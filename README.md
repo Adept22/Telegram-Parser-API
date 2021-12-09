@@ -49,7 +49,7 @@ docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
 
 `GET /telegram/chat/{UUID}`
 
-Примеры запроса:
+Пример запроса:
 ```
 curl -i \
 	-X GET \
@@ -57,14 +57,15 @@ curl -i \
 	https://localhost:7449/api/v1/telegram/chat/cc976c61-adc6-4fd0-ac0d-832e7221709e
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 200 OK
 Date: Mon, 12 Oct 2020 22:35:15 GMT
 Status: 200 OK
 Connection: close
 Content-Type: application/json
-
+```
+```json
 {
 	id: "cc976c61-adc6-4fd0-ac0d-832e7221709e",
 	internalId: "ID из Телеграмма",
@@ -81,7 +82,6 @@ Content-Type: application/json
 
 `POST /telegram/chat/find`
 
-Примеры запроса:
 ```
 curl -i \
 	-X POST \
@@ -90,31 +90,32 @@ curl -i \
 	https://localhost:7449/api/v1/telegram/chat/find
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 200 OK
 Date: Mon, 12 Oct 2020 22:35:15 GMT
 Status: 200 OK
 Connection: close
 Content-Type: application/json
-
+```
+```json
 [
     ...
 	{
-		id: "cc976c61-adc6-4fd0-ac0d-832e7221709e",
-		internalId: "ID из Телеграмма",
-		title: "Группа 1",
-		createdAt: "2021-11-24T15:43:53+00:00",
-		media: [...],
-		members: [...],
+		"id": "cc976c61-adc6-4fd0-ac0d-832e7221709e",
+		"internalId": "ID из Телеграмма",
+		"title": "Группа 1",
+		"createdAt": "2021-11-24T15:43:53+00:00",
+		"media": [...],
+		"members": [...],
 	},
 	{
-		id: "b93709fa-58f6-11ec-bf63-0242ac130002",
-		internalId: "ID из Телеграмма 2",
-		title: "Группа 2",
-		createdAt: "2021-12-02T11:22:03+00:00",
-		media: [...],
-		members: [...],
+		"id": "b93709fa-58f6-11ec-bf63-0242ac130002",
+		"internalId": "ID из Телеграмма 2",
+		"title": "Группа 2",
+		"createdAt": "2021-12-02T11:22:03+00:00",
+		"media": [...],
+		"members": [...],
 	}
     ...
 ]
@@ -122,13 +123,12 @@ Content-Type: application/json
 
 ### Создание чата телеграмма
 
-> Метод доступен только для пользователей с ролью `ROLE_PARSER`
-
 Создает сущность чата телеграма.
+
+> Метод доступен только для пользователей с ролью `ROLE_PARSER`
 
 `POST /telegram/chat`
 
-Примеры запроса:
 ```
 curl -i \
 	-X POST \
@@ -137,20 +137,21 @@ curl -i \
 	https://localhost:7449/api/v1/telegram/chat
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 201 Created
 Date: Mon, 12 Oct 2020 22:35:15 GMT
 Status: 201 Created
 Connection: close
-
+```
+```json
 {
-	id: "b49e4236-58f7-11ec-bf63-0242ac130002",
-	internalId: "ID из Телеграмма",
-	title: "Группа 3",
-	createdAt: "2021-11-24T15:43:53+00:00",
-	media: [],
-	members: [],
+	"id": "b49e4236-58f7-11ec-bf63-0242ac130002",
+	"internalId": "ID из Телеграмма",
+	"title": "Группа 3",
+	"createdAt": "2021-11-24T15:43:53+00:00",
+	"media": [],
+	"members": [],
 }
 ```
 
@@ -160,7 +161,6 @@ Connection: close
 
 `POST /telegram/chat/monitoring`
 
-Примеры запроса:
 ```
 curl -i \
 	-X POST \
@@ -169,54 +169,42 @@ curl -i \
 	https://localhost:7449/api/v1/telegram/chat/monitoring
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 201 Created
 Date: Mon, 12 Oct 2020 22:35:15 GMT
 Status: 201 Created
 Connection: close
-
+```
+```json
 {
-	id: "066b412c-58f8-11ec-bf63-0242ac130002",
-	internalId: "ID из Телеграмма",
-	title: "Группа 4",
-	createdAt: "2021-11-24T15:43:53+00:00",
-	media: [],
-	members: [],
+	"id": "066b412c-58f8-11ec-bf63-0242ac130002",
+	"internalId": "ID из Телеграмма",
+	"title": "Группа 4",
+	"createdAt": "2021-11-24T15:43:53+00:00",
+	"media": [],
+	"members": [],
 }
 ```
 
 Ошибочные ответы:
 
 - Чат по ссылке не найден или ссылка просрочена:
-```
-HTTP/1.1 404 Not Found
-Date: Mon, 12 Oct 2020 22:35:15 GMT
-Status: 404 Not Found
-Connection: close
-```
-
-- Проверка безопасности чата:
-```
-HTTP/1.1 401 Unauthorized
-Date: Mon, 12 Oct 2020 22:35:15 GMT
-Status: 401 Unauthorized
-Connection: close
-
-{
-	// объект с капчей
-}
-```
+	```
+	HTTP/1.1 404 Not Found
+	Date: Mon, 12 Oct 2020 22:35:15 GMT
+	Status: 404 Not Found
+	Connection: close
+	```
 
 ### Изменение чата телеграмма
 
-> Метод доступен только для пользователей с ролью `ROLE_PARSER`
-
 Изменяет сущность чата телеграма.
+
+> Метод доступен только для пользователей с ролью `ROLE_PARSER`
 
 `PUT /telegram/chat/{UUID}`
 
-Примеры запроса:
 ```
 curl -i \
 	-X PUT \
@@ -225,39 +213,39 @@ curl -i \
 	https://localhost:7449/api/v1/telegram/chat/066b412c-58f8-11ec-bf63-0242ac130002
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 200 OK
 Date: Mon, 12 Oct 2020 22:35:15 GMT
 Status: 200 OK
 Connection: close
-
+```
+```json
 {
-	id: "066b412c-58f8-11ec-bf63-0242ac130002",
-	internalId: "ID из Телеграмма",
-	title: "Группа 4 теперь 5",
-	createdAt: "2021-11-24T15:43:53+00:00",
-	media: [],
-	members: [],
+	"id": "066b412c-58f8-11ec-bf63-0242ac130002",
+	"internalId": "ID из Телеграмма",
+	"title": "Группа 4 теперь 5",
+	"createdAt": "2021-11-24T15:43:53+00:00",
+	"media": [],
+	"members": [],
 }
 ```
 
 ### Удаление чата телеграмма
 
-> Метод доступен только для пользователей с ролью `ROLE_PARSER`
-
 Удаляет сущность чата телеграма и снимает с мониторинга.
+
+> Метод доступен только для пользователей с ролью `ROLE_PARSER`
 
 `DELETE /telegram/chat/{UUID}`
 
-Примеры запроса:
 ```
 curl -i \
 	-X DELETE \
 	https://localhost:7449/api/v1/telegram/chat/066b412c-58f8-11ec-bf63-0242ac130002
 ```
 
-Пример успешного ответа:
+Успешный ответ:
 ```
 HTTP/1.1 204 No Content
 Date: Mon, 12 Oct 2020 22:35:15 GMT
