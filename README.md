@@ -28,7 +28,35 @@ docker-compose build --no-cache --pull
 docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
 ```
 
-## Использование API
+## Общие методы
+
+`POST /api/v1/chats/find`
+
+Пример запроса:
+```
+curl -i \
+	-X POST \
+	-H 'Accept: application/json' \
+	-d '{ "link": "https://t.me/joinchat/msxbwTSRCnJhNDli" }'
+	https://localhost:7449/api/v1/chats/find
+```
+Успешный ответ:
+```
+HTTP/1.1 200 OK
+Date: Mon, 12 Oct 2020 22:35:15 GMT
+Status: 200 OK
+Connection: close
+Content-Type: application/json
+```
+```json
+{
+	internalId: "msxbwTSRCnJhNDli",
+	title: "Группа 1",
+	createdAt: "2021-11-24T15:43:53+00:00",
+}
+```
+
+## API чатов
 
 Все запросы к API следует осуществлять с использованием REST методов (GET, POST, PUT, DELETE). Важно передавать тип чата с которым предполагается работа. Данный параметр помечен как `CHAT_TYPE` в примерах запросов. Особенности работы с каждым типом чатов описаны каждым методом. Формат общения с сервером - `JSON`.
 
