@@ -6,6 +6,7 @@
 # https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact
 ARG PHP_VERSION=8.0
 ARG CADDY_VERSION=2
+ARG PYTHON_VERSION=3
 
 # "php" stage
 FROM php:${PHP_VERSION}-fpm-alpine AS symfony_php
@@ -115,6 +116,7 @@ RUN set -eux; \
 	composer symfony:dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync
+	
 VOLUME /srv/app/var
 
 ENTRYPOINT ["docker-entrypoint"]
@@ -136,3 +138,17 @@ COPY --from=dunglas/mercure:v0.11 /srv/public /srv/mercure-assets/
 COPY --from=symfony_caddy_builder /usr/bin/caddy /usr/bin/caddy
 COPY --from=symfony_php /srv/app/public public/
 COPY docker/caddy/Caddyfile /etc/caddy/Caddyfile
+
+FROM python:${PYTHON_VERSION} as python_tg_parser
+
+WORKDIR /srv/tg-parser
+
+COPY tg-parser/requirements.txt ./
+
+RUN pip install \
+	--no-cache-dir  \
+	-r requirements.txt
+
+COPY tg-parser/ ./
+
+CMD [ "python", "main.py" ]

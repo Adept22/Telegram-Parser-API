@@ -81,10 +81,23 @@ services:
             # - ./docker/db/data:/var/lib/postgresql/data:rw
     ###< doctrine/doctrine-bundle ###
 
+    tg_parser:
+        build:
+            context: .
+            target: python_tg_parser
+        depends_on:
+            - php
+        restart: unless-stopped
+        volumes:
+            - python_data:/usr/local/lib/python3.10/site-packages/telethon:rw
 volumes:
     php_socket: null
+    
     caddy_data: null
     caddy_config: null
+
+    python_data: null
+
     ###> symfony/mercure-bundle ###
     ###< symfony/mercure-bundle ###
 

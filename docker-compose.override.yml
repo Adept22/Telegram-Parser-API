@@ -18,6 +18,10 @@ services:
             - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
             - ./public:/srv/app/public:ro
 
+    tg_parser:
+        volumes:
+            - ./tg-parser:/srv/tg-parser:ro
+
     ###> symfony/mercure-bundle ###
     ###< symfony/mercure-bundle ###
 
