@@ -65,7 +65,7 @@ class TelegramMessage
     private $forwardedFromName;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
      */
     private $createdAt;
 

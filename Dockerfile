@@ -122,6 +122,50 @@ VOLUME /srv/app/var
 ENTRYPOINT ["docker-entrypoint"]
 CMD ["php-fpm"]
 
+FROM python:${PYTHON_VERSION} as python_tg_checker
+
+RUN adduser --disabled-password checker
+USER checker
+
+WORKDIR /srv/tg-checker
+
+COPY --chown=checker:checker tg-checker/requirements.txt .
+
+RUN pip install \
+	--user \
+	-r requirements.txt
+
+ENV PATH="/home/checker/.local/bin:${PATH}"
+
+COPY --chown=checker:checker tg-checker/ .
+
+EXPOSE 7010
+
+ENTRYPOINT [ "python" ]
+
+CMD [ "main.py" ]
+
+FROM python:${PYTHON_VERSION} as python_tg_parser
+
+RUN adduser --disabled-password parser
+USER parser
+
+WORKDIR /srv/tg-parser
+
+COPY --chown=parser:parser tg-parser/requirements.txt .
+
+RUN pip install \
+	--user \
+	-r requirements.txt
+
+ENV PATH="/home/parser/.local/bin:${PATH}"
+
+COPY --chown=parser:parser tg-parser/ .
+
+ENTRYPOINT [ "python" ]
+
+CMD [ "main.py" ]
+
 FROM caddy:${CADDY_VERSION}-builder-alpine AS symfony_caddy_builder
 
 RUN xcaddy build \
@@ -138,17 +182,3 @@ COPY --from=dunglas/mercure:v0.11 /srv/public /srv/mercure-assets/
 COPY --from=symfony_caddy_builder /usr/bin/caddy /usr/bin/caddy
 COPY --from=symfony_php /srv/app/public public/
 COPY docker/caddy/Caddyfile /etc/caddy/Caddyfile
-
-FROM python:${PYTHON_VERSION} as python_tg_parser
-
-WORKDIR /srv/tg-parser
-
-COPY tg-parser/requirements.txt ./
-
-RUN pip install \
-	--no-cache-dir  \
-	-r requirements.txt
-
-COPY tg-parser/ ./
-
-CMD [ "python", "main.py" ]

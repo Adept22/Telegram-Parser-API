@@ -39,7 +39,7 @@ class TelegramChat
     private $title;
 
     /**
-     * @ORM\Column(type="datetime")
+     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
      */
     private $createdAt;
 

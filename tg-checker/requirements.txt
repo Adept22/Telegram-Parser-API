@@ -1,0 +1,5 @@
+telethon == 1.23.0
+asyncio == 3.4.3
+requests == 2.22.0
+quart==0.16.1
+hypercorn==0.12.0

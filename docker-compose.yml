@@ -27,6 +27,10 @@ services:
             MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
             MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
 
+            PYTHON: ${PYTHON:-3}
+            PARSER_PATH: ${PARSER_PATH:-/srv/tg-parser}
+            PARSER_CHECK_FILENAME: ${PARSER_CHECK_FILENAME:-check.py}
+
     caddy:
         build:
             context: .
@@ -81,6 +85,21 @@ services:
             # - ./docker/db/data:/var/lib/postgresql/data:rw
     ###< doctrine/doctrine-bundle ###
 
+    tg_checker:
+        build:
+            context: .
+            target: python_tg_checker
+        tty: true
+        stdin_open: true
+        env_file: ./tg-checker/.env
+        depends_on:
+            - php
+        restart: unless-stopped
+        volumes:
+            - python_tg_checker_data:/usr/local/lib/python3.10/site-packages:rw
+        ports:
+            - '7010:7010'
+
     tg_parser:
         build:
             context: .
@@ -89,14 +108,15 @@ services:
             - php
         restart: unless-stopped
         volumes:
-            - python_data:/usr/local/lib/python3.10/site-packages/telethon:rw
+            - python_tg_parser_data:/usr/local/lib/python3.10/site-packages:rw
 volumes:
     php_socket: null
     
     caddy_data: null
     caddy_config: null
 
-    python_data: null
+    python_tg_checker_data: null
+    python_tg_parser_data: null
 
     ###> symfony/mercure-bundle ###
     ###< symfony/mercure-bundle ###
