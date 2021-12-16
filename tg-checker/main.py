@@ -2,7 +2,7 @@ import time
 import re
 import hypercorn.asyncio
 import telethon
-from telethon import functions, errors
+from telethon import functions, errors, types
 from core.ClientManager import ClientManager
 from processors.ApiProcessor import ApiProcessor
 
@@ -19,26 +19,33 @@ api = ApiProcessor()
 async def startup():
     phones = api.get('phone')
 
-    print('')
-    print('phones ', phones)
-
     for phone in phones:
+        print('')
+
         client = ClientManager().new(phone['phone'])
 
         try:
             await client.connect()
 
             if not await client.is_user_authorized():
-                print('client ', phone['phone'], client, 'false')
-                sent = await client.send_code_request(phone=phone['phone'])
-                print('sent ', phone['phone'], sent)
+                phone_code_hash = None
 
-                api.set('phone', { 'id': phone['id'], 'isVerified': False, 'phoneCodeHash': sent.phone_code_hash })
+                try:
+                    sent = await client.send_code_request(phone=phone['phone'])
+                    print('sent', phone['phone'], sent)
+
+                    phone_code_hash = sent.phone_code_hash
+                except errors.RPCError as ex:
+                    print('Exception', phone['phone'], ex.message)
+
+                api.set('phone', { 'id': phone['id'], 'isVerified': False, 'phoneCodeHash': phone_code_hash })
             else:
                 ClientManager().set(phone['id'], client)
+                print('using', phone['phone'])
         except errors.RPCError as ex:
-            print(ex.message)
-    print('clients ', ClientManager().get_clients())
+            print('Exception', phone['phone'], ex.message)
+
+        time.sleep(1)
 
 
 # After we're done serving (near shutdown), clean up the client
@@ -103,36 +110,42 @@ async def check():
     else:
         raise Exception('Недействительная ссылка')
 
-    matches = re.match(r'https:\/\/t.me\/joinchat\/(.*)', link)
+    link = re.sub(r'https?:\/\/t\.me\/', '', link)
 
-    link_hash = matches.group(1)
+    matches = re.match(r'(?:joinchat\/|\+)(\w{16})', link)
 
-    if link_hash != "":
-        clients = ClientManager().get_clients()
-        print(clients)
-        for client in clients.values():
-            try:
-                print('client ', client)
-                updates = await client(functions.messages.ImportChatInviteRequest(link_hash))
-                print('updates ', updates)
-                print('updates.to_dict() ', updates.to_dict())
-                channel = updates['chats'][0]
-                print('channel ', channel)
-                print('channel.to_dict() ', channel.to_dict())
+    hash = matches.group(1) if not matches is None else None
 
-                return channel.to_dict()
-                # channel = Channel(channel)
+    clients = ClientManager().get_clients()
 
-                # return channel.serialize()
-            # except errors.FloodWaitError as e:
-            #     print('Have to sleep', e.seconds, 'seconds')
-            #     time.sleep(e.seconds)
-            except errors.rpcbaseerrors.RPCError as ex:
-                if not type(ex) == errors.rpcbaseerrors.FloodError \
-                    or not type(ex) == errors.rpcbaseerrors.TimedOutError:
-                    return ex.__dict__
+    for client in clients.values():
+        try:
+            if hash is None:
+                # TODO: какого-то хрена не вступает
+                reguest = functions.channels.JoinChannelRequest(channel=link)
+            else:
+                reguest = functions.messages.ImportChatInviteRequest(hash=hash)
 
-    return ""
+            updates = await client(reguest)
+                
+            channel = updates.chats[0]
+
+            if not channel is None:
+                try:
+                    users = await client.get_participants(channel)
+                    print('users', users)
+                except ex:
+                    print(ex)
+                    continue
+            
+            return { 'id': channel.id, 'title': channel.title }
+        except errors.rpcbaseerrors.FloodError as ex:
+            print(ex.message)
+            time.sleep("FLOOD", ex.seconds)
+        except:
+            continue
+
+    return "ok"
 
 
 async def main():

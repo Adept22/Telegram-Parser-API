@@ -1,6 +1,6 @@
 import os
 from decorators.singleton import singleton
-from telethon.sync import TelegramClient
+from telethon import sync
 
 @singleton
 class ClientManager:
@@ -16,7 +16,11 @@ class ClientManager:
         return self
     
     def new(self, phone):
-        return TelegramClient('sessions/' + str(phone), os.environ['TELEGRAM_API_ID'], os.environ['TELEGRAM_API_HASH'])
+        return sync.TelegramClient(
+            session='sessions/' + str(phone), 
+            api_id=os.environ['TELEGRAM_API_ID'], 
+            api_hash=os.environ['TELEGRAM_API_HASH']
+        )
 
     def has(self, id):
         return id in self.clients
