@@ -56,11 +56,10 @@ class DefaultController extends AbstractFOSRestController
 
         $response = (new \GuzzleHttp\Client())->post('http://tg_checker:7010/check', [ 'json' => $content ]);
 
-        $statusCode = $response->getStatusCode();
         $json = $response->getBody()->getContents();
         $json = json_decode($json, true);
 
-        if ($statusCode === 200) {
+        if ($response->getStatusCode() === 200) {
             $json['internalId'] = $json['id'];
             unset($json['id']);
 

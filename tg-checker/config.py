@@ -4,6 +4,12 @@ SERVER = {
     'debug': True
 }
 
+API = {
+    'protocol': 'http',
+    'domain': 'caddy',
+    'path': 'api/v1/telegram'
+}
+
 CHANNEL_FIELDS = {
     'id': 'ID',
     'title': 'Заголовок',

@@ -3,7 +3,6 @@
 namespace App\Controller;
 
 use App\Entity\AbstractEntity;
-use App\Validator\Exception\ValidationException;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Entity;
@@ -134,19 +133,19 @@ abstract class AbstractController extends AbstractFOSRestController implements C
      */
     public function _post(Request $request, ParamFetcherInterface $paramFetcher): View
     {
-        $content = json_decode($request->getContent());
+        $content = json_decode($request->getContent(), true) ?? [];
 
-        if (isset($content->id)) {
-            unset($content->id);
+        if (isset($content['id'])) {
+            unset($content['id']);
         }
 
         $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
 
-        try {
+        // try {
             $this->em->persist($entity);
-        } catch (ValidationFailedException $ex) {
-            return View::create($ex, Response::HTTP_BAD_REQUEST);
-        }
+        // } catch (ValidationFailedException $ex) {
+        //     return View::create($ex, Response::HTTP_BAD_REQUEST);
+        // }
 
         $this->em->flush();
 
@@ -160,9 +159,9 @@ abstract class AbstractController extends AbstractFOSRestController implements C
      */
     public function _put(?string $id, Request $request): View
     {
-        $content = json_decode($request->getContent());
+        $content = json_decode($request->getContent(), true) ?? [];
 
-        $content->id = $id;
+        $content['id'] = $id;
 
         $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
 
@@ -199,11 +198,9 @@ abstract class AbstractController extends AbstractFOSRestController implements C
      * 
      * @param string $id UUID сущности
      * 
-     * @return AbstractEntity Сущность
-     * 
      * @throws NotFoundHttpException Если сущность не найдена
      */
-    public function find(string $id): AbstractEntity
+    public function find(string $id)
     {
         $entity = $this->repository->find($id);
 
