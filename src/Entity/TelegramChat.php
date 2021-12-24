@@ -34,6 +34,11 @@ class TelegramChat
     private $internalId;
 
     /**
+     * @ORM\Column(type="string", length=255, unique=true, nullable=true)
+     */
+    private $accessHash;
+
+    /**
      * @ORM\Column(type="string", length=255, unique=true)
      */
     private $link;
@@ -42,6 +47,11 @@ class TelegramChat
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $title;
+
+    /**
+     * @ORM\Column(type="boolean", options={"default": true})
+     */
+    private $isAvailable;
 
     /**
      * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
@@ -88,6 +98,18 @@ class TelegramChat
         return $this;
     }
 
+    public function getAccessHash(): ?string
+    {
+        return $this->accessHash;
+    }
+
+    public function setAccessHash(string $accessHash): self
+    {
+        $this->accessHash = $accessHash;
+
+        return $this;
+    }
+
     public function getLink(): ?string
     {
         return $this->link;
@@ -108,6 +130,18 @@ class TelegramChat
     public function setTitle(string $title): self
     {
         $this->title = $title;
+
+        return $this;
+    }
+
+    public function getIsAvailable(): ?bool
+    {
+        return $this->isAvailable;
+    }
+
+    public function setIsAvailable(bool $isAvailable): self
+    {
+        $this->isAvailable = $isAvailable;
 
         return $this;
     }

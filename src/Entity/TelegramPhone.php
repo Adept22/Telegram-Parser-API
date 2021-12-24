@@ -7,17 +7,13 @@ use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
+use Symfony\Component\Serializer\Annotation as SymfonySerializer;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 
 /**
  * @ORM\Table(name="telegram.phones")
  * @ORM\Entity(repositoryClass=TelegramPhoneRepository::class)
- * 
- * @Serializer\VirtualProperty(
- *    "chatsCount",
- *    exp="object.getChats().count()"
- * )
  */
 class TelegramPhone
 {
@@ -71,6 +67,7 @@ class TelegramPhone
     /**
      * @ORM\ManyToMany(targetEntity=TelegramChat::class, mappedBy="phones")
      * 
+     * @SymfonySerializer\Ignore()
      * @Serializer\Exclude
      */
     private $chats;

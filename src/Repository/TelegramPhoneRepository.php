@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\TelegramPhone;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\Common\Collections\Criteria;
 
 /**
  * @method TelegramPhone|null find($id, $lockMode = null, $lockVersion = null)
@@ -17,6 +18,18 @@ class TelegramPhoneRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, TelegramPhone::class);
+    }
+
+    public function findAllOrderByTelegramChatsCount($limit = 50, $direction = 'ASC')
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.chats', 'c')
+            ->orderBy('COUNT(t.id)', $direction)
+            ->groupBy('t.id')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult()
+        ;
     }
 
     // /**

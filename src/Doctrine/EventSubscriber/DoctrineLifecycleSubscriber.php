@@ -2,6 +2,8 @@
 
 namespace App\Doctrine\EventSubscriber;
 
+use App\Entity\TelegramChat;
+use App\Entity\TelegramPhone;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Events;
@@ -9,9 +11,6 @@ use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Thruway\ClientSession;
-use Thruway\Peer\Client;
-use Thruway\Transport\PawlTransportProvider;
 
 final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
 {
@@ -37,8 +36,8 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         return [
             Events::prePersist,
-            Events::preUpdate,
             Events::postPersist,
+            Events::preUpdate,
             Events::postUpdate,
             Events::postFlush,
         ];
@@ -47,6 +46,17 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     public function prePersist(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
+
+        if ($entity instanceof TelegramChat) {
+            /** @var ArrayCollection|TelegramPhone[] */
+            $telegramPhones = $args->getObjectManager()
+                ->getRepository(TelegramPhone::class)
+                ->findAllOrderByTelegramChatsCount(3);
+
+            foreach ($telegramPhones as $telegramPhone) {
+                $entity->addPhone($telegramPhone);
+            }
+        }
 
         // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {
