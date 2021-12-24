@@ -29,12 +29,17 @@ class TelegramChat
     private $id;
 
     /**
-     * @ORM\Column(type="string", length=255, unique=true)
+     * @ORM\Column(type="string", length=255, unique=true, nullable=true)
      */
     private $internalId;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, unique=true)
+     */
+    private $link;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $title;
 
@@ -53,10 +58,17 @@ class TelegramChat
      */
     private $members;
 
+    /**
+     * @ORM\ManyToMany(targetEntity=TelegramPhone::class, inversedBy="chats")
+     */
+    private $phones;
+
     public function __construct()
     {
+        $this->createdAt = new \DateTime();
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
+        $this->phones = new ArrayCollection();
     }
 
     public function getId(): ?UuidInterface
@@ -72,6 +84,18 @@ class TelegramChat
     public function setInternalId(string $internalId): self
     {
         $this->internalId = $internalId;
+
+        return $this;
+    }
+
+    public function getLink(): ?string
+    {
+        return $this->link;
+    }
+
+    public function setLink(string $link): self
+    {
+        $this->link = $link;
 
         return $this;
     }
@@ -155,6 +179,33 @@ class TelegramChat
             if ($member->getChat() === $this) {
                 $member->setChat(null);
             }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|TelegramPhone[]
+     */
+    public function getPhones(): Collection
+    {
+        return $this->phones;
+    }
+
+    public function addPhone(TelegramPhone $phone): self
+    {
+        if (!$this->phones->contains($phone)) {
+            $this->phones[] = $phone;
+            $phone->addChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removePhone(TelegramPhone $phone): self
+    {
+        if ($this->phones->removeElement($phone)) {
+            $phone->removeChat($this);
         }
 
         return $this;

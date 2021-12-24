@@ -27,16 +27,6 @@ services:
             - "5432"
     ###< doctrine/doctrine-bundle ###
 
-    tg_checker:
-        volumes:
-            # The "cached" option has no effect on Linux but improves performance on Mac
-            - ./tg-checker/:/srv/tg-checker:rw,cached
-
-    tg_parser:
-        volumes:
-            # The "cached" option has no effect on Linux but improves performance on Mac
-            - ./tg-parser/:/srv/tg-parser:rw,cached
-
     ###> symfony/mailer ###
     mailer:
         image: schickling/mailcatcher

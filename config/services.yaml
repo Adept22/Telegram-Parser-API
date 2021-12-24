@@ -4,7 +4,7 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-
+    
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -20,7 +20,156 @@ services:
             - "../src/Entity/"
             - "../src/Kernel.php"
             - "../src/Tests/"
-            
+
+    #
+    # ------ VORYX ------ #
+    #
+
+    voryx.thruway.loop:
+        public: true
+        class: React\EventLoop\LoopInterface
+        factory: ['React\EventLoop\Factory', 'create']
+
+    voryx.thruway.ratchet.transport:
+        class: Thruway\Transport\RatchetTransportProvider
+        arguments:
+            $address: '0.0.0.0'
+            $port: 7015
+
+    voryx.thruway.client:
+        public: true
+        class: Thruway\Peer\Client
+        arguments:
+            $realm: 'realm1'
+
+    # voryx.thruway.web.push.client:
+    #     class: App\Thruway\Client\WebPushClient
+    #     arguments:
+    #         $realm: 'realm1'
+
+    voryx.thruway.internal.transport:
+        class: Thruway\Transport\InternalClientTransportProvider
+        arguments:
+            - '@voryx.thruway.client'
+
+    voryx.thruway.internal.manager:
+        class: Thruway\Transport\InternalClientTransportProvider
+
+    # voryx.thruway.internal.web.push:
+    #     class: Thruway\Transport\InternalClientTransportProvider
+    #     arguments:
+    #         - '@voryx.thruway.web.push.client'
+
+    voryx.thruway.server:
+        public: true
+        class: Thruway\Peer\Router
+        arguments:
+            - '@voryx.thruway.loop'
+        calls:
+            - addTransportProvider: ['@voryx.thruway.ratchet.transport']
+            # - addTransportProvider: ['@voryx.thruway.internal.transport']
+
+    voryx.thruway.resource.mapper:
+        public: true
+        class: App\Thruway\ResourceMapper
+        arguments:
+            - '@annotation_reader'
+
+    get_set_stdClass_normalizer:
+        class: App\Thruway\Serialization\StdClassNormalizer
+        tags:
+            - { name: serializer.normalizer }
+
+    wamp_kernel:
+        public: true
+        class: App\Thruway\WampKernel
+        # arguments:
+        #     $resourceMapper: '@voryx.thruway.resource.mapper'
+
+    thruway_container:
+        class: Symfony\Component\DependencyInjection\Container
+        factory: ['App\Thruway\ContainerFactory', 'createContainer']
+        arguments:
+            $containerName: '@kernel.container_class'
+
+    thruway.details:
+        class: App\Thruway\Details
+
+    voryx.thruway.authentication.manager:
+        class: Thruway\Authentication\AuthenticationManager
+
+    voryx.thruway.auth.manager.transport.provider:
+        class: Thruway\Transport\InternalClientTransportProvider
+
+    voryx.thruway.user.db:
+        class: App\Thruway\Authentication\UserDB
+
+    # voryx.thruway.wamp.cra.auth.client:
+    #     class: Thruway\Authentication\WampCraAuthProvider
+    #     arguments:
+    #         $realm: 'realm1'
+    #     calls:
+    #         - setUserDb: ['@voryx.thruway.user.db']
+
+    voryx.thruway.wamp.cra.auth.transport.provider:
+        class: Thruway\Transport\InternalClientTransportProvider
+
+    ### Main Thruway Client
+    thruway.client:
+        public: true
+        class: App\Thruway\Client\ClientManager
+        arguments:
+            $config: 
+                realm: 'realm1'
+                trusted_url: 'ws://127.0.0.1:7016/ws'
+            $connector: '@voryx.thruway.client.react_connector'
+
+    voryx.thruway.topic_state_handler:
+        class: App\Thruway\TopicStateHandler
+        tags:
+            - { name: kernel.event_listener, event: wamp.open, method: onOpen }
+
+    ### Topic State Handler
+    voryx.thruway.topic.state.handler:
+        class: Thruway\Subscription\StateHandlerRegistry
+        arguments:
+            $realm: 'realm1'
+
+    ### Register command as public services
+    thruway.command.debug:
+        public: true
+        class: App\Thruway\Command\ThruwayDebugCommand
+        tags:
+            - { name: console.command, command: thruway:debug }
+
+    thruway.command.process:
+        public: true
+        class: App\Thruway\Command\ThruwayProcessCommand
+        tags:
+            - { name: console.command, command: thruway:process }
+
+    thruway.command.router:
+        public: true
+        class: App\Thruway\Command\ThruwayRouterCommand
+        tags:
+            - { name: console.command, command: thruway:router:start }
+
+    thruway.command.worker:
+        public: true
+        class: App\Thruway\Command\ThruwayWorkerCommand
+        tags:
+            - { name: console.command, command: thruway:worker:start }
+
+    voryx.thruway.client.react_connector:
+        public: true
+        class: React\Socket\Connector
+        # arguments:
+        #     - '@voryx.thruway.loop'
+
+    #
+    # ------ ! VORYX ------ #
+    #
+
     #
     # ------ DOCTRINE ------ #
     #

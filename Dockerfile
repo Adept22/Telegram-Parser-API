@@ -6,7 +6,6 @@
 # https://docs.docker.com/engine/reference/builder/#understand-how-arg-and-from-interact
 ARG PHP_VERSION=8.0
 ARG CADDY_VERSION=2
-ARG PYTHON_VERSION=3
 
 # "php" stage
 FROM php:${PHP_VERSION}-fpm-alpine AS symfony_php
@@ -29,9 +28,21 @@ ARG APCU_VERSION=5.1.20
 RUN set -eux; \
 	apk add --no-cache --virtual .build-deps \
 		$PHPIZE_DEPS \
+		autoconf \
+		cmake \
+		file \
+		g++ \
+		gcc \
+		libc-dev \
+		pcre-dev \
+		make \
+		git \
+		pkgconf \
+		re2c \
 		icu-dev \
 		libzip-dev \
 		zlib-dev \
+
 	; \
 	\
 	docker-php-ext-configure zip; \
@@ -54,9 +65,21 @@ RUN set -eux; \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 	)"; \
+	apk add --no-cache --virtual .persistent-deps \
+		zeromq-dev \
+		zeromq; \
+	git clone https://github.com/mkoppanen/php-zmq /tmp/php-zmq \
+		&& cd /tmp/php-zmq \
+		&& phpize  \
+		&& ./configure  \
+		&& make  \
+		&& make install \
+		&& make test \
+		&& docker-php-ext-enable zmq; \
 	apk add --no-cache --virtual .phpexts-rundeps $runDeps; \
 	\
-	apk del .build-deps
+	apk del .build-deps; \
+	rm -rf /tmp/* /usr/local/lib/php/doc/* /var/cache/apk/*.
 
 COPY docker/php/docker-healthcheck.sh /usr/local/bin/docker-healthcheck
 RUN chmod +x /usr/local/bin/docker-healthcheck
@@ -122,50 +145,6 @@ VOLUME /srv/app/var
 ENTRYPOINT ["docker-entrypoint"]
 CMD ["php-fpm"]
 
-FROM python:${PYTHON_VERSION} as python_tg_checker
-
-RUN adduser --disabled-password checker
-USER checker
-
-WORKDIR /srv/tg-checker
-
-COPY --chown=checker:checker tg-checker/requirements.txt .
-
-RUN pip install \
-	--user \
-	-r requirements.txt
-
-ENV PATH="/home/checker/.local/bin:${PATH}"
-
-COPY --chown=checker:checker tg-checker/ .
-
-EXPOSE 7010
-
-ENTRYPOINT [ "python" ]
-
-CMD [ "main.py" ]
-
-FROM python:${PYTHON_VERSION} as python_tg_parser
-
-RUN adduser --disabled-password parser
-USER parser
-
-WORKDIR /srv/tg-parser
-
-COPY --chown=parser:parser tg-parser/requirements.txt .
-
-RUN pip install \
-	--user \
-	-r requirements.txt
-
-ENV PATH="/home/parser/.local/bin:${PATH}"
-
-COPY --chown=parser:parser tg-parser/ .
-
-ENTRYPOINT [ "python" ]
-
-CMD [ "main.py" ]
-
 FROM caddy:${CADDY_VERSION}-builder-alpine AS symfony_caddy_builder
 
 RUN xcaddy build \
@@ -182,3 +161,12 @@ COPY --from=dunglas/mercure:v0.11 /srv/public /srv/mercure-assets/
 COPY --from=symfony_caddy_builder /usr/bin/caddy /usr/bin/caddy
 COPY --from=symfony_php /srv/app/public public/
 COPY docker/caddy/Caddyfile /etc/caddy/Caddyfile
+
+FROM symfony_php AS symfony_php_debug
+
+ARG XDEBUG_VERSION=3.0.4
+RUN set -eux; \
+	apk add --no-cache --virtual .build-deps $PHPIZE_DEPS; \
+	pecl install xdebug-$XDEBUG_VERSION; \
+	docker-php-ext-enable xdebug; \
+	apk del .build-deps

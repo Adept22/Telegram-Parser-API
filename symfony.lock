@@ -5,6 +5,9 @@
     "brick/math": {
         "version": "0.9.3"
     },
+    "cboden/ratchet": {
+        "version": "v0.4.4"
+    },
     "doctrine/annotations": {
         "version": "1.13",
         "recipe": {
@@ -87,6 +90,9 @@
     },
     "egulias/email-validator": {
         "version": "3.1.2"
+    },
+    "evenement/evenement": {
+        "version": "v3.0.1"
     },
     "friendsofphp/proxy-manager-lts": {
         "version": "v1.0.5"
@@ -223,6 +229,39 @@
             "ref": "471aed0fbf5620b8d7f92b7a5ebbbf6c0945c27a"
         }
     },
+    "ratchet/pawl": {
+        "version": "v0.3.5"
+    },
+    "ratchet/rfc6455": {
+        "version": "v0.3.1"
+    },
+    "react/cache": {
+        "version": "v1.1.1"
+    },
+    "react/child-process": {
+        "version": "v0.6.4"
+    },
+    "react/dns": {
+        "version": "v1.9.0"
+    },
+    "react/event-loop": {
+        "version": "v1.2.0"
+    },
+    "react/promise": {
+        "version": "v2.8.0"
+    },
+    "react/promise-timer": {
+        "version": "v1.8.0"
+    },
+    "react/socket": {
+        "version": "v1.10.0"
+    },
+    "react/stream": {
+        "version": "v1.2.0"
+    },
+    "react/zmq": {
+        "version": "v0.4.0"
+    },
     "sendgrid/php-http-client": {
         "version": "3.14.0"
     },
@@ -331,6 +370,9 @@
             "src/Controller/.gitignore",
             "src/Kernel.php"
         ]
+    },
+    "symfony/http-client-contracts": {
+        "version": "v2.5.0"
     },
     "symfony/http-foundation": {
         "version": "v5.4.0"
@@ -501,6 +543,9 @@
     },
     "symfony/yaml": {
         "version": "v5.3.11"
+    },
+    "thruway/pawl-transport": {
+        "version": "0.5.1"
     },
     "webmozart/assert": {
         "version": "1.10.0"

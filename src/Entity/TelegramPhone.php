@@ -7,10 +7,17 @@ use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 /**
  * @ORM\Table(name="telegram.phones")
  * @ORM\Entity(repositoryClass=TelegramPhoneRepository::class)
+ * 
+ * @Serializer\VirtualProperty(
+ *    "chatsCount",
+ *    exp="object.getChats().count()"
+ * )
  */
 class TelegramPhone
 {
@@ -29,7 +36,7 @@ class TelegramPhone
     /**
      * @ORM\Column(type="string", length=20, unique=true)
      */
-    private $phone;
+    private $number;
 
     /**
      * @ORM\Column(type="string", length=20, unique=true)
@@ -52,9 +59,21 @@ class TelegramPhone
     private $isBanned = false;
     
     /**
+     * @ORM\Column(type="string", length=6, nullable=true)
+     */
+    private $code;
+    
+    /**
      * @ORM\Column(type="string", length=255, nullable=true)
      */
-    private $phoneCodeHash;
+    private $codeHash;
+
+    /**
+     * @ORM\ManyToMany(targetEntity=TelegramChat::class, mappedBy="phones")
+     * 
+     * @Serializer\Exclude
+     */
+    private $chats;
 
     /**
      * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
@@ -63,6 +82,7 @@ class TelegramPhone
 
     public function __construct()
     {
+        $this->chats = new ArrayCollection();
         $this->createdAt = new \DateTime();
     }
 
@@ -71,14 +91,14 @@ class TelegramPhone
         return $this->id;
     }
 
-    public function getPhone(): ?string
+    public function getNumber(): ?string
     {
-        return $this->phone;
+        return $this->number;
     }
 
-    public function setPhone(string $phone): self
+    public function setNumber(string $number): self
     {
-        $this->phone = $phone;
+        $this->number = $number;
 
         return $this;
     }
@@ -131,14 +151,50 @@ class TelegramPhone
         return $this;
     }
 
-    public function getPhoneCodeHash(): ?string
+    public function getCode(): ?string
     {
-        return $this->phoneCodeHash;
+        return $this->code;
     }
 
-    public function setPhoneCodeHash(?string $phoneCodeHash): self
+    public function setCode(?string $code): self
     {
-        $this->phoneCodeHash = $phoneCodeHash;
+        $this->code = $code;
+
+        return $this;
+    }
+
+    public function getCodeHash(): ?string
+    {
+        return $this->codeHash;
+    }
+
+    public function setCodeHash(?string $codeHash): self
+    {
+        $this->codeHash = $codeHash;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|TelegramChat[]
+     */
+    public function getChats(): Collection
+    {
+        return $this->chats;
+    }
+
+    public function addChat(TelegramChat $chat): self
+    {
+        if (!$this->chats->contains($chat)) {
+            $this->chats[] = $chat;
+        }
+
+        return $this;
+    }
+
+    public function removeChat(TelegramChat $chat): self
+    {
+        $this->chats->removeElement($chat);
 
         return $this;
     }
