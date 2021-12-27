@@ -51,7 +51,7 @@ class TelegramChat
     /**
      * @ORM\Column(type="boolean", options={"default": true})
      */
-    private $isAvailable;
+    private $isAvailable = true;
 
     /**
      * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})

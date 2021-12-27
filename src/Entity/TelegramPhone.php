@@ -207,4 +207,12 @@ class TelegramPhone
 
         return $this;
     }
+
+    /**
+     * @Serializer\VirtualProperty()
+     */
+    public function getChatsCount()
+    {
+        return $this->getChats()->count();
+    }
 }

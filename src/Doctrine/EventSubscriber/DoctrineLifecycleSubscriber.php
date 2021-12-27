@@ -47,16 +47,16 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
 
-        if ($entity instanceof TelegramChat) {
-            /** @var ArrayCollection|TelegramPhone[] */
-            $telegramPhones = $args->getObjectManager()
-                ->getRepository(TelegramPhone::class)
-                ->findAllOrderByTelegramChatsCount(3);
+        // if ($entity instanceof TelegramChat) {
+        //     /** @var ArrayCollection|TelegramPhone[] */
+        //     $telegramPhones = $args->getObjectManager()
+        //         ->getRepository(TelegramPhone::class)
+        //         ->findAllOrderByTelegramChatsCount(3);
 
-            foreach ($telegramPhones as $telegramPhone) {
-                $entity->addPhone($telegramPhone);
-            }
-        }
+        //     foreach ($telegramPhones as $telegramPhone) {
+        //         $entity->addPhone($telegramPhone);
+        //     }
+        // }
 
         // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {
