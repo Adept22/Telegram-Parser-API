@@ -15,20 +15,8 @@ use Doctrine\Common\Collections\Collection;
  * @ORM\Table(name="telegram.phones")
  * @ORM\Entity(repositoryClass=TelegramPhoneRepository::class)
  */
-class TelegramPhone
+class TelegramPhone extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\Column(type="string", length=20, unique=true)
      */
@@ -67,25 +55,16 @@ class TelegramPhone
     /**
      * @ORM\ManyToMany(targetEntity=TelegramChat::class, mappedBy="phones")
      * 
-     * @SymfonySerializer\Ignore()
      * @Serializer\Exclude
      */
     private $chats;
 
-    /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
     public function __construct()
     {
+        parent::__construct();
+        
         $this->chats = new ArrayCollection();
         $this->createdAt = new \DateTime();
-    }
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
     }
 
     public function getNumber(): ?string
@@ -195,19 +174,7 @@ class TelegramPhone
 
         return $this;
     }
-
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
+    
     /**
      * @Serializer\VirtualProperty()
      */

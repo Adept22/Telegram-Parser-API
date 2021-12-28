@@ -14,27 +14,15 @@ use JMS\Serializer\Annotation as Serializer;
  * @ORM\Table(name="telegram.members")
  * @ORM\Entity(repositoryClass=TelegramMemberRepository::class)
  */
-class TelegramMember
+class TelegramMember extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\Column(type="string", length=255, unique=true)
      */
     private $internalId;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $username;
 
@@ -59,29 +47,25 @@ class TelegramMember
     private $phone;
 
     /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
-    /**
      * @ORM\OneToMany(targetEntity=TelegramMemberMedia::class, mappedBy="member", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
      */
     private $media;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatsMembers::class, mappedBy="member")
+     * @ORM\OneToMany(targetEntity=TelegramChatMember::class, mappedBy="member")
+     * 
+     * @Serializer\Exclude
      */
     private $chats;
 
     public function __construct()
     {
+        parent::__construct();
+        
         $this->media = new ArrayCollection();
         $this->chats = new ArrayCollection();
-    }
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
     }
 
     public function getInternalId(): ?string
@@ -156,18 +140,6 @@ class TelegramMember
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
     /**
      * @return Collection|TelegramMemberMedia[]
      */
@@ -199,14 +171,14 @@ class TelegramMember
     }
 
     /**
-     * @return Collection|TelegramChatsMembers[]
+     * @return Collection|TelegramChatMember[]
      */
     public function getChats(): Collection
     {
         return $this->chats;
     }
 
-    public function addChat(TelegramChatsMembers $chat): self
+    public function addChat(TelegramChatMember $chat): self
     {
         if (!$this->chats->contains($chat)) {
             $this->chats[] = $chat;
@@ -216,7 +188,7 @@ class TelegramMember
         return $this;
     }
 
-    public function removeChat(TelegramChatsMembers $chat): self
+    public function removeChat(TelegramChatMember $chat): self
     {
         if ($this->chats->removeElement($chat)) {
             // set the owning side to null (unless already changed)

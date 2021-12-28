@@ -14,20 +14,8 @@ use JMS\Serializer\Annotation as Serializer;
  * @ORM\Table(name="telegram.messages")
  * @ORM\Entity(repositoryClass=TelegramMessageRepository::class)
  */
-class TelegramMessage
+class TelegramMessage extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\Column(type="string", length=255, unique=true)
      */
@@ -39,7 +27,7 @@ class TelegramMessage
     private $text;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatsMembers::class, inversedBy="messages")
+     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages")
      * @ORM\JoinColumn(nullable=false)
      */
     private $member;
@@ -65,23 +53,17 @@ class TelegramMessage
     private $forwardedFromName;
 
     /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
-    /**
      * @ORM\OneToMany(targetEntity=TelegramMessageMedia::class, mappedBy="message", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
      */
     private $media;
 
     public function __construct()
     {
+        parent::__construct();
+        
         $this->media = new ArrayCollection();
-    }
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
     }
 
     public function getInternalId(): ?string
@@ -108,12 +90,12 @@ class TelegramMessage
         return $this;
     }
 
-    public function getMember(): ?TelegramChatsMembers
+    public function getMember(): ?TelegramChatMember
     {
         return $this->member;
     }
 
-    public function setMember(?TelegramChatsMembers $member): self
+    public function setMember(?TelegramChatMember $member): self
     {
         $this->member = $member;
 
@@ -164,18 +146,6 @@ class TelegramMessage
     public function setForwardedFromName(?string $forwardedFromName): self
     {
         $this->forwardedFromName = $forwardedFromName;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
 
         return $this;
     }

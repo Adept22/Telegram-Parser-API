@@ -12,20 +12,8 @@ use JMS\Serializer\Annotation as Serializer;
  * @ORM\Table(name="telegram.members_medias")
  * @ORM\Entity(repositoryClass=TelegramMemberMediaRepository::class)
  */
-class TelegramMemberMedia
+class TelegramMemberMedia extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\ManyToOne(targetEntity=TelegramMember::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
@@ -36,16 +24,6 @@ class TelegramMemberMedia
      * @ORM\Column(type="string", length=255)
      */
     private $path;
-
-    /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
-    }
 
     public function getMember(): ?TelegramMember
     {
@@ -67,18 +45,6 @@ class TelegramMemberMedia
     public function setPath(string $path): self
     {
         $this->path = $path;
-
-        return $this;
-    }
-
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
 
         return $this;
     }

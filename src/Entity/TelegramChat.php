@@ -10,24 +10,14 @@ use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
 
+use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
+
 /**
  * @ORM\Table(name="telegram.chats")
  * @ORM\Entity(repositoryClass=TelegramChatRepository::class)
  */
-class TelegramChat
+class TelegramChat extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\Column(type="string", length=255, unique=true, nullable=true)
      */
@@ -54,17 +44,16 @@ class TelegramChat
     private $isAvailable = true;
 
     /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
-    /**
      * @ORM\OneToMany(targetEntity=TelegramChatMedia::class, mappedBy="chat")
+     * 
+     * @Serializer\Exclude
      */
     private $media;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatsMembers::class, mappedBy="chat", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=TelegramChatMember::class, mappedBy="chat", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
      */
     private $members;
 
@@ -75,15 +64,11 @@ class TelegramChat
 
     public function __construct()
     {
-        $this->createdAt = new \DateTime();
+        parent::__construct();
+
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->phones = new ArrayCollection();
-    }
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
     }
 
     public function getInternalId(): ?string
@@ -146,18 +131,6 @@ class TelegramChat
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
     /**
      * @return Collection|TelegramChatMedia[]
      */
@@ -189,14 +162,14 @@ class TelegramChat
     }
 
     /**
-     * @return Collection|TelegramChatsMembers[]
+     * @return Collection|TelegramChatMember[]
      */
     public function getMembers(): Collection
     {
         return $this->members;
     }
 
-    public function addMember(TelegramChatsMembers $member): self
+    public function addMember(TelegramChatMember $member): self
     {
         if (!$this->members->contains($member)) {
             $this->members[] = $member;
@@ -206,7 +179,7 @@ class TelegramChat
         return $this;
     }
 
-    public function removeMember(TelegramChatsMembers $member): self
+    public function removeMember(TelegramChatMember $member): self
     {
         if ($this->members->removeElement($member)) {
             // set the owning side to null (unless already changed)

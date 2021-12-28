@@ -2,11 +2,12 @@
 
 namespace App\Thruway\Client;
 
+use JMS\Serializer\SerializerInterface;
 use Psr\Log\NullLogger;
 use React\Promise\Deferred;
 use React\Socket\ConnectorInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\Serializer\SerializerInterface;
+// use Symfony\Component\Serializer\SerializerInterface;
 use Thruway\ClientSession;
 use Thruway\Logging\Logger;
 use Thruway\Peer\Client;
@@ -56,8 +57,8 @@ class ClientManager
     {
         $arguments   = $arguments ?: [$arguments];
         $argumentsKw = $argumentsKw ?: [$argumentsKw];
-        $arguments   = $this->serializer->normalize($arguments);
-        $argumentsKw = $this->serializer->normalize($argumentsKw);
+        $arguments   = $this->serializer->toArray($arguments);
+        $argumentsKw = $this->serializer->toArray($argumentsKw);
 
         //If we already have a client open that we can use, use that
         if ($this->container->initialized('wamp_kernel') && $client = $this->container->get('wamp_kernel')->getClient()) {
@@ -114,8 +115,8 @@ class ClientManager
     {
         $arguments   = $arguments ?: [$arguments];
         $argumentsKw = $argumentsKw ?: [$argumentsKw];
-        $arguments   = $this->serializer->normalize($arguments);
-        $argumentsKw = $this->serializer->normalize($argumentsKw);
+        $arguments   = $this->serializer->toArray($arguments);
+        $argumentsKw = $this->serializer->toArray($argumentsKw);
 
         //If we already have a client open that we can use, use that
         if ($this->container->initialized('wamp_kernel') && $client = $this->container->get('wamp_kernel')->getClient()) {

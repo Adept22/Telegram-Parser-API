@@ -12,20 +12,8 @@ use JMS\Serializer\Annotation as Serializer;
  * @ORM\Table(name="telegram.messages_medias")
  * @ORM\Entity(repositoryClass=TelegramMessageMediaRepository::class)
  */
-class TelegramMessageMedia
+class TelegramMessageMedia extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\ManyToOne(targetEntity=TelegramMessage::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
@@ -36,11 +24,6 @@ class TelegramMessageMedia
      * @ORM\Column(type="string", length=255)
      */
     private $path;
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
-    }
 
     public function getMessage(): ?TelegramMessage
     {

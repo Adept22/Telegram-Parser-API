@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\TelegramChatsMembersRepository;
+use App\Repository\TelegramChatMemberRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,22 +12,10 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.chats_members")
- * @ORM\Entity(repositoryClass=TelegramChatsMembersRepository::class)
+ * @ORM\Entity(repositoryClass=TelegramChatMemberRepository::class)
  */
-class TelegramChatsMembers
+class TelegramChatMember extends AbstractEntity
 {
-    /**
-     * @ORM\Id
-     * @ORM\Column(name="id", type="uuid", unique=true)
-     * @ORM\GeneratedValue(strategy="CUSTOM")
-     * @ORM\CustomIdGenerator(class=UuidGenerator::class)
-     *
-     * @Serializer\Type("uuid")
-     * 
-     * @var UuidInterface
-     */
-    private $id;
-
     /**
      * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="members")
      * @ORM\JoinColumn(nullable=false)
@@ -46,29 +34,25 @@ class TelegramChatsMembers
     private $isLeft;
 
     /**
-     * @ORM\Column(type="datetimetz", options={"default": "CURRENT_TIMESTAMP"})
-     */
-    private $createdAt;
-
-    /**
-     * @ORM\OneToMany(targetEntity=TelegramChatsMembersRoles::class, mappedBy="member", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=TelegramChatMemberRole::class, mappedBy="member", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
      */
     private $roles;
 
     /**
      * @ORM\OneToMany(targetEntity=TelegramMessage::class, mappedBy="member", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
      */
     private $messages;
 
     public function __construct()
     {
+        parent::__construct();
+        
         $this->roles = new ArrayCollection();
         $this->messages = new ArrayCollection();
-    }
-
-    public function getId(): ?UuidInterface
-    {
-        return $this->id;
     }
 
     public function getChat(): ?TelegramChat
@@ -107,27 +91,15 @@ class TelegramChatsMembers
         return $this;
     }
 
-    public function getCreatedAt(): ?\DateTimeInterface
-    {
-        return $this->createdAt;
-    }
-
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
     /**
-     * @return Collection|TelegramChatsMembersRoles[]
+     * @return Collection|TelegramChatMemberRole[]
      */
     public function getRoles(): Collection
     {
         return $this->roles;
     }
 
-    public function addRole(TelegramChatsMembersRoles $role): self
+    public function addRole(TelegramChatMemberRole $role): self
     {
         if (!$this->roles->contains($role)) {
             $this->roles[] = $role;
@@ -137,7 +109,7 @@ class TelegramChatsMembers
         return $this;
     }
 
-    public function removeRole(TelegramChatsMembersRoles $role): self
+    public function removeRole(TelegramChatMemberRole $role): self
     {
         if ($this->roles->removeElement($role)) {
             // set the owning side to null (unless already changed)
