@@ -39,9 +39,9 @@ class TelegramChat extends AbstractEntity
     private $title;
 
     /**
-     * @ORM\Column(type="boolean", options={"default": true})
+     * @ORM\Column(type="boolean", options={"default": false})
      */
-    private $isAvailable = true;
+    private $isAvailable = false;
 
     /**
      * @ORM\OneToMany(targetEntity=TelegramChatMedia::class, mappedBy="chat")
