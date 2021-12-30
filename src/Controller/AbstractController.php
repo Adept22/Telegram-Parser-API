@@ -79,8 +79,8 @@ abstract class AbstractController extends AbstractFOSRestController implements C
      * 
      * @Rest\Post("/find")
      * 
-     * @Rest\QueryParam(name="_start", default=null, requirements="\d+", description="Сдвиг с начала")
-     * @Rest\QueryParam(name="_limit", default=null, requirements="\d+", description="Количество")
+     * @Rest\QueryParam(name="_start", default=0, requirements="\d+", description="Сдвиг с начала")
+     * @Rest\QueryParam(name="_limit", default=50, requirements="\d+", description="Количество")
      * @Rest\QueryParam(name="_order", default="ASC", requirements="ASC|DESC", description="Порядок сортировки")
      * @Rest\QueryParam(name="_sort", default="id", requirements=".+", description="Свойство сортировки")
      */
@@ -119,8 +119,8 @@ abstract class AbstractController extends AbstractFOSRestController implements C
         $entities = $this->repository->findBy(
             $content,
             [$sort => $order],
-            $limit !== '' ? $limit : null,
-            $start !== '' ? $start : null
+            $limit,
+            $start
         );
 
         return View::create($entities, Response::HTTP_OK);

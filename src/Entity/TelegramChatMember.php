@@ -20,7 +20,7 @@ class TelegramChatMember extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="members")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $chat;
 
@@ -28,7 +28,7 @@ class TelegramChatMember extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=TelegramMember::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $member;
 

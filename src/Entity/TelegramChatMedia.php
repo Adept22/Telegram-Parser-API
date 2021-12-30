@@ -17,7 +17,7 @@ class TelegramChatMedia extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="media")
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $chat;
 

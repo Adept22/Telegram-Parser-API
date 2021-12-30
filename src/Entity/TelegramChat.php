@@ -54,8 +54,16 @@ class TelegramChat extends AbstractEntity
 
     /**
      * @ORM\ManyToMany(targetEntity=TelegramPhone::class, inversedBy="chats")
+     * @ORM\JoinTable(name="telegram_chat_telegram_phone",
+     *      joinColumns={
+     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
+     *      },
+     *      inverseJoinColumns={
+     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
+     *      }
+     * )
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $phones;
 
