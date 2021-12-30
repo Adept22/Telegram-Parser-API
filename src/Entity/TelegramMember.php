@@ -17,7 +17,7 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramMember extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="string", length=255, unique=true)
+     * @ORM\Column(type="integer", unique=true)
      */
     private $internalId;
 
@@ -68,12 +68,12 @@ class TelegramMember extends AbstractEntity
         $this->chats = new ArrayCollection();
     }
 
-    public function getInternalId(): ?string
+    public function getInternalId(): ?int
     {
         return $this->internalId;
     }
 
-    public function setInternalId(string $internalId): self
+    public function setInternalId(int $internalId): self
     {
         $this->internalId = $internalId;
 

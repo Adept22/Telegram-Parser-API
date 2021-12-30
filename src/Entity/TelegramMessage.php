@@ -17,7 +17,7 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramMessage extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="string", length=255, unique=true)
+     * @ORM\Column(type="integer", unique=true)
      */
     private $internalId;
 
@@ -29,21 +29,25 @@ class TelegramMessage extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages")
      * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 
     /**
      * @ORM\OneToOne(targetEntity=TelegramMessage::class, cascade={"persist", "remove"})
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $replyTo;
 
     /**
      * @ORM\Column(type="boolean")
      */
-    private $isPinned;
+    private $isPinned = false;
 
     /**
-     * @ORM\Column(type="string", length=255, nullable=true)
+     * @ORM\Column(type="integer", nullable=true)
      */
     private $forwardedFromId;
 
@@ -66,12 +70,12 @@ class TelegramMessage extends AbstractEntity
         $this->media = new ArrayCollection();
     }
 
-    public function getInternalId(): ?string
+    public function getInternalId(): ?int
     {
         return $this->internalId;
     }
 
-    public function setInternalId(string $internalId): self
+    public function setInternalId(int $internalId): self
     {
         $this->internalId = $internalId;
 

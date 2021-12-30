@@ -19,14 +19,9 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 class TelegramChat extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="string", length=255, unique=true, nullable=true)
+     * @ORM\Column(type="integer", unique=true, nullable=true)
      */
     private $internalId;
-
-    /**
-     * @ORM\Column(type="string", length=255, unique=true, nullable=true)
-     */
-    private $accessHash;
 
     /**
      * @ORM\Column(type="string", length=255, unique=true)
@@ -39,9 +34,9 @@ class TelegramChat extends AbstractEntity
     private $title;
 
     /**
-     * @ORM\Column(type="boolean", options={"default": false})
+     * @ORM\Column(type="boolean")
      */
-    private $isAvailable = false;
+    private $isAvailable = true;
 
     /**
      * @ORM\OneToMany(targetEntity=TelegramChatMedia::class, mappedBy="chat")
@@ -59,6 +54,8 @@ class TelegramChat extends AbstractEntity
 
     /**
      * @ORM\ManyToMany(targetEntity=TelegramPhone::class, inversedBy="chats")
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $phones;
 
@@ -71,26 +68,14 @@ class TelegramChat extends AbstractEntity
         $this->phones = new ArrayCollection();
     }
 
-    public function getInternalId(): ?string
+    public function getInternalId(): ?int
     {
         return $this->internalId;
     }
 
-    public function setInternalId(string $internalId): self
+    public function setInternalId(int $internalId): self
     {
         $this->internalId = $internalId;
-
-        return $this;
-    }
-
-    public function getAccessHash(): ?string
-    {
-        return $this->accessHash;
-    }
-
-    public function setAccessHash(string $accessHash): self
-    {
-        $this->accessHash = $accessHash;
 
         return $this;
     }

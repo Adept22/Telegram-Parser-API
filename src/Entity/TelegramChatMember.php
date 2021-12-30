@@ -19,19 +19,23 @@ class TelegramChatMember extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="members")
      * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $chat;
 
     /**
      * @ORM\ManyToOne(targetEntity=TelegramMember::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 
     /**
      * @ORM\Column(type="boolean")
      */
-    private $isLeft;
+    private $isLeft = false;
 
     /**
      * @ORM\OneToMany(targetEntity=TelegramChatMemberRole::class, mappedBy="member", orphanRemoval=true)

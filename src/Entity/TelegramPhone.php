@@ -18,6 +18,11 @@ use Doctrine\Common\Collections\Collection;
 class TelegramPhone extends AbstractEntity
 {
     /**
+     * @ORM\Column(type="text", unique=true, nullable=true)
+     */
+    private $session;
+
+    /**
      * @ORM\Column(type="string", length=20, unique=true)
      */
     private $number;
@@ -65,6 +70,18 @@ class TelegramPhone extends AbstractEntity
         
         $this->chats = new ArrayCollection();
         $this->createdAt = new \DateTime();
+    }
+
+    public function getSession(): ?string
+    {
+        return $this->session;
+    }
+
+    public function setSession(string $session): self
+    {
+        $this->session = $session;
+
+        return $this;
     }
 
     public function getNumber(): ?string
