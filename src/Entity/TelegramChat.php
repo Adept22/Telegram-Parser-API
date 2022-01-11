@@ -19,7 +19,7 @@ use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
 class TelegramChat extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="integer", unique=true, nullable=true)
+     * @ORM\Column(type="bigint", unique=true, nullable=true)
      */
     private $internalId;
 

@@ -56,7 +56,7 @@ class TelegramMessage extends AbstractEntity
     private $isPinned = false;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
+     * @ORM\Column(type="bigint", nullable=true)
      */
     private $forwardedFromId;
 
