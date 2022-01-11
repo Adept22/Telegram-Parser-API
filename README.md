@@ -50,9 +50,9 @@ Content-Type: application/json
 ```
 ```json
 {
-	internalId: "msxbwTSRCnJhNDli",
-	title: "Группа 1",
-	createdAt: "2021-11-24T15:43:53+00:00",
+	"internalId": "msxbwTSRCnJhNDli",
+	"title": "Группа 1",
+	"createdAt": "2021-11-24T15:43:53+00:00",
 }
 ```
 
@@ -95,12 +95,12 @@ Content-Type: application/json
 ```
 ```json
 {
-	id: "cc976c61-adc6-4fd0-ac0d-832e7221709e",
-	internalId: "ID из Телеграмма",
-	title: "Группа 1",
-	createdAt: "2021-11-24T15:43:53+00:00",
-	media: [...],
-	members: [...],
+	"id": "cc976c61-adc6-4fd0-ac0d-832e7221709e",
+	"internalId": "ID из Телеграмма",
+	"title": "Группа 1",
+	"createdAt": "2021-11-24T15:43:53+00:00",
+	"media": [...],
+	"members": [...],
 }
 ```
 

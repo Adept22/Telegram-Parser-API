@@ -18,7 +18,7 @@ class TelegramMessageMedia extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=TelegramMessage::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $message;
 

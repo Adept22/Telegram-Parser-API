@@ -18,7 +18,7 @@ class TelegramChatMemberRole extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="roles")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 

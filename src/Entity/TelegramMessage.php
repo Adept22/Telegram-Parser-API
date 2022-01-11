@@ -17,7 +17,7 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramMessage extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="integer", unique=true)
+     * @ORM\Column(type="integer")
      */
     private $internalId;
 
@@ -27,17 +27,26 @@ class TelegramMessage extends AbstractEntity
     private $text;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages")
+     * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="messages")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
+     */
+    private $chat;
+
+    /**
+     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages")
+     * @ORM\JoinColumn(nullable=true)
+     * 
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 
     /**
-     * @ORM\OneToOne(targetEntity=TelegramMessage::class, cascade={"persist", "remove"})
+     * @ORM\ManyToOne(targetEntity=TelegramMessage::class, cascade={"persist", "remove"})
+     * @ORM\JoinColumn(nullable=true)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $replyTo;
 
@@ -55,6 +64,11 @@ class TelegramMessage extends AbstractEntity
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $forwardedFromName;
+
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     */
+    private $groupedId;
 
     /**
      * @ORM\OneToMany(targetEntity=TelegramMessageMedia::class, mappedBy="message", orphanRemoval=true)
@@ -90,6 +104,18 @@ class TelegramMessage extends AbstractEntity
     public function setText(?string $text): self
     {
         $this->text = $text;
+
+        return $this;
+    }
+
+    public function getChat(): ?TelegramChat
+    {
+        return $this->chat;
+    }
+
+    public function setChat(?TelegramChat $chat): self
+    {
+        $this->chat = $chat;
 
         return $this;
     }
@@ -150,6 +176,18 @@ class TelegramMessage extends AbstractEntity
     public function setForwardedFromName(?string $forwardedFromName): self
     {
         $this->forwardedFromName = $forwardedFromName;
+
+        return $this;
+    }
+
+    public function getGroupedId(): ?int
+    {
+        return $this->groupedId;
+    }
+
+    public function setGroupedId(int $groupedId): self
+    {
+        $this->groupedId = $groupedId;
 
         return $this;
     }

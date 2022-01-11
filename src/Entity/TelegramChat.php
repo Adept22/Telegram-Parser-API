@@ -53,6 +53,13 @@ class TelegramChat extends AbstractEntity
     private $members;
 
     /**
+     * @ORM\OneToMany(targetEntity=TelegramMessage::class, mappedBy="chat", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
+     */
+    private $messages;
+
+    /**
      * @ORM\ManyToMany(targetEntity=TelegramPhone::class, inversedBy="chats")
      * @ORM\JoinTable(name="telegram_chat_telegram_phone",
      *      joinColumns={
@@ -63,7 +70,7 @@ class TelegramChat extends AbstractEntity
      *      }
      * )
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $phones;
 
@@ -73,6 +80,7 @@ class TelegramChat extends AbstractEntity
 
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
+        $this->messages = new ArrayCollection();
         $this->phones = new ArrayCollection();
     }
 
@@ -178,6 +186,36 @@ class TelegramChat extends AbstractEntity
             // set the owning side to null (unless already changed)
             if ($member->getChat() === $this) {
                 $member->setChat(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|TelegramMessage[]
+     */
+    public function getMessages(): Collection
+    {
+        return $this->messages;
+    }
+
+    public function addMessage(TelegramMessage $message): self
+    {
+        if (!$this->messages->contains($message)) {
+            $this->messages[] = $message;
+            $message->setChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMessage(TelegramMessage $message): self
+    {
+        if ($this->messages->removeElement($message)) {
+            // set the owning side to null (unless already changed)
+            if ($message->getChat() === $this) {
+                $message->setChat(null);
             }
         }
 
