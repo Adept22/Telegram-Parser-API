@@ -66,7 +66,7 @@ class TelegramMessage extends AbstractEntity
     private $forwardedFromName;
 
     /**
-     * @ORM\Column(type="integer", nullable=true)
+     * @ORM\Column(type="bigint", nullable=true)
      */
     private $groupedId;
 
