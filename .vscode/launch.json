@@ -13,10 +13,7 @@
             "externalConsole": false,
             "pathMappings": {
                 "/srv/app": "${workspaceRoot}"
-            },
-            // "ignore": [
-            //     "**/vendor/**/*.php"
-            // ]
+            }
         },
         {
             "name": "Launch currently open script",

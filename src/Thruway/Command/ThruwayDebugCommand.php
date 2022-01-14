@@ -26,6 +26,8 @@ class ThruwayDebugCommand extends Command
     public function __construct(ContainerInterface $container)
     {
         $this->container = $container;
+        
+        parent::__construct(static::$defaultName);
     }
 
     /**
@@ -103,6 +105,8 @@ class ThruwayDebugCommand extends Command
 
             $table->render();
         }
+        
+        return Command::SUCCESS;
     }
 
     /**

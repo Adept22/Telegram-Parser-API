@@ -66,6 +66,8 @@ class ThruwayProcessCommand extends Command
     {
         $this->container = $container;
         $this->logger = $logger;
+
+        parent::__construct(static::$defaultName);
     }
 
     /**
@@ -76,7 +78,9 @@ class ThruwayProcessCommand extends Command
         $this
             ->setAliases(['tp'])
             ->setHelp('The <info>%command.name%</info> manages thruway sub processes (workers).')
+            ->addOption('no-log', null, InputOption::VALUE_NONE, 'Don\'t logging command process')
             ->addOption('no-exec', null, InputOption::VALUE_NONE, 'Don\'t use "exec" command when starting processes')
+            ->addArgument('url', InputArgument::OPTIONAL, 'Server URL (default ws://127.0.0.1:7015/)', 'ws://127.0.0.1:7015/')
             ->addArgument('action', InputArgument::REQUIRED, 'Actions: start, status')
             ->addArgument('worker', InputArgument::OPTIONAL, 'Actions for individual workers: start, stop, restart');
     }
@@ -86,7 +90,7 @@ class ThruwayProcessCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($this->container->getParameter('voryx_thruway')['enable_logging']) {
+        if (!$input->getOption('no-log')) {
             Logger::set($this->logger);
         } else {
             Logger::set(new NullLogger());
@@ -115,6 +119,8 @@ class ThruwayProcessCommand extends Command
             default:
                 $output->writeln('Expected an action: start, stop, status');
         }
+        
+        return Command::SUCCESS;
     }
 
     /**
@@ -123,8 +129,8 @@ class ThruwayProcessCommand extends Command
      */
     protected function start()
     {
-        $appCmd = "{$this->container->get('kernel')->getRootDir()}/console";
-        $binCmd = "{$this->container->get('kernel')->getRootDir()}/../bin/console";
+        $appCmd = \dirname(__DIR__)."/console";
+        $binCmd = \dirname(__DIR__)."/../bin/console";
 
         $this->consoleCommand = file_exists($binCmd) ? $binCmd : $appCmd;
 
@@ -146,7 +152,7 @@ class ThruwayProcessCommand extends Command
             $loop = $this->container->get('voryx.thruway.loop');
 
             $this->processManager = new ProcessManager("process_manager", $loop, $this->container);
-            $this->processManager->addTransportProvider(new PawlTransportProvider($this->config['trusted_url']));
+            $this->processManager->addTransportProvider(new PawlTransportProvider($this->input->getArgument('url')));
 
             $this->output->writeln('Starting Thruway Workers...');
             $this->output->writeln("The environment is: {$env}");
@@ -183,7 +189,7 @@ class ThruwayProcessCommand extends Command
         $result = null;
         $realm  = 'process_manager';
 
-        $connection = new Connection(['realm' => $realm, 'url' => $this->config['trusted_url'], "max_retries" => 0]);
+        $connection = new Connection(['realm' => $realm, 'url' => $this->input->getArgument('url'), "max_retries" => 0]);
         $connection->on('open', function (ClientSession $session) use ($uri, $args, $connection, &$result) {
             $session->call($uri, $args)->then(
                 function ($res) use ($connection, &$result) {

@@ -42,7 +42,6 @@ RUN set -eux; \
 		icu-dev \
 		libzip-dev \
 		zlib-dev \
-
 	; \
 	\
 	docker-php-ext-configure zip; \

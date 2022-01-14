@@ -71,11 +71,11 @@ class ThruwayRouterCommand extends Command
             $server->addTransportProvider($trustedProvider);
 
             $server->start();
-
         } catch (\Exception $e) {
             $this->logger->critical('EXCEPTION:' . $e->getMessage());
             $output->writeln('EXCEPTION:' . $e->getMessage());
         }
+
 
         return Command::SUCCESS;
     }

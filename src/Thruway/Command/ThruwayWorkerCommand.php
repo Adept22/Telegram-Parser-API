@@ -32,6 +32,8 @@ class ThruwayWorkerCommand extends Command
     {
         $this->container = $container;
         $this->logger = $logger;
+        
+        parent::__construct(static::$defaultName);
     }
 
     /**
@@ -91,5 +93,7 @@ class ThruwayWorkerCommand extends Command
             $this->logger->critical('EXCEPTION:' . $e->getMessage());
             $output->writeln('EXCEPTION:' . $e->getMessage());
         }
+        
+        return Command::SUCCESS;
     }
 }
