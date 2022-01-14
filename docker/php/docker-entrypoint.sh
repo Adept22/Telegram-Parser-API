@@ -69,7 +69,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX var
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX var
 
-	nohup php bin/console app:thruway:router:start > /dev/null 2>&1 &
+	bin/console app:thruway:router:start &
 fi
 
 exec docker-php-entrypoint "$@"
