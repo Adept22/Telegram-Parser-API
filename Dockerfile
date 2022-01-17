@@ -138,7 +138,11 @@ RUN set -eux; \
 	composer symfony:dump-env prod; \
 	composer run-script --no-dev post-install-cmd; \
 	chmod +x bin/console; sync
-	
+
+# Allow to select skeleton version
+ARG WEBSOCKET_PORT=7015
+ENV WEBSOCKET_PORT ${WEBSOCKET_PORT}
+
 VOLUME /srv/app/var
 
 ENTRYPOINT ["docker-entrypoint"]

@@ -15,7 +15,10 @@ services:
         volumes:
             - php_socket:/var/run/php
         ports:
-            - '${WEBSOCKET_PORT:-7015}:${WEBSOCKET_PORT:-7015}'
+            # websocket
+            - target: ${WEBSOCKET_PORT:-7015}
+              published: ${WEBSOCKET_PORT:-7015}
+              protocol: tcp
         healthcheck:
             interval: 10s
             timeout: 3s
@@ -28,6 +31,7 @@ services:
             MERCURE_URL: ${CADDY_MERCURE_URL:-http://caddy/.well-known/mercure}
             MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
             MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
+            WEBSOCKET_PORT: ${WEBSOCKET_PORT:-7015}
     caddy:
         build:
             context: .
