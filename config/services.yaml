@@ -34,7 +34,7 @@ services:
         class: Thruway\Transport\RatchetTransportProvider
         arguments:
             $address: '0.0.0.0'
-            $port: '%env(int:WEBSOCKET_PORT)%'
+            $port: 8080
 
     voryx.thruway.client:
         public: true
@@ -111,7 +111,7 @@ services:
         arguments:
             $config: 
                 realm: 'realm1'
-                trusted_url: 'ws://127.0.0.1:%env(WEBSOCKET_PORT)%/ws'
+                trusted_url: 'ws://127.0.0.1:8080'
             $connector: '@voryx.thruway.client.react_connector'
 
     voryx.thruway.topic_state_handler:

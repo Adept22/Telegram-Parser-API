@@ -80,7 +80,7 @@ class ThruwayProcessCommand extends Command
             ->setHelp('The <info>%command.name%</info> manages thruway sub processes (workers).')
             ->addOption('no-log', null, InputOption::VALUE_NONE, 'Don\'t logging command process')
             ->addOption('no-exec', null, InputOption::VALUE_NONE, 'Don\'t use "exec" command when starting processes')
-            ->addArgument('url', InputArgument::OPTIONAL, 'Server URL (default ws://127.0.0.1:7015/)', 'ws://127.0.0.1:7015/')
+            ->addArgument('url', InputArgument::OPTIONAL, 'Server URL (default ws://127.0.0.1:8080)', 'ws://127.0.0.1:8080')
             ->addArgument('action', InputArgument::REQUIRED, 'Actions: start, status')
             ->addArgument('worker', InputArgument::OPTIONAL, 'Actions for individual workers: start, stop, restart');
     }

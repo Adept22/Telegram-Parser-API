@@ -45,7 +45,7 @@ class ThruwayRouterCommand extends Command
             ->setHelp('The <info>%command.name%</info> starts the Thruway WAMP router.')
             ->addOption('no-log', null, InputOption::VALUE_NONE, 'Don\'t logging command process')
             ->addOption('ip', 'i', InputOption::VALUE_OPTIONAL, 'Listening IP address (default 0.0.0.0)', '0.0.0.0')
-            ->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Listening port (default 7015)', 7015);
+            ->addOption('port', 'p', InputOption::VALUE_OPTIONAL, 'Listening port (default 8080)', 8080);
     }
 
     /**
@@ -66,7 +66,7 @@ class ThruwayRouterCommand extends Command
             $server = $this->container->get('voryx.thruway.server');
 
             //Trusted provider (bound to loopback and requires no authentication)
-            $trustedProvider = new RatchetTransportProvider($input->getOption('ip'), $input->getOption('port'));
+            $trustedProvider = new RatchetTransportProvider($input->getOption('ip'), (int) $input->getOption('port'));
             $trustedProvider->setTrusted(true);
             $server->addTransportProvider($trustedProvider);
 

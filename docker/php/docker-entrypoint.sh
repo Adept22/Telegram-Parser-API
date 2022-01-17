@@ -70,11 +70,11 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX var
 
 	echo "Waiting for websocekt to be ready..."
-	if lsof -Pi :$WEBSOCKET_PORT -s TCP:LISTEN -t > /dev/null; then
-		bin/console app:thruway:router:start -p $WEBSOCKET_PORT &
+	if lsof -Pi :$THRUWAY_PORT -s TCP:LISTEN -t > /dev/null; then
+		bin/console app:thruway:router:start -p $THRUWAY_PORT &
 		echo "The websocket is now ready and reachable"
 	else
-		echo "The websocket port $WEBSOCKET_PORT is bizy"
+		echo "The websocket port $THRUWAY_PORT is bizy"
 	fi
 fi
 

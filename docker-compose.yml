@@ -16,8 +16,8 @@ services:
             - php_socket:/var/run/php
         ports:
             # websocket
-            - target: ${WEBSOCKET_PORT:-7015}
-              published: ${WEBSOCKET_PORT:-7015}
+            - target: ${THRUWAY_PORT:-7015}
+              published: ${THRUWAY_PORT:-7015}
               protocol: tcp
         healthcheck:
             interval: 10s
@@ -31,7 +31,7 @@ services:
             MERCURE_URL: ${CADDY_MERCURE_URL:-http://caddy/.well-known/mercure}
             MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
             MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
-            WEBSOCKET_PORT: ${WEBSOCKET_PORT:-7015}
+            THRUWAY_PORT: ${THRUWAY_PORT:-7015}
     caddy:
         build:
             context: .
