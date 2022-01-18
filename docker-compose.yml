@@ -16,9 +16,7 @@ services:
             - php_socket:/var/run/php
         ports:
             # websocket
-            - target: ${THRUWAY_PORT:-7015}
-              published: ${THRUWAY_PORT:-7015}
-              protocol: tcp
+            - '${THRUWAY_PORT:-7015}:${THRUWAY_PORT:-7015}'
         healthcheck:
             interval: 10s
             timeout: 3s

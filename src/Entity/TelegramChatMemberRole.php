@@ -15,7 +15,7 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramChatMemberRole extends AbstractEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="roles")
+     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="roles", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)

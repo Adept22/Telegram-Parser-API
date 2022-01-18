@@ -10,7 +10,7 @@
     }
 }
 
-{$SERVER_NAME}, :80
+{$SERVER_NAME}, localhost:80
 
 log
 
