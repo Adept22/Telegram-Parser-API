@@ -22,6 +22,11 @@ class TelegramChatMedia extends AbstractEntity
     private $chat;
 
     /**
+     * @ORM\Column(type="bigint", unique=true)
+     */
+    private $internalId;
+
+    /**
      * @ORM\Column(type="string", length=255)
      */
     private $path;

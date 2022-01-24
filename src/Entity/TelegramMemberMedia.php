@@ -23,6 +23,11 @@ class TelegramMemberMedia extends AbstractEntity
     private $member;
 
     /**
+     * @ORM\Column(type="bigint", unique=true)
+     */
+    private $internalId;
+
+    /**
      * @ORM\Column(type="string", length=255)
      */
     private $path;
