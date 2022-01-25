@@ -51,11 +51,6 @@ class TelegramPhone extends AbstractEntity
      * @ORM\Column(type="string", length=6, nullable=true)
      */
     private $code;
-    
-    /**
-     * @ORM\Column(type="string", length=255, nullable=true)
-     */
-    private $codeHash;
 
     /**
      * @ORM\ManyToMany(targetEntity=TelegramChat::class, mappedBy="phones")
@@ -152,18 +147,6 @@ class TelegramPhone extends AbstractEntity
     public function setCode(?string $code): self
     {
         $this->code = $code;
-
-        return $this;
-    }
-
-    public function getCodeHash(): ?string
-    {
-        return $this->codeHash;
-    }
-
-    public function setCodeHash(?string $codeHash): self
-    {
-        $this->codeHash = $codeHash;
 
         return $this;
     }
