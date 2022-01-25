@@ -43,6 +43,18 @@ class TelegramChatMedia extends AbstractEntity
         return $this;
     }
 
+    public function getInternalId(): ?int
+    {
+        return $this->internalId;
+    }
+
+    public function setInternalId(int $internalId): self
+    {
+        $this->internalId = $internalId;
+
+        return $this;
+    }
+
     public function getPath(): ?string
     {
         return $this->path;
