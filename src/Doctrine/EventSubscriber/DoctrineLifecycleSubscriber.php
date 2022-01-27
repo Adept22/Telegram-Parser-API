@@ -47,16 +47,16 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
 
-        // if ($entity instanceof TelegramChat) {
-        //     /** @var ArrayCollection|TelegramPhone[] */
-        //     $telegramPhones = $args->getObjectManager()
-        //         ->getRepository(TelegramPhone::class)
-        //         ->findAllOrderByTelegramChatsCount(3);
+        if ($entity instanceof TelegramChat) {
+            /** @var ArrayCollection|TelegramPhone[] */
+            $telegramPhones = $args->getObjectManager()
+                ->getRepository(TelegramPhone::class)
+                ->findAll();
 
-        //     foreach ($telegramPhones as $telegramPhone) {
-        //         $entity->addPhone($telegramPhone);
-        //     }
-        // }
+            foreach ($telegramPhones as $telegramPhone) {
+                $entity->addAvailablePhone($telegramPhone);
+            }
+        }
 
         // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {
@@ -74,6 +74,19 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     public function preUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
+
+        if ($entity instanceof TelegramChat) {
+            $phones = $entity->getPhones();
+            $availablePhones = $entity->getAvailablePhones();
+
+            $phones->map(function ($phone) use ($entity, $availablePhones) {
+                $exist = $availablePhones->exists(function ($availablePhone) use ($phone) {
+                    return (string) $availablePhone->getId() === (string) $phone->getId();
+                });
+
+                if (!$exist) $entity->removePhone($phone);
+            });
+        }
 
         // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {

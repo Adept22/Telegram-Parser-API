@@ -10,8 +10,6 @@ use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
 
-use function Symfony\Component\DependencyInjection\Loader\Configurator\param;
-
 /**
  * @ORM\Table(name="telegram.chats")
  * @ORM\Entity(repositoryClass=TelegramChatRepository::class)
@@ -74,6 +72,21 @@ class TelegramChat extends AbstractEntity
      */
     private $phones;
 
+    /**
+     * @ORM\ManyToMany(targetEntity=TelegramPhone::class)
+     * @ORM\JoinTable(name="telegram_chat_available_telegram_phone",
+     *      joinColumns={
+     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
+     *      },
+     *      inverseJoinColumns={
+     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
+     *      }
+     * )
+     * 
+     * @Serializer\MaxDepth(2)
+     */
+    private $availablePhones;
+
     public function __construct()
     {
         parent::__construct();
@@ -82,6 +95,7 @@ class TelegramChat extends AbstractEntity
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
         $this->phones = new ArrayCollection();
+        $this->availablePhones = new ArrayCollection();
     }
 
     public function getInternalId(): ?int
@@ -244,6 +258,33 @@ class TelegramChat extends AbstractEntity
     {
         if ($this->phones->removeElement($phone)) {
             $phone->removeChat($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|TelegramPhone[]
+     */
+    public function getAvailablePhones(): Collection
+    {
+        return $this->availablePhones;
+    }
+
+    public function addAvailablePhone(TelegramPhone $availablePhone): self
+    {
+        if (!$this->availablePhones->contains($availablePhone)) {
+            $this->availablePhones[] = $availablePhone;
+            $availablePhone->addChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailablePhone(TelegramPhone $availablePhone): self
+    {
+        if ($this->availablePhones->removeElement($availablePhone)) {
+            $availablePhone->removeChat($this);
         }
 
         return $this;
