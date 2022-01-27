@@ -80,7 +80,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             $availablePhones = $entity->getAvailablePhones();
 
             $phones->map(function ($phone) use ($entity, $availablePhones) {
-                $exist = $availablePhones->exists(function ($availablePhone) use ($phone) {
+                $exist = $availablePhones->exists(function ($key, $availablePhone) use ($phone) {
                     return (string) $availablePhone->getId() === (string) $phone->getId();
                 });
 
