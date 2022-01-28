@@ -17,7 +17,7 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramMessage extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="bigint")
      */
     private $internalId;
 

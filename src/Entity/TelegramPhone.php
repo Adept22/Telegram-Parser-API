@@ -18,6 +18,11 @@ use Doctrine\Common\Collections\Collection;
 class TelegramPhone extends AbstractEntity
 {
     /**
+     * @ORM\Column(type="bigint", unique=true, nullable=true)
+     */
+    private $internalId;
+
+    /**
      * @ORM\Column(type="text", unique=true, nullable=true)
      */
     private $session;
@@ -65,6 +70,18 @@ class TelegramPhone extends AbstractEntity
         
         $this->chats = new ArrayCollection();
         $this->createdAt = new \DateTime();
+    }
+
+    public function getInternalId(): ?int
+    {
+        return $this->internalId;
+    }
+
+    public function setInternalId(int $internalId): self
+    {
+        $this->internalId = $internalId;
+
+        return $this;
     }
 
     public function getSession(): ?string
