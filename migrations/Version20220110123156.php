@@ -27,7 +27,7 @@ final class Version20220110123156 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX IDX_685FD848FFDF7169');
+        $this->addSql('DROP INDEX telegram.IDX_685FD848FFDF7169');
         $this->addSql('CREATE UNIQUE INDEX uniq_685fd848ffdf7169 ON telegram.messages (reply_to_id)');
     }
 }

@@ -29,7 +29,7 @@ final class Version20220128083143 extends AbstractMigration
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX UNIQ_31F81ED5BFDFB4D8');
+        $this->addSql('DROP INDEX telegram.UNIQ_31F81ED5BFDFB4D8');
         $this->addSql('ALTER TABLE telegram.phones DROP internal_id');
         $this->addSql('ALTER TABLE telegram.messages ALTER internal_id TYPE INT');
         $this->addSql('ALTER TABLE telegram.messages ALTER internal_id DROP DEFAULT');

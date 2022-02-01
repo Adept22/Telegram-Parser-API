@@ -30,7 +30,7 @@ final class Version20220110074728 extends AbstractMigration
     {
         // this down() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE telegram.messages DROP CONSTRAINT FK_685FD8481A9A7125');
-        $this->addSql('DROP INDEX IDX_685FD8481A9A7125');
+        $this->addSql('DROP INDEX telegram.IDX_685FD8481A9A7125');
         $this->addSql('ALTER TABLE telegram.messages DROP chat_id');
     }
 }
