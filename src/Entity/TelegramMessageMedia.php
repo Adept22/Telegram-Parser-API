@@ -23,6 +23,11 @@ class TelegramMessageMedia extends AbstractEntity
     private $message;
 
     /**
+     * @ORM\Column(type="bigint", unique=true)
+     */
+    private $internalId;
+
+    /**
      * @ORM\Column(type="string", length=255)
      */
     private $path;
@@ -35,6 +40,18 @@ class TelegramMessageMedia extends AbstractEntity
     public function setMessage(?TelegramMessage $message): self
     {
         $this->message = $message;
+
+        return $this;
+    }
+
+    public function getInternalId(): ?int
+    {
+        return $this->internalId;
+    }
+
+    public function setInternalId(int $internalId): self
+    {
+        $this->internalId = $internalId;
 
         return $this;
     }

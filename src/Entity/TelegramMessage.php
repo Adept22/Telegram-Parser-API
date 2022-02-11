@@ -35,7 +35,7 @@ class TelegramMessage extends AbstractEntity
     private $chat;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages")
+     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages", cascade={"all"})
      * @ORM\JoinColumn(nullable=true)
      * 
      * @Serializer\MaxDepth(2)
@@ -43,7 +43,7 @@ class TelegramMessage extends AbstractEntity
     private $member;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramMessage::class, cascade={"persist", "remove"})
+     * @ORM\ManyToOne(targetEntity=TelegramMessage::class, cascade={"all"})
      * @ORM\JoinColumn(nullable=true)
      * 
      * @Serializer\MaxDepth(2)

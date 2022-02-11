@@ -1,6 +1,16 @@
-controllers:
+api_default:
     resource: ../../src/Controller/
     prefix: /api/v1
+    type: annotation
+
+telegram:
+    resource: ../../src/Controller/Telegram/
+    prefix: /api/v1/telegram
+    type: annotation
+
+export:
+    resource: ../../src/Controller/Telegram/
+    prefix: /api/v1/export
     type: annotation
 
 kernel:

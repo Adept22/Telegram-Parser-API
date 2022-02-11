@@ -1,16 +1,17 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Telegram;
 
+use App\Controller\AbstractEntityController;
 use App\Entity\TelegramMember;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  * 
- * @Route("/telegram/member")
+ * @Route("/member")
  */
-class TelegramMemberController extends AbstractController
+class TelegramMemberController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}

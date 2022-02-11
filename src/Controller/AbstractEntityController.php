@@ -22,7 +22,7 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  */
-abstract class AbstractController extends AbstractFOSRestController implements ControllerInterface
+abstract class AbstractEntityController extends AbstractFOSRestController implements ControllerInterface
 {
     /**
      * @var string $entityClassName Класс сущности с которой работает контроллер
