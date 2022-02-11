@@ -15,6 +15,11 @@ use JMS\Serializer\Annotation as Serializer;
 class TelegramMessageMedia extends AbstractEntity
 {
     /**
+     * @ORM\Column(type="bigint")
+     */
+    private $internalId;
+
+    /**
      * @ORM\ManyToOne(targetEntity=TelegramMessage::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
      * 
@@ -26,6 +31,18 @@ class TelegramMessageMedia extends AbstractEntity
      * @ORM\Column(type="string", length=255)
      */
     private $path;
+
+    public function getInternalId(): ?int
+    {
+        return $this->internalId;
+    }
+
+    public function setInternalId(int $internalId): self
+    {
+        $this->internalId = $internalId;
+
+        return $this;
+    }
 
     public function getMessage(): ?TelegramMessage
     {
