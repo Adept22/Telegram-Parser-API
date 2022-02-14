@@ -3,7 +3,7 @@
 namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
-use App\Entity\TelegramMessage;
+use App\Entity\Telegram\Message;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
@@ -11,10 +11,10 @@ use Symfony\Component\Routing\Annotation\Route;
  * 
  * @Route("/message")
  */
-class TelegramMessageController extends AbstractEntityController
+class MessageController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}
      */
-    protected static $entityClassName = TelegramMessage::class;
+    protected static $entityClassName = Message::class;
 }

@@ -1,25 +1,27 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramChatMediaRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\MessageMediaRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(name="telegram.chats_medias")
- * @ORM\Entity(repositoryClass=TelegramChatMediaRepository::class)
+ * @ORM\Table(name="telegram.messages_medias")
+ * @ORM\Entity(repositoryClass=MessageMediaRepository::class)
  */
-class TelegramChatMedia extends AbstractEntity
+class MessageMedia extends AbstractEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="media")
+     * @ORM\ManyToOne(targetEntity=Message::class, inversedBy="media")
+     * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
      */
-    private $chat;
+    private $message;
 
     /**
      * @ORM\Column(type="bigint", unique=true)
@@ -31,14 +33,14 @@ class TelegramChatMedia extends AbstractEntity
      */
     private $path;
 
-    public function getChat(): ?TelegramChat
+    public function getMessage(): ?Message
     {
-        return $this->chat;
+        return $this->message;
     }
 
-    public function setChat(?TelegramChat $chat): self
+    public function setMessage(?Message $message): self
     {
-        $this->chat = $chat;
+        $this->message = $message;
 
         return $this;
     }

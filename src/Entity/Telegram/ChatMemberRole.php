@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramChatMemberRoleRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\ChatMemberRoleRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
@@ -10,12 +11,12 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.chats_members_roles")
- * @ORM\Entity(repositoryClass=TelegramChatMemberRoleRepository::class)
+ * @ORM\Entity(repositoryClass=ChatMemberRoleRepository::class)
  */
-class TelegramChatMemberRole extends AbstractEntity
+class ChatMemberRole extends AbstractEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="roles", cascade={"all"})
+     * @ORM\ManyToOne(targetEntity=ChatMember::class, inversedBy="roles", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
@@ -32,12 +33,12 @@ class TelegramChatMemberRole extends AbstractEntity
      */
     private $code;
 
-    public function getMember(): ?TelegramChatMember
+    public function getMember(): ?ChatMember
     {
         return $this->member;
     }
 
-    public function setMember(?TelegramChatMember $member): self
+    public function setMember(?ChatMember $member): self
     {
         $this->member = $member;
 

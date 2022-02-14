@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramChatRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\ChatRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,9 +13,9 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.chats")
- * @ORM\Entity(repositoryClass=TelegramChatRepository::class)
+ * @ORM\Entity(repositoryClass=ChatRepository::class)
  */
-class TelegramChat extends AbstractEntity
+class Chat extends AbstractEntity
 {
     /**
      * @ORM\Column(type="bigint", unique=true, nullable=true)
@@ -37,28 +38,28 @@ class TelegramChat extends AbstractEntity
     private $isAvailable = true;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatMedia::class, mappedBy="chat")
+     * @ORM\OneToMany(targetEntity=ChatMedia::class, mappedBy="chat")
      * 
      * @Serializer\Exclude
      */
     private $media;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatMember::class, mappedBy="chat", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=ChatMember::class, mappedBy="chat", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
     private $members;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramMessage::class, mappedBy="chat", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=Message::class, mappedBy="chat", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
     private $messages;
 
     /**
-     * @ORM\ManyToMany(targetEntity=TelegramPhone::class, inversedBy="chats")
+     * @ORM\ManyToMany(targetEntity=Phone::class, inversedBy="chats")
      * @ORM\JoinTable(name="telegram_chat_telegram_phone",
      *      joinColumns={
      *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
@@ -73,7 +74,7 @@ class TelegramChat extends AbstractEntity
     private $phones;
 
     /**
-     * @ORM\ManyToMany(targetEntity=TelegramPhone::class)
+     * @ORM\ManyToMany(targetEntity=Phone::class)
      * @ORM\JoinTable(name="telegram_chat_available_telegram_phone",
      *      joinColumns={
      *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
@@ -147,14 +148,14 @@ class TelegramChat extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramChatMedia[]
+     * @return Collection|ChatMedia[]
      */
     public function getMedia(): Collection
     {
         return $this->media;
     }
 
-    public function addMedium(TelegramChatMedia $medium): self
+    public function addMedium(ChatMedia $medium): self
     {
         if (!$this->media->contains($medium)) {
             $this->media[] = $medium;
@@ -164,7 +165,7 @@ class TelegramChat extends AbstractEntity
         return $this;
     }
 
-    public function removeMedium(TelegramChatMedia $medium): self
+    public function removeMedium(ChatMedia $medium): self
     {
         if ($this->media->removeElement($medium)) {
             // set the owning side to null (unless already changed)
@@ -177,14 +178,14 @@ class TelegramChat extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramChatMember[]
+     * @return Collection|ChatMember[]
      */
     public function getMembers(): Collection
     {
         return $this->members;
     }
 
-    public function addMember(TelegramChatMember $member): self
+    public function addMember(ChatMember $member): self
     {
         if (!$this->members->contains($member)) {
             $this->members[] = $member;
@@ -194,7 +195,7 @@ class TelegramChat extends AbstractEntity
         return $this;
     }
 
-    public function removeMember(TelegramChatMember $member): self
+    public function removeMember(ChatMember $member): self
     {
         if ($this->members->removeElement($member)) {
             // set the owning side to null (unless already changed)
@@ -207,14 +208,14 @@ class TelegramChat extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramMessage[]
+     * @return Collection|Message[]
      */
     public function getMessages(): Collection
     {
         return $this->messages;
     }
 
-    public function addMessage(TelegramMessage $message): self
+    public function addMessage(Message $message): self
     {
         if (!$this->messages->contains($message)) {
             $this->messages[] = $message;
@@ -224,7 +225,7 @@ class TelegramChat extends AbstractEntity
         return $this;
     }
 
-    public function removeMessage(TelegramMessage $message): self
+    public function removeMessage(Message $message): self
     {
         if ($this->messages->removeElement($message)) {
             // set the owning side to null (unless already changed)
@@ -237,14 +238,14 @@ class TelegramChat extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramPhone[]
+     * @return Collection|Phone[]
      */
     public function getPhones(): Collection
     {
         return $this->phones;
     }
 
-    public function addPhone(TelegramPhone $phone): self
+    public function addPhone(Phone $phone): self
     {
         if (!$this->phones->contains($phone)) {
             $this->phones[] = $phone;
@@ -254,7 +255,7 @@ class TelegramChat extends AbstractEntity
         return $this;
     }
 
-    public function removePhone(TelegramPhone $phone): self
+    public function removePhone(Phone $phone): self
     {
         if ($this->phones->removeElement($phone)) {
             $phone->removeChat($this);
@@ -264,14 +265,14 @@ class TelegramChat extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramPhone[]
+     * @return Collection|Phone[]
      */
     public function getAvailablePhones(): Collection
     {
         return $this->availablePhones;
     }
 
-    public function addAvailablePhone(TelegramPhone $availablePhone): self
+    public function addAvailablePhone(Phone $availablePhone): self
     {
         if (!$this->availablePhones->contains($availablePhone)) {
             $this->availablePhones[] = $availablePhone;
@@ -281,7 +282,7 @@ class TelegramChat extends AbstractEntity
         return $this;
     }
 
-    public function removeAvailablePhone(TelegramPhone $availablePhone): self
+    public function removeAvailablePhone(Phone $availablePhone): self
     {
         if ($this->availablePhones->removeElement($availablePhone)) {
             $availablePhone->removeChat($this);

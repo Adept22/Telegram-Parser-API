@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramChatMemberRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\ChatMemberRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,12 +13,12 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.chats_members")
- * @ORM\Entity(repositoryClass=TelegramChatMemberRepository::class)
+ * @ORM\Entity(repositoryClass=ChatMemberRepository::class)
  */
-class TelegramChatMember extends AbstractEntity
+class ChatMember extends AbstractEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="members")
+     * @ORM\ManyToOne(targetEntity=Chat::class, inversedBy="members")
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
@@ -25,7 +26,7 @@ class TelegramChatMember extends AbstractEntity
     private $chat;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramMember::class, inversedBy="chats", cascade={"all"})
+     * @ORM\ManyToOne(targetEntity=Member::class, inversedBy="chats", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
@@ -38,14 +39,14 @@ class TelegramChatMember extends AbstractEntity
     private $isLeft = false;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatMemberRole::class, mappedBy="member", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=ChatMemberRole::class, mappedBy="member", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
     private $roles;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramMessage::class, mappedBy="member", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=Message::class, mappedBy="member", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
@@ -59,24 +60,24 @@ class TelegramChatMember extends AbstractEntity
         $this->messages = new ArrayCollection();
     }
 
-    public function getChat(): ?TelegramChat
+    public function getChat(): ?Chat
     {
         return $this->chat;
     }
 
-    public function setChat(?TelegramChat $chat): self
+    public function setChat(?Chat $chat): self
     {
         $this->chat = $chat;
 
         return $this;
     }
 
-    public function getMember(): ?TelegramMember
+    public function getMember(): ?Member
     {
         return $this->member;
     }
 
-    public function setMember(?TelegramMember $member): self
+    public function setMember(?Member $member): self
     {
         $this->member = $member;
 
@@ -96,14 +97,14 @@ class TelegramChatMember extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramChatMemberRole[]
+     * @return Collection|ChatMemberRole[]
      */
     public function getRoles(): Collection
     {
         return $this->roles;
     }
 
-    public function addRole(TelegramChatMemberRole $role): self
+    public function addRole(ChatMemberRole $role): self
     {
         if (!$this->roles->contains($role)) {
             $this->roles[] = $role;
@@ -113,7 +114,7 @@ class TelegramChatMember extends AbstractEntity
         return $this;
     }
 
-    public function removeRole(TelegramChatMemberRole $role): self
+    public function removeRole(ChatMemberRole $role): self
     {
         if ($this->roles->removeElement($role)) {
             // set the owning side to null (unless already changed)
@@ -126,14 +127,14 @@ class TelegramChatMember extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramMessage[]
+     * @return Collection|Message[]
      */
     public function getMessages(): Collection
     {
         return $this->messages;
     }
 
-    public function addMessage(TelegramMessage $message): self
+    public function addMessage(Message $message): self
     {
         if (!$this->messages->contains($message)) {
             $this->messages[] = $message;
@@ -143,7 +144,7 @@ class TelegramChatMember extends AbstractEntity
         return $this;
     }
 
-    public function removeMessage(TelegramMessage $message): self
+    public function removeMessage(Message $message): self
     {
         if ($this->messages->removeElement($message)) {
             // set the owning side to null (unless already changed)

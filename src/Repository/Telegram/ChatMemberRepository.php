@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Repository;
+namespace App\Repository\Telegram;
 
-use App\Entity\TelegramChatMemberRole;
+use App\Entity\Telegram\ChatMember;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method TelegramChatMemberRole|null find($id, $lockMode = null, $lockVersion = null)
- * @method TelegramChatMemberRole|null findOneBy(array $criteria, array $orderBy = null)
- * @method TelegramChatMemberRole[]    findAll()
- * @method TelegramChatMemberRole[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method ChatMember|null find($id, $lockMode = null, $lockVersion = null)
+ * @method ChatMember|null findOneBy(array $criteria, array $orderBy = null)
+ * @method ChatMember[]    findAll()
+ * @method ChatMember[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TelegramChatMemberRoleRepository extends ServiceEntityRepository
+class ChatMemberRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TelegramChatMemberRole::class);
+        parent::__construct($registry, ChatMember::class);
     }
 
     // /**
-    //  * @return TelegramChatMemberRole[] Returns an array of TelegramChatMemberRole objects
+    //  * @return ChatMember[] Returns an array of ChatMember objects
     //  */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class TelegramChatMemberRoleRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?TelegramChatMemberRole
+    public function findOneBySomeField($value): ?ChatMember
     {
         return $this->createQueryBuilder('t')
             ->andWhere('t.exampleField = :val')

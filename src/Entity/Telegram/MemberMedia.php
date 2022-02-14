@@ -1,26 +1,27 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramMessageMediaRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\MemberMediaRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(name="telegram.messages_medias")
- * @ORM\Entity(repositoryClass=TelegramMessageMediaRepository::class)
+ * @ORM\Table(name="telegram.members_medias")
+ * @ORM\Entity(repositoryClass=MemberMediaRepository::class)
  */
-class TelegramMessageMedia extends AbstractEntity
+class MemberMedia extends AbstractEntity
 {
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramMessage::class, inversedBy="media")
+     * @ORM\ManyToOne(targetEntity=Member::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
      */
-    private $message;
+    private $member;
 
     /**
      * @ORM\Column(type="bigint", unique=true)
@@ -32,14 +33,14 @@ class TelegramMessageMedia extends AbstractEntity
      */
     private $path;
 
-    public function getMessage(): ?TelegramMessage
+    public function getMember(): ?Member
     {
-        return $this->message;
+        return $this->member;
     }
 
-    public function setMessage(?TelegramMessage $message): self
+    public function setMember(?Member $member): self
     {
-        $this->message = $message;
+        $this->member = $member;
 
         return $this;
     }

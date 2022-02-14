@@ -2,25 +2,25 @@
 
 namespace App\Repository;
 
-use App\Entity\TelegramChat;
+use App\Entity\Export;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method TelegramChat|null find($id, $lockMode = null, $lockVersion = null)
- * @method TelegramChat|null findOneBy(array $criteria, array $orderBy = null)
- * @method TelegramChat[]    findAll()
- * @method TelegramChat[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Export|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Export|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Export[]    findAll()
+ * @method Export[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TelegramChatRepository extends ServiceEntityRepository
+class ExportRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TelegramChat::class);
+        parent::__construct($registry, Export::class);
     }
 
     // /**
-    //  * @return TelegramChat[] Returns an array of TelegramChat objects
+    //  * @return Export[] Returns an array of Export objects
     //  */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class TelegramChatRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?TelegramChat
+    public function findOneBySomeField($value): ?Export
     {
         return $this->createQueryBuilder('t')
             ->andWhere('t.exampleField = :val')

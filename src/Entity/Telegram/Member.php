@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramMemberRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\MemberRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,9 +13,9 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.members")
- * @ORM\Entity(repositoryClass=TelegramMemberRepository::class)
+ * @ORM\Entity(repositoryClass=MemberRepository::class)
  */
-class TelegramMember extends AbstractEntity
+class Member extends AbstractEntity
 {
     /**
      * @ORM\Column(type="bigint", unique=true)
@@ -47,14 +48,14 @@ class TelegramMember extends AbstractEntity
     private $phone;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramMemberMedia::class, mappedBy="member", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=MemberMedia::class, mappedBy="member", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
     private $media;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramChatMember::class, mappedBy="member")
+     * @ORM\OneToMany(targetEntity=ChatMember::class, mappedBy="member")
      * 
      * @Serializer\Exclude
      */
@@ -141,14 +142,14 @@ class TelegramMember extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramMemberMedia[]
+     * @return Collection|MemberMedia[]
      */
     public function getMedia(): Collection
     {
         return $this->media;
     }
 
-    public function addMedium(TelegramMemberMedia $medium): self
+    public function addMedium(MemberMedia $medium): self
     {
         if (!$this->media->contains($medium)) {
             $this->media[] = $medium;
@@ -158,7 +159,7 @@ class TelegramMember extends AbstractEntity
         return $this;
     }
 
-    public function removeMedium(TelegramMemberMedia $medium): self
+    public function removeMedium(MemberMedia $medium): self
     {
         if ($this->media->removeElement($medium)) {
             // set the owning side to null (unless already changed)
@@ -171,14 +172,14 @@ class TelegramMember extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramChatMember[]
+     * @return Collection|ChatMember[]
      */
     public function getChats(): Collection
     {
         return $this->chats;
     }
 
-    public function addChat(TelegramChatMember $chat): self
+    public function addChat(ChatMember $chat): self
     {
         if (!$this->chats->contains($chat)) {
             $this->chats[] = $chat;
@@ -188,7 +189,7 @@ class TelegramMember extends AbstractEntity
         return $this;
     }
 
-    public function removeChat(TelegramChatMember $chat): self
+    public function removeChat(ChatMember $chat): self
     {
         if ($this->chats->removeElement($chat)) {
             // set the owning side to null (unless already changed)

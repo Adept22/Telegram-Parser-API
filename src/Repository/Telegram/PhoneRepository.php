@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Repository;
+namespace App\Repository\Telegram;
 
-use App\Entity\TelegramPhone;
+use App\Entity\Telegram\Phone;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Common\Collections\Criteria;
 
 /**
- * @method TelegramPhone|null find($id, $lockMode = null, $lockVersion = null)
- * @method TelegramPhone|null findOneBy(array $criteria, array $orderBy = null)
- * @method TelegramPhone[]    findAll()
- * @method TelegramPhone[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Phone|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Phone|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Phone[]    findAll()
+ * @method Phone[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TelegramPhoneRepository extends ServiceEntityRepository
+class PhoneRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TelegramPhone::class);
+        parent::__construct($registry, Phone::class);
     }
 
-    public function findAllOrderByTelegramChatsCount($limit = 50, $direction = 'ASC')
+    public function findAllOrderByChatsCount($limit = 50, $direction = 'ASC')
     {
         return $this->createQueryBuilder('t')
             ->leftJoin('t.chats', 'c')
@@ -33,7 +33,7 @@ class TelegramPhoneRepository extends ServiceEntityRepository
     }
 
     // /**
-    //  * @return TelegramPhone[] Returns an array of TelegramPhone objects
+    //  * @return Phone[] Returns an array of Phone objects
     //  */
     /*
     public function findByExampleField($value)
@@ -50,7 +50,7 @@ class TelegramPhoneRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?TelegramPhone
+    public function findOneBySomeField($value): ?Phone
     {
         return $this->createQueryBuilder('t')
             ->andWhere('t.exampleField = :val')

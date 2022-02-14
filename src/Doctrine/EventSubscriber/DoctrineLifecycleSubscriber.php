@@ -2,8 +2,7 @@
 
 namespace App\Doctrine\EventSubscriber;
 
-use App\Entity\TelegramChat;
-use App\Entity\TelegramPhone;
+use App\Entity\Telegram;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Event\PostFlushEventArgs;
 use Doctrine\ORM\Events;
@@ -47,10 +46,10 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
 
-        if ($entity instanceof TelegramChat) {
-            /** @var ArrayCollection|TelegramPhone[] */
+        if ($entity instanceof Telegram\Chat) {
+            /** @var ArrayCollection|Telegram\Phone[] */
             $telegramPhones = $args->getObjectManager()
-                ->getRepository(TelegramPhone::class)
+                ->getRepository(Telegram\Phone::class)
                 ->findAll();
 
             foreach ($telegramPhones as $telegramPhone) {
@@ -75,7 +74,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
 
-        if ($entity instanceof TelegramChat) {
+        if ($entity instanceof Telegram\Chat) {
             $phones = $entity->getPhones();
             $availablePhones = $entity->getAvailablePhones();
 

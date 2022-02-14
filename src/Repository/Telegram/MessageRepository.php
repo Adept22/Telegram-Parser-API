@@ -1,26 +1,26 @@
 <?php
 
-namespace App\Repository;
+namespace App\Repository\Telegram;
 
-use App\Entity\TelegramMessageMedia;
+use App\Entity\Telegram\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @method TelegramMessageMedia|null find($id, $lockMode = null, $lockVersion = null)
- * @method TelegramMessageMedia|null findOneBy(array $criteria, array $orderBy = null)
- * @method TelegramMessageMedia[]    findAll()
- * @method TelegramMessageMedia[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
+ * @method Message|null find($id, $lockMode = null, $lockVersion = null)
+ * @method Message|null findOneBy(array $criteria, array $orderBy = null)
+ * @method Message[]    findAll()
+ * @method Message[]    findBy(array $criteria, array $orderBy = null, $limit = null, $offset = null)
  */
-class TelegramMessageMediaRepository extends ServiceEntityRepository
+class MessageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, TelegramMessageMedia::class);
+        parent::__construct($registry, Message::class);
     }
 
     // /**
-    //  * @return TelegramMessageMedia[] Returns an array of TelegramMessageMedia objects
+    //  * @return Message[] Returns an array of Message objects
     //  */
     /*
     public function findByExampleField($value)
@@ -37,7 +37,7 @@ class TelegramMessageMediaRepository extends ServiceEntityRepository
     */
 
     /*
-    public function findOneBySomeField($value): ?TelegramMessageMedia
+    public function findOneBySomeField($value): ?Message
     {
         return $this->createQueryBuilder('t')
             ->andWhere('t.exampleField = :val')

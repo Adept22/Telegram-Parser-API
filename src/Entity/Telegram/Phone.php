@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramPhoneRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\PhoneRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Ramsey\Uuid\UuidInterface;
 use Ramsey\Uuid\Doctrine\UuidGenerator;
@@ -13,9 +14,9 @@ use Doctrine\Common\Collections\Collection;
 
 /**
  * @ORM\Table(name="telegram.phones")
- * @ORM\Entity(repositoryClass=TelegramPhoneRepository::class)
+ * @ORM\Entity(repositoryClass=PhoneRepository::class)
  */
-class TelegramPhone extends AbstractEntity
+class Phone extends AbstractEntity
 {
     /**
      * @ORM\Column(type="bigint", unique=true, nullable=true)
@@ -58,7 +59,7 @@ class TelegramPhone extends AbstractEntity
     private $code;
 
     /**
-     * @ORM\ManyToMany(targetEntity=TelegramChat::class, mappedBy="phones")
+     * @ORM\ManyToMany(targetEntity=Chat::class, mappedBy="phones")
      * 
      * @Serializer\Exclude
      */
@@ -169,14 +170,14 @@ class TelegramPhone extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramChat[]
+     * @return Collection|Chat[]
      */
     public function getChats(): Collection
     {
         return $this->chats;
     }
 
-    public function addChat(TelegramChat $chat): self
+    public function addChat(Chat $chat): self
     {
         if (!$this->chats->contains($chat)) {
             $this->chats[] = $chat;
@@ -185,7 +186,7 @@ class TelegramPhone extends AbstractEntity
         return $this;
     }
 
-    public function removeChat(TelegramChat $chat): self
+    public function removeChat(Chat $chat): self
     {
         $this->chats->removeElement($chat);
 

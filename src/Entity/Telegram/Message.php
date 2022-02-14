@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Entity;
+namespace App\Entity\Telegram;
 
-use App\Repository\TelegramMessageRepository;
+use App\Entity\AbstractEntity;
+use App\Repository\Telegram\MessageRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -12,9 +13,9 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.messages")
- * @ORM\Entity(repositoryClass=TelegramMessageRepository::class)
+ * @ORM\Entity(repositoryClass=MessageRepository::class)
  */
-class TelegramMessage extends AbstractEntity
+class Message extends AbstractEntity
 {
     /**
      * @ORM\Column(type="bigint")
@@ -27,7 +28,7 @@ class TelegramMessage extends AbstractEntity
     private $text;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChat::class, inversedBy="messages")
+     * @ORM\ManyToOne(targetEntity=Chat::class, inversedBy="messages")
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\MaxDepth(2)
@@ -35,7 +36,7 @@ class TelegramMessage extends AbstractEntity
     private $chat;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramChatMember::class, inversedBy="messages", cascade={"all"})
+     * @ORM\ManyToOne(targetEntity=ChatMember::class, inversedBy="messages", cascade={"all"})
      * @ORM\JoinColumn(nullable=true)
      * 
      * @Serializer\MaxDepth(2)
@@ -43,7 +44,7 @@ class TelegramMessage extends AbstractEntity
     private $member;
 
     /**
-     * @ORM\ManyToOne(targetEntity=TelegramMessage::class, cascade={"all"})
+     * @ORM\ManyToOne(targetEntity=Message::class, cascade={"all"})
      * @ORM\JoinColumn(nullable=true)
      * 
      * @Serializer\MaxDepth(2)
@@ -71,7 +72,7 @@ class TelegramMessage extends AbstractEntity
     private $groupedId;
 
     /**
-     * @ORM\OneToMany(targetEntity=TelegramMessageMedia::class, mappedBy="message", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=MessageMedia::class, mappedBy="message", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
@@ -108,24 +109,24 @@ class TelegramMessage extends AbstractEntity
         return $this;
     }
 
-    public function getChat(): ?TelegramChat
+    public function getChat(): ?Chat
     {
         return $this->chat;
     }
 
-    public function setChat(?TelegramChat $chat): self
+    public function setChat(?Chat $chat): self
     {
         $this->chat = $chat;
 
         return $this;
     }
 
-    public function getMember(): ?TelegramChatMember
+    public function getMember(): ?ChatMember
     {
         return $this->member;
     }
 
-    public function setMember(?TelegramChatMember $member): self
+    public function setMember(?ChatMember $member): self
     {
         $this->member = $member;
 
@@ -193,14 +194,14 @@ class TelegramMessage extends AbstractEntity
     }
 
     /**
-     * @return Collection|TelegramMessageMedia[]
+     * @return Collection|MessageMedia[]
      */
     public function getMedia(): Collection
     {
         return $this->media;
     }
 
-    public function addMedium(TelegramMessageMedia $medium): self
+    public function addMedium(MessageMedia $medium): self
     {
         if (!$this->media->contains($medium)) {
             $this->media[] = $medium;
@@ -210,7 +211,7 @@ class TelegramMessage extends AbstractEntity
         return $this;
     }
 
-    public function removeMedium(TelegramMessageMedia $medium): self
+    public function removeMedium(MessageMedia $medium): self
     {
         if ($this->media->removeElement($medium)) {
             // set the owning side to null (unless already changed)

@@ -3,18 +3,18 @@
 namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
-use App\Entity\TelegramPhone;
+use App\Entity\Telegram\MemberMedia;
 use Symfony\Component\Routing\Annotation\Route;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  * 
- * @Route("/phone")
+ * @Route("/member-media")
  */
-final class TelegramPhoneController extends AbstractEntityController
+class MemberMediaController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}
      */
-    protected static $entityClassName = TelegramPhone::class;
+    protected static $entityClassName = MemberMedia::class;
 }
