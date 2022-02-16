@@ -8,16 +8,6 @@ telegram:
     prefix: /api/v1/telegram
     type: annotation
 
-export:
-    resource: ../../src/Controller/Export/
-    prefix: /api/v1/export
-    type: annotation
-
-export_telegram:
-    resource: ../../src/Controller/Export/Telegram/
-    prefix: /api/v1/export/telegram
-    type: annotation
-
 kernel:
     resource: ../../src/Kernel.php
     type: annotation

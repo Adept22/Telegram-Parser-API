@@ -3,6 +3,7 @@
 namespace App\Entity\Telegram;
 
 use App\Entity\AbstractEntity;
+use App\Entity\Export;
 use App\Repository\Telegram\ChatRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -88,15 +89,22 @@ class Chat extends AbstractEntity
      */
     private $availablePhones;
 
+    /**
+     * @ORM\OneToMany(targetEntity=Export::class, mappedBy="chat")
+     * 
+     * @Serializer\Exclude
+     */
+    private $exports;
+
     public function __construct()
     {
         parent::__construct();
-
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
         $this->phones = new ArrayCollection();
         $this->availablePhones = new ArrayCollection();
+        $this->exports = new ArrayCollection();
     }
 
     public function getInternalId(): ?int
@@ -286,6 +294,36 @@ class Chat extends AbstractEntity
     {
         if ($this->availablePhones->removeElement($availablePhone)) {
             $availablePhone->removeChat($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Export[]
+     */
+    public function getExports(): Collection
+    {
+        return $this->exports;
+    }
+
+    public function addExport(Export $export): self
+    {
+        if (!$this->exports->contains($export)) {
+            $this->exports[] = $export;
+            $export->setChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removeExport(Export $export): self
+    {
+        if ($this->exports->removeElement($export)) {
+            // set the owning side to null (unless already changed)
+            if ($export->getChat() === $this) {
+                $export->setChat(null);
+            }
         }
 
         return $this;
