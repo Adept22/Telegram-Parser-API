@@ -27,7 +27,7 @@ class Export extends AbstractEntity
     private $entities = ["members", "messages"];
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $path;
 

@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Thruway\Command;
+namespace App\Command;
 
 use App\Entity\Telegram;
 use App\Entity\Export;
 use App\Repository\ExportRepository;
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -16,7 +15,6 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Thruway\Logging\Logger;
-use Thruway\Transport\RatchetTransportProvider;
 
 class ExportCommand extends Command
 {
@@ -25,6 +23,11 @@ class ExportCommand extends Command
      */
     protected $container;
     
+    /**
+     * @var EntityManagerInterface $em
+     */
+    private $em;
+
     /**
      * @var LoggerInterface $logger
      */
@@ -36,11 +39,12 @@ class ExportCommand extends Command
     private $basePath;
 
     protected static $defaultName = 'app:export';
-    protected static $defaultDescription = 'Start the export archive generator';
+    protected static $defaultDescription = 'Start the export zip archive generator';
 
-    public function __construct(ContainerInterface $container, LoggerInterface $logger)
+    public function __construct(ContainerInterface $container, EntityManagerInterface $em, LoggerInterface $logger)
     {
         $this->container = $container;
+        $this->em = $em;
         $this->logger = $logger;
 
         $this->basePath = $this->container->getParameter('kernel.project_dir') . "/var/export";
@@ -72,14 +76,11 @@ class ExportCommand extends Command
 
         $exportId = $input->getArgument('exportId');
 
-        /** @var EntityManagerInterface */
-        $em = $this->container->get('doctrine.orm.entity_manager');
-
         try {
             $output->writeln('Starting generation ZIP archive of export');
 
             /** @var Export */
-            $export = $em->find(Export::class, $exportId);
+            $export = $this->em->find(Export::class, $exportId);
 
             if (!isset($export)) {
                 throw new \Exception("Export not found");
@@ -91,8 +92,13 @@ class ExportCommand extends Command
 
             $export->setStatus("running");
 
+            $this->em->persist($export);
+            $this->em->flush();
+
             try {
-                $exportPath = $this-> basePath . "/" . (string) $export->getId();
+                $exportPath = $this->basePath . "/" . (string) $export->getId();
+
+                // TODO: ПРИКРУТИТЬ ПОДКАЧКУ ФАЙОВ
                 
                 if (in_array("members", $export->getEntities())) {
                     $file = $this->openCSV($exportPath . "/members/members.csv");
@@ -126,6 +132,8 @@ class ExportCommand extends Command
                     throw new \Exception("Couldn't create ZIP archive.");
                 }
 
+                $zip->addEmptyDir(str_replace($this->basePath . '/', '', $exportPath . '/'));
+
                 $files = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($exportPath), 
                     \RecursiveIteratorIterator::SELF_FIRST
@@ -134,21 +142,31 @@ class ExportCommand extends Command
                 foreach ($files as $file) {
                     $file = str_replace('\\', '/', $file);
 
-                    if (in_array(substr($file, strrpos($file, '/') + 1), ['.', '..']))
+                    if (in_array(basename($file), ['.', '..']))
                         continue;
 
                     $file = realpath($file);
 
                     if (is_dir($file) === true) {
-                        $zip->addEmptyDir(str_replace($exportPath . '/', '', $file . '/'));
+                        $zip->addEmptyDir(str_replace($this->basePath . '/', '', $file . '/'));
                     } else if (is_file($file) === true) {
-                        $zip->addFile($file, str_replace($exportPath . '/', '', $file));
+                        $zip->addFile($file, str_replace($this->basePath . '/', '', $file));
                     }
                 }
 
+                $zip->close();
+
+                $this->deleteDirectory($exportPath);
+
                 $export->setStatus("finished");
+
+                $this->em->persist($export);
+                $this->em->flush();
             } catch (\Exception $e) {
                 $export->setStatus("error");
+
+                $this->em->persist($export);
+                $this->em->flush();
 
                 return Command::FAILURE;
             }
@@ -181,8 +199,8 @@ class ExportCommand extends Command
         $csv = [];
 
         foreach ($chat->getMembers() as $chatMember) {
-            $memberRow = $this->getRow($chatMember->getMember());
-            $roleRow = $this->getRow($chatMember->getRoles()->last(), ['id']);
+            $memberRow = $this->getRow($chatMember->getMember(), $memberTitles);
+            $roleRow = $this->getRow($chatMember->getRoles()->last(), $chatMemberRoleTitles, "role_");
 
             $csv[] = array_merge($memberRow, $roleRow);
         }
@@ -195,7 +213,7 @@ class ExportCommand extends Command
     private function makeMessagesCSV($file, Telegram\Chat $chat)
     {
         $messageTitles = $this->getTitles(Telegram\Message::class);
-        $memberTitles = $this->getTitles(Telegram\Member::class);
+        $memberTitles = $this->getTitles(Telegram\Member::class, "sender_");
         $replyToTitles = $this->getTitles(Telegram\Message::class, "reply_to_", ['id']);
 
         fputcsv($file, array_merge($messageTitles, $memberTitles, $replyToTitles), ';');
@@ -203,9 +221,9 @@ class ExportCommand extends Command
         $csv = [];
 
         foreach ($chat->getMessages() as $message) {
-            $messageRow = $this->getRow($message);
-            $memberRow = $this->getRow($message->getMember());
-            $replyToRow = $this->getRow($message->getReplyTo(), ['id']);
+            $messageRow = $this->getRow($message, $messageTitles);
+            $memberRow = $this->getRow($message->getMember(), $memberTitles, "sender_");
+            $replyToRow = $this->getRow($message->getReplyTo(), $replyToTitles, "reply_to_");
 
             $csv[] = array_merge($messageRow, $memberRow, $replyToRow);
         }
@@ -231,18 +249,15 @@ class ExportCommand extends Command
         return $titles;
     } 
 
-    private function getRow($entity, array $exclude = []): array
+    private function getRow($entity, array $titles, string $titlePrefix = ""): array
     {
         $row = [];
         
-        if (!isset($entity)) {
-            $entityClassMetadata = $this->em->getClassMetadata(get_class($entity));
+        if (isset($entity)) {
+            foreach ($titles as $title) {
+                $title = str_replace($titlePrefix, '', $title);
 
-            foreach ($entityClassMetadata->fieldMappings as $fieldMapping) {
-                if (in_array($fieldMapping['fieldName'], array_merge(['internalId'], $exclude)))
-                    continue;
-
-                $getter = 'get' . ucfirst($fieldMapping['fieldName']);
+                $getter = 'get' . ucfirst($title);
 
                 if (method_exists($entity, $getter)) {
                     $value = $entity->$getter();
@@ -260,4 +275,17 @@ class ExportCommand extends Command
 
         return $row;
     }
+
+    private function deleteDirectory($directory)
+    { 
+        $files = array_diff(scandir($directory), ['.', '..']); 
+
+        foreach ($files as $file) { 
+            (is_dir("$directory/$file")) 
+                ? $this->deleteDirectory("$directory/$file") 
+                : unlink("$directory/$file"); 
+        }
+
+        return rmdir($directory); 
+    } 
 }

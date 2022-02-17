@@ -21,6 +21,20 @@ services:
             - "../src/Kernel.php"
             - "../src/Tests/"
 
+
+
+    #
+    # ------ KERNEL ------ #
+    #
+
+    App\Kernel\EventListener\EventListener:
+        tags:
+            - { 'name': 'kernel.event_listener', 'event': 'kernel.terminate', 'method': 'onTerminateEvent' }
+
+    #
+    # ------ ! KERNEL ------ #
+    #
+
     #
     # ------ VORYX ------ #
     #

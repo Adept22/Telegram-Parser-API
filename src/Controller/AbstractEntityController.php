@@ -2,27 +2,26 @@
 
 namespace App\Controller;
 
-use App\Entity\AbstractEntity;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Mapping\Entity;
-use FOS\RestBundle\Context\Context;
-use FOS\RestBundle\Controller\AbstractFOSRestController;
-use FOS\RestBundle\Controller\Annotations as Rest;
-use FOS\RestBundle\Request\ParamFetcherInterface;
-use FOS\RestBundle\View\View;
-use JMS\Serializer\SerializerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Security;
+use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\Persistence\Mapping\ClassMetadata;
+use JMS\Serializer\SerializerInterface;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  */
-abstract class AbstractEntityController extends AbstractFOSRestController implements ControllerInterface
+abstract class AbstractEntityController extends AbstractController implements ControllerInterface
 {
     /**
      * @var string $entityClassName Класс сущности с которой работает контроллер
@@ -30,108 +29,127 @@ abstract class AbstractEntityController extends AbstractFOSRestController implem
     protected static $entityClassName;
 
     /**
-     * @var EntityManagerInterface $em
+     * @var EntityManagerInterface
      */
     protected $em;
 
     /**
-     * @var SerializerInterface $serializer
+     * @var SerializerInterface
      */
     protected $serializer;
 
-    // /**
-    //  * @var Security $security
-    //  */
+    /**
+     * @var ValidatorInterface
+     */
+    protected $validator;
+
+    /**
+     * @var Security
+     */
     // protected $security;
 
     /**
-     * @var mixed $repository
+     * @var ServiceEntityRepository
      */
     protected $repository;
 
+    /**
+     * @var ClassMetadata
+     */
+    protected $classMetadata;
+
     public function __construct(ContainerInterface $container) {
+        /** @var EntityManagerInterface */
         $this->em = $container->get('doctrine.orm.entity_manager');
+        /** @var SerializerInterface */
         $this->serializer = $container->get('jms_serializer');
+        /** @var ValidatorInterface */
+        $this->validator = $container->get('validator');
         // $this->security = $container->get('security.authorization_checker');
 
         // Разрешаем админам удалять сущности безвозвратно
         // if ($this->security->isGranted('ROLE_ADMIN')) {
         //     $this->em->getFilters()->disable('softdeleteable');
         // }
-
+        
+        /** @var ServiceEntityRepository */
         $this->repository = $this->em->getRepository(static::$entityClassName);
+        /** @var ClassMetadata */
+        $this->classMetadata = $this->em->getClassMetadata(static::$entityClassName);
     }
 
     /**
      * {@inheritdoc}
      * 
-     * @Rest\Get("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"})
+     * @Route("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"GET"})
      */
-    public function _get(string $id): View
+    public function _get(string $id): Response
     {
-        $entity = $this->find($id);
+        $entity = $this->repository->find($id);
 
-        return View::create($entity, Response::HTTP_OK);
+        if (!isset($entity)) {
+            throw new NotFoundHttpException("Entity ($id) not found.");
+        }
+
+        $response = $this->serializer->serialize($entity, 'json');
+
+        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
     }
 
     /**
      * {@inheritdoc}
      * 
-     * @Rest\Post("/find")
-     * 
-     * @Rest\QueryParam(name="_start", default=0, requirements="\d+", description="Сдвиг с начала")
-     * @Rest\QueryParam(name="_limit", default=50, requirements="\d+", description="Количество")
-     * @Rest\QueryParam(name="_order", default="ASC", requirements="ASC|DESC", description="Порядок сортировки")
-     * @Rest\QueryParam(name="_sort", default="id", requirements=".+", description="Свойство сортировки")
+     * @Route("/find", methods={"POST"})
      */
-    public function _postFind(Request $request, ParamFetcherInterface $paramFetcher): View
+    public function _postFind(Request $request): Response
     {
-        $reserved = ['id', '_sort', '_order', '_limit', '_start'];
-
         $content = json_decode($request->getContent(), true) ?? [];
 
-        $sort = $paramFetcher->get('_sort');
-        $order = $paramFetcher->get('_order');
-        $limit = $paramFetcher->get('_limit');
-        $start = $paramFetcher->get('_start');
+        $queryConstraint = new Assert\Collection([
+            "fields" => [
+                "_sort" => new Assert\Choice($this->classMetadata->getFieldNames()),
+                "_order" => new Assert\Choice(["ASC", "DESC"]),
+                "_limit" => new Assert\Type("integer"),
+                "_start" => new Assert\Type("integer")
+            ],
+            "allowMissingFields" => true,
+            "missingFieldsMessage" => "Ожидается параметр {{ field }}"
+        ]);
+
+        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        
+        if ($errors->count() > 0) {
+            throw new BadRequestException($errors->get(count($errors) - 1)->getMessage());
+        }
+        
+        $sort = $request->query->get('_sort') ?? "id";
+        $order = $request->query->get('_order') ?? "ASC";
+        $limit = $request->query->get('_limit') ?? 50;
+        $start = $request->query->get('_start') ?? 0;
+
+        if (isset($content["id"])) {
+            unset($content["id"]);
+        }
 
         foreach ($content as $key => $value) {
-            if (in_array($key, $reserved, true)) {
-                unset($content[$key]);
-                continue;
-            }
-
-            if (is_array($value)) {
-                unset($content[$key]);
-
-                if (isset($value['id'])) {
-                    $content[$key] = $value['id'];
-                } else {
-                    foreach ($value as $item) {
-                        if (isset($item['id'])) {
-                            $content[$key][] = $item['id'];
-                        }
-                    }
-                }
+            if (is_array($value) && isset($value['id'])) {
+                $content[$key] = $value['id'];
             }
         }
 
-        $entities = $this->repository->findBy(
-            $content,
-            [$sort => $order],
-            $limit,
-            $start
-        );
+        $entities = $this->repository->findBy($content, [$sort => $order], $limit, $start);
 
-        return View::create($entities, Response::HTTP_OK);
+        $response = $this->serializer->serialize($entities, 'json');
+
+        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
     }
 
     /**
      * {@inheritdoc}
      * 
-     * @Rest\Post("")
+     * @Route("", methods={"POST"})
      */
-    public function _post(Request $request, ParamFetcherInterface $paramFetcher): View
+    public function _post(Request $request): Response
     {
         $content = json_decode($request->getContent(), true) ?? [];
 
@@ -149,15 +167,17 @@ abstract class AbstractEntityController extends AbstractFOSRestController implem
 
         $this->em->flush();
 
-        return View::create($entity, Response::HTTP_CREATED);
+        $response = $this->serializer->serialize($entity, 'json');
+
+        return new Response($response, Response::HTTP_CREATED, ['content-type' => 'application/json']);
     }
 
     /**
      * {@inheritdoc}
      * 
-     * @Rest\Put("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"})
+     * @Route("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"PUT"})
      */
-    public function _put(?string $id, Request $request): View
+    public function _put(string $id, Request $request): Response
     {
         $content = json_decode($request->getContent(), true) ?? [];
 
@@ -168,20 +188,22 @@ abstract class AbstractEntityController extends AbstractFOSRestController implem
         try {
             $this->em->persist($entity);
         } catch (ValidationFailedException $ex) {
-            return View::create($ex, Response::HTTP_BAD_REQUEST);
+            throw new BadRequestException($ex->getMessage());
         }
 
         $this->em->flush();
 
-        return View::create($entity, Response::HTTP_OK);
+        $response = $this->serializer->serialize($entity, 'json');
+
+        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
     }
 
     /**
      * {@inheritdoc}
      * 
-     * @Rest\Delete("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"})
+     * @Route("/{id}", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"DELETE"})
      */
-    public function _delete(string $id): View
+    public function _delete(string $id): Response
     {
         $entity = $this->repository->find($id);
 
@@ -190,24 +212,6 @@ abstract class AbstractEntityController extends AbstractFOSRestController implem
             $this->em->flush();
         }
 
-        return View::create([], Response::HTTP_NO_CONTENT);
-    }
-
-    /**
-     * Получает сущность по UUID
-     * 
-     * @param string $id UUID сущности
-     * 
-     * @throws NotFoundHttpException Если сущность не найдена
-     */
-    public function find(string $id)
-    {
-        $entity = $this->repository->find($id);
-
-        if (!isset($entity)) {
-            throw new NotFoundHttpException("Сущность c UUID ($id) не существует.");
-        }
-
-        return $entity;
+        return new Response('', Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
     }
 }
