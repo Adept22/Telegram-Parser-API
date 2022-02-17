@@ -2,23 +2,35 @@
 
 namespace App\Controller;
 
-use FOS\RestBundle\Controller\AbstractFOSRestController;
-use FOS\RestBundle\Controller\Annotations as Rest;
-use FOS\RestBundle\View\View;
+use JMS\Serializer\SerializerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  */
-class DefaultController extends AbstractFOSRestController
+class DefaultController extends AbstractController
 {
+    /**
+     * @var SerializerInterface
+     */
+    protected $serializer;
+
+    public function __construct(SerializerInterface $serializer)
+    {
+        $this->serializer = $serializer;
+    }
+    
     /**
      * Если все хорошо, ответит соответствующе.
      *
-     * @Rest\Get("/ping")
+     * @Route("/ping", methods={"GET"})
      */
-    public function pingAction(): View
+    public function pingAction(): Response
     {
-        return View::create(['ping' => 'pong'], Response::HTTP_OK);
+        $response = $this->serializer->serialize(['ping' => 'pong'], 'json');
+
+        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
     }
 }

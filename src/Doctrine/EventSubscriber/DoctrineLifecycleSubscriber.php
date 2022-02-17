@@ -57,7 +57,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             }
         }
 
-        // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
         }
@@ -87,7 +86,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             });
         }
 
-        // Валидируем сущность
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
         }

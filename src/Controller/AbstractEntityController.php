@@ -4,12 +4,10 @@ namespace App\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\DependencyInjection\ContainerInterface;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\Security;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
@@ -44,11 +42,6 @@ abstract class AbstractEntityController extends AbstractController implements Co
     protected $validator;
 
     /**
-     * @var Security
-     */
-    // protected $security;
-
-    /**
      * @var ServiceEntityRepository
      */
     protected $repository;
@@ -58,23 +51,13 @@ abstract class AbstractEntityController extends AbstractController implements Co
      */
     protected $classMetadata;
 
-    public function __construct(ContainerInterface $container) {
-        /** @var EntityManagerInterface */
-        $this->em = $container->get('doctrine.orm.entity_manager');
-        /** @var SerializerInterface */
-        $this->serializer = $container->get('jms_serializer');
-        /** @var ValidatorInterface */
-        $this->validator = $container->get('validator');
-        // $this->security = $container->get('security.authorization_checker');
-
-        // Разрешаем админам удалять сущности безвозвратно
-        // if ($this->security->isGranted('ROLE_ADMIN')) {
-        //     $this->em->getFilters()->disable('softdeleteable');
-        // }
+    public function __construct(EntityManagerInterface $em, SerializerInterface $serializer, ValidatorInterface $validator)
+    {
+        $this->em = $em;
+        $this->serializer = $serializer;
+        $this->validator = $validator;
         
-        /** @var ServiceEntityRepository */
         $this->repository = $this->em->getRepository(static::$entityClassName);
-        /** @var ClassMetadata */
         $this->classMetadata = $this->em->getClassMetadata(static::$entityClassName);
     }
 
@@ -154,16 +137,16 @@ abstract class AbstractEntityController extends AbstractController implements Co
         $content = json_decode($request->getContent(), true) ?? [];
 
         if (isset($content['id'])) {
-            unset($content['id']);
+            throw new BadRequestException("Can't create new entity with given uuid.");
         }
 
         $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
 
-        // try {
+        try {
             $this->em->persist($entity);
-        // } catch (ValidationFailedException $ex) {
-        //     return View::create($ex, Response::HTTP_BAD_REQUEST);
-        // }
+        } catch (ValidationFailedException $ex) {
+            throw new BadRequestException($ex->getMessage());
+        }
 
         $this->em->flush();
 

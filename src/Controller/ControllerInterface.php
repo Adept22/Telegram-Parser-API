@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use FOS\RestBundle\Request\ParamFetcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
