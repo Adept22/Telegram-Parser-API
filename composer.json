@@ -13,7 +13,6 @@
         "doctrine/doctrine-bundle": "^2.5",
         "doctrine/doctrine-migrations-bundle": "^3.2",
         "doctrine/orm": "^2.10",
-        "friendsofsymfony/rest-bundle": "^3.1",
         "guzzlehttp/guzzle": "^7.4",
         "jms/serializer-bundle": "^4.0",
         "lcobucci/jwt": "^4.1",
