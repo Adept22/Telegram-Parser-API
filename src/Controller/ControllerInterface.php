@@ -3,8 +3,8 @@
 namespace App\Controller;
 
 use FOS\RestBundle\Request\ParamFetcherInterface;
-use FOS\RestBundle\View\View;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
@@ -13,38 +13,46 @@ interface ControllerInterface {
     /**
      * Получает сущность
      * 
-     * @param string|null UUID сущности
+     * @param string UUID сущности
      * 
-     * @return View Представление
+     * @return Response Ответ
      */
-    public function _get(string $id): View;
+    public function _get(string $id): Response;
 
     /**
-     * Получает сущности
+     * Получает массив сущностей фильтруя по свойствам
      * 
      * @param Request $request Объект запроса
-     * @param ParamFetchInterface Сервис валидирующий параметры
      * 
-     * @return View Представление
+     * @return Response Ответ
      */
-    public function _post(Request $request, ParamFetcherInterface $paramFetcher): View;
+    public function _postFind(Request $request): Response;
 
     /**
-     * Создает или изменяет сущность
+     * Создает сущность
      * 
-     * @param string|null UUID сущности
      * @param Request $request Объект запроса
      * 
-     * @return View Представление
+     * @return Response Ответ
      */
-    public function _put(?string $id, Request $request): View;
+    public function _post(Request $request): Response;
 
     /**
-     * Получает сущности по параметрам
+     * Изменяет сущность
+     * 
+     * @param string UUID сущности
+     * @param Request $request Объект запроса
+     * 
+     * @return Response Ответ
+     */
+    public function _put(string $id, Request $request): Response;
+
+    /**
+     * Удаяет сущность
      * 
      * @param string UUID сущности
      * 
-     * @return View Представление
+     * @return Response Ответ
      */
-    public function _delete(string $id): View;
+    public function _delete(string $id): Response;
 }
