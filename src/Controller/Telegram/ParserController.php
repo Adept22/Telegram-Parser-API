@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
+use App\Entity\Telegram\Parser;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Entity\Export;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  * 
- * @Route("/export")
+ * @Route("/parser")
  */
-class ExportController extends AbstractEntityController
+final class ParserController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}
      */
-    protected static $entityClassName = Export::class;
+    protected static $entityClassName = Parser::class;
 }

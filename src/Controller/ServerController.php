@@ -4,17 +4,17 @@ namespace App\Controller;
 
 use App\Controller\AbstractEntityController;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Entity\Export;
+use App\Entity\Server;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  * 
- * @Route("/export")
+ * @Route("/server")
  */
-class ExportController extends AbstractEntityController
+class ServerController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}
      */
-    protected static $entityClassName = Export::class;
+    protected static $entityClassName = Server::class;
 }
