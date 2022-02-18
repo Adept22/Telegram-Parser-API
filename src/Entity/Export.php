@@ -6,7 +6,6 @@ use App\Entity\AbstractEntity;
 use App\Repository\ExportRepository;
 use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
-use Symfony\Component\Serializer\Annotation as SymfonySerializer;
 
 /**
  * @ORM\Table(name="app.export")

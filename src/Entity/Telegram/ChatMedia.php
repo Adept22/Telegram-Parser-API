@@ -5,8 +5,6 @@ namespace App\Entity\Telegram;
 use App\Entity\AbstractEntity;
 use App\Repository\Telegram\ChatMediaRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Ramsey\Uuid\UuidInterface;
-use Ramsey\Uuid\Doctrine\UuidGenerator;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
