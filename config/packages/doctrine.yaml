@@ -1,14 +1,6 @@
 doctrine:
     dbal:
-        # url: 'pdo_pgsql://tegia:XkLp2Nma@127.0.0.1:5432/tegia?serverVersion=13'
         url: '%env(resolve:DATABASE_URL)%'
-        driver: '%env(resolve:DATABASE_DRIVER)%'
-        dbname: '%env(resolve:POSTGRES_DB)%'
-        user: '%env(resolve:POSTGRES_USER)%'
-        password: '%env(resolve:POSTGRES_PASSWORD)%'
-        # host: '%env(resolve:DATABASE_HOST)%'
-        # port: '%env(resolve:DATABASE_PORT)%'
-        # charset: '%env(resolve:DATABASE_CHARSET)%'
         types:
             uuid: Ramsey\Uuid\Doctrine\UuidType
 
