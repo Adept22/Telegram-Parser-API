@@ -27,7 +27,7 @@ class MessageMedia extends AbstractEntity
     private $message;
 
     /**
-     * @ORM\Column(type="string", length=255)
+     * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $path;
 
