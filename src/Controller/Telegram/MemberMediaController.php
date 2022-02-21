@@ -3,6 +3,7 @@
 namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
+use App\Controller\UploadTrait;
 use App\Entity\Telegram\MemberMedia;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -13,8 +14,15 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class MemberMediaController extends AbstractEntityController
 {
+    use UploadTrait;
+
     /**
      * {@inheritdoc}
      */
     protected static $entityClassName = MemberMedia::class;
+    
+    /**
+     * {@inheritdoc}
+     */
+    protected static $entityAlias = 'member';
 }

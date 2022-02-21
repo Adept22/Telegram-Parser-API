@@ -3,6 +3,7 @@
 namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
+use App\Controller\UploadTrait;
 use App\Entity\Telegram\ChatMedia;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -13,8 +14,15 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class ChatMediaController extends AbstractEntityController
 {
+    use UploadTrait;
+    
     /**
      * {@inheritdoc}
      */
     protected static $entityClassName = ChatMedia::class;
+    
+    /**
+     * {@inheritdoc}
+     */
+    protected static $entityAlias = 'chat';
 }
