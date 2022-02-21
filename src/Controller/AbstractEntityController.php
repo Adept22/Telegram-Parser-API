@@ -6,7 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
@@ -92,8 +92,8 @@ abstract class AbstractEntityController extends AbstractController implements Co
             "fields" => [
                 "_sort" => new Assert\Choice($this->classMetadata->getFieldNames()),
                 "_order" => new Assert\Choice(["ASC", "DESC"]),
-                "_limit" => new Assert\Type("integer"),
-                "_start" => new Assert\Type("integer")
+                "_limit" => new Assert\Regex("/\d+/"),
+                "_start" => new Assert\Regex("/\d+/")
             ],
             "allowMissingFields" => true,
             "missingFieldsMessage" => "Ожидается параметр {{ field }}"
@@ -102,7 +102,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
         $errors = $this->validator->validate($request->query->all(), $queryConstraint);
         
         if ($errors->count() > 0) {
-            throw new BadRequestException($errors->get(count($errors) - 1)->getMessage());
+            throw new BadRequestHttpException($errors->get(count($errors) - 1)->getMessage());
         }
         
         $sort = $request->query->get('_sort') ?? "id";
@@ -137,7 +137,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
         $content = json_decode($request->getContent(), true) ?? [];
 
         if (isset($content['id'])) {
-            throw new BadRequestException("Can't create new entity with given uuid.");
+            throw new BadRequestHttpException("Can't create new entity with given uuid.");
         }
 
         $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
@@ -145,7 +145,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
         try {
             $this->em->persist($entity);
         } catch (ValidationFailedException $ex) {
-            throw new BadRequestException($ex->getMessage());
+            throw new BadRequestHttpException($ex->getMessage());
         }
 
         $this->em->flush();
@@ -171,7 +171,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
         try {
             $this->em->persist($entity);
         } catch (ValidationFailedException $ex) {
-            throw new BadRequestException($ex->getMessage());
+            throw new BadRequestHttpException($ex->getMessage());
         }
 
         $this->em->flush();

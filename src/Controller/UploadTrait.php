@@ -2,7 +2,7 @@
 
 namespace App\Controller;
 
-use Symfony\Component\HttpFoundation\Exception\BadRequestException;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -25,7 +25,7 @@ trait UploadTrait
         $file = $request->files->get('file');
 
         if (!isset($file)) {
-            throw new BadRequestException("Unexpected file given.");
+            throw new BadRequestHttpException("Unexpected file given.");
         }
 
         $basePath = $this->container->getParameter('kernel.project_dir') . "/var/upload";
