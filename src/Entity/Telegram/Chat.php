@@ -58,21 +58,6 @@ class Chat extends AbstractEntity
     private $messages;
 
     /**
-     * @ORM\ManyToMany(targetEntity=Phone::class, inversedBy="chats")
-     * @ORM\JoinTable(name="telegram_chat_telegram_phone",
-     *      joinColumns={
-     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
-     *      },
-     *      inverseJoinColumns={
-     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
-     *      }
-     * )
-     * 
-     * @Serializer\MaxDepth(2)
-     */
-    private $phones;
-
-    /**
      * @ORM\ManyToMany(targetEntity=Phone::class)
      * @ORM\JoinTable(name="telegram_chat_available_telegram_phone",
      *      joinColumns={
@@ -86,6 +71,21 @@ class Chat extends AbstractEntity
      * @Serializer\MaxDepth(2)
      */
     private $availablePhones;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity=Phone::class, inversedBy="chats")
+     * @ORM\JoinTable(name="telegram_chat_telegram_phone",
+     *      joinColumns={
+     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
+     *      },
+     *      inverseJoinColumns={
+     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
+     *      }
+     * )
+     * 
+     * @Serializer\MaxDepth(2)
+     */
+    private $phones;
 
     /**
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
@@ -108,8 +108,8 @@ class Chat extends AbstractEntity
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
-        $this->phones = new ArrayCollection();
         $this->availablePhones = new ArrayCollection();
+        $this->phones = new ArrayCollection();
         $this->exports = new ArrayCollection();
     }
 
@@ -254,33 +254,6 @@ class Chat extends AbstractEntity
     /**
      * @return Collection|Phone[]
      */
-    public function getPhones(): Collection
-    {
-        return $this->phones;
-    }
-
-    public function addPhone(Phone $phone): self
-    {
-        if (!$this->phones->contains($phone)) {
-            $this->phones[] = $phone;
-            $phone->addChat($this);
-        }
-
-        return $this;
-    }
-
-    public function removePhone(Phone $phone): self
-    {
-        if ($this->phones->removeElement($phone)) {
-            $phone->removeChat($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|Phone[]
-     */
     public function getAvailablePhones(): Collection
     {
         return $this->availablePhones;
@@ -300,6 +273,33 @@ class Chat extends AbstractEntity
     {
         if ($this->availablePhones->removeElement($availablePhone)) {
             $availablePhone->removeChat($this);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Phone[]
+     */
+    public function getPhones(): Collection
+    {
+        return $this->phones;
+    }
+
+    public function addPhone(Phone $phone): self
+    {
+        if (!$this->phones->contains($phone)) {
+            $this->phones[] = $phone;
+            $phone->addChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removePhone(Phone $phone): self
+    {
+        if ($this->phones->removeElement($phone)) {
+            $phone->removeChat($this);
         }
 
         return $this;
