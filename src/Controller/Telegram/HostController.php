@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Controller;
+namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
 use Symfony\Component\Routing\Annotation\Route;
-use App\Entity\Server;
+use App\Entity\Telegram\Host;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  * 
- * @Route("/server")
+ * @Route("/host")
  */
-class ServerController extends AbstractEntityController
+class HostController extends AbstractEntityController
 {
     /**
      * {@inheritdoc}
      */
-    protected static $entityClassName = Server::class;
+    protected static $entityClassName = Host::class;
 }

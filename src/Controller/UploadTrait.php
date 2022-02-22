@@ -28,11 +28,14 @@ trait UploadTrait
             throw new BadRequestHttpException("Unexpected file given.");
         }
 
-        $basePath = $this->container->getParameter('kernel.project_dir') . "/var/upload";
+        $basePath = $this->getParameter('kernel.project_dir') . "/var/uploads";
         
-        $file = $file->move($basePath . '/' . parent::$entityAlias, $file->getClientOriginalName());
+        $file = $file->move($basePath . '/' . static::$alias, $file->getClientOriginalName());
 
         $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
+
+        $this->em->persist($entity);
+        $this->em->flush();
 
         return new Response(null, Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
     }

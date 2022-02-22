@@ -24,5 +24,5 @@ class MessageMediaController extends AbstractEntityController
     /**
      * {@inheritdoc}
      */
-    protected static $entityAlias = 'message';
+    protected static $alias = 'message';
 }

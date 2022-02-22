@@ -88,6 +88,14 @@ class Chat extends AbstractEntity
     private $availablePhones;
 
     /**
+     * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
+     * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\MaxDepth(2)
+     */
+    private $parser;
+
+    /**
      * @ORM\OneToMany(targetEntity=Export::class, mappedBy="chat")
      * 
      * @Serializer\Exclude
@@ -293,6 +301,18 @@ class Chat extends AbstractEntity
         if ($this->availablePhones->removeElement($availablePhone)) {
             $availablePhone->removeChat($this);
         }
+
+        return $this;
+    }
+
+    public function getParser(): ?Parser
+    {
+        return $this->parser;
+    }
+
+    public function setParser(?Parser $parser): self
+    {
+        $this->parser = $parser;
 
         return $this;
     }

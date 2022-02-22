@@ -24,5 +24,5 @@ class ChatMediaController extends AbstractEntityController
     /**
      * {@inheritdoc}
      */
-    protected static $entityAlias = 'chat';
+    protected static $alias = 'chat';
 }

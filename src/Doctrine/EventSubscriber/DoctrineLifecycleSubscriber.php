@@ -47,13 +47,8 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         $entity = $args->getObject();
 
         if ($entity instanceof Telegram\Chat) {
-            /** @var ArrayCollection|Telegram\Phone[] */
-            $telegramPhones = $args->getObjectManager()
-                ->getRepository(Telegram\Phone::class)
-                ->findAll();
-
-            foreach ($telegramPhones as $telegramPhone) {
-                $entity->addAvailablePhone($telegramPhone);
+            foreach ($entity->getParser()->getPhones() as $phone) {
+                $entity->addAvailablePhone($phone);
             }
         }
 
@@ -74,10 +69,19 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         $entity = $args->getObject();
 
         if ($entity instanceof Telegram\Chat) {
-            $phones = $entity->getPhones();
+            $phones = $entity->getParser()->getPhones();
+
+            $entity->getAvailablePhones()->map(function ($availablePhone) use ($entity, $phones) {
+                $exist = $phones->exists(function ($key, $phone) use ($availablePhone) {
+                    return (string) $phone->getId() === (string) $availablePhone->getId();
+                });
+
+                if (!$exist) $entity->removePhone($availablePhone);
+            });
+
             $availablePhones = $entity->getAvailablePhones();
 
-            $phones->map(function ($phone) use ($entity, $availablePhones) {
+            $entity->getPhones()->map(function ($phone) use ($entity, $availablePhones) {
                 $exist = $availablePhones->exists(function ($key, $availablePhone) use ($phone) {
                     return (string) $availablePhone->getId() === (string) $phone->getId();
                 });
@@ -103,9 +107,9 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         $client = $this->container->get('thruway.client');
 
         foreach ($this->updatedEntities as $updatedEntity) {
-            $classPath = explode('\\', get_class($updatedEntity));
+            $class = str_replace("App\Entity\\", '', get_class($updatedEntity));
 
-            $client->publish("com.app.entity", [['_' => array_pop($classPath), 'entity' => $updatedEntity]]);
+            $client->publish("com.app.entity", [['_' => $class, 'entity' => $updatedEntity]]);
         }
     }
 }

@@ -62,6 +62,14 @@ class Phone extends AbstractEntity
      */
     private $chats;
 
+    /**
+     * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="phones")
+     * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\MaxDepth(2)
+     */
+    private $parser;
+
     public function __construct()
     {
         parent::__construct();
@@ -186,6 +194,18 @@ class Phone extends AbstractEntity
     public function removeChat(Chat $chat): self
     {
         $this->chats->removeElement($chat);
+
+        return $this;
+    }
+
+    public function getParser(): ?Parser
+    {
+        return $this->parser;
+    }
+
+    public function setParser(?Parser $parser): self
+    {
+        $this->parser = $parser;
 
         return $this;
     }

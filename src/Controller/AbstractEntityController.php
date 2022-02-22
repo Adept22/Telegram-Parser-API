@@ -149,7 +149,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
             throw new BadRequestHttpException("Can't create new entity with given uuid.");
         }
 
-        $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
+        $entity = $this->serializer->deserialize($request->getContent(), static::$entityClassName, 'json');
 
         try {
             $this->em->persist($entity);

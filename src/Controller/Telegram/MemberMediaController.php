@@ -24,5 +24,5 @@ class MemberMediaController extends AbstractEntityController
     /**
      * {@inheritdoc}
      */
-    protected static $entityAlias = 'member';
+    protected static $alias = 'member';
 }

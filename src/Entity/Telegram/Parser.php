@@ -3,9 +3,11 @@
 namespace App\Entity\Telegram;
 
 use App\Entity\AbstractEntity;
-use App\Entity\Server;
 use App\Repository\Telegram\ParserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(name="telegram.parsers")
@@ -14,19 +16,9 @@ use Doctrine\ORM\Mapping as ORM;
 class Parser extends AbstractEntity
 {
     /**
-     * @ORM\Column(type="string", length=12)
-     */
-    private $containerId;
-
-    /**
-     * @ORM\Column(type="string", length=255)
-     */
-    private $containerName;
-
-    /**
      * @ORM\Column(type="string", length=20)
      */
-    private $status = "published";
+    private $status = "created";
 
     /**
      * @ORM\Column(type="integer")
@@ -39,33 +31,31 @@ class Parser extends AbstractEntity
     private $api_hash;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Server::class, inversedBy="telegramParsers")
+     * @ORM\ManyToOne(targetEntity=Host::class, inversedBy="parsers", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      */
-    private $server;
+    private $host;
 
-    public function getContainerId(): ?string
+    /**
+     * @ORM\OneToMany(targetEntity=Chat::class, mappedBy="parser", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
+     */
+    private $chats;
+
+    /**
+     * @ORM\OneToMany(targetEntity=Phone::class, mappedBy="parser", orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
+     */
+    private $phones;
+
+    public function __construct()
     {
-        return $this->containerId;
-    }
-
-    public function setContainerId(string $containerId): self
-    {
-        $this->containerId = $containerId;
-
-        return $this;
-    }
-
-    public function getContainerName(): ?string
-    {
-        return $this->containerName;
-    }
-
-    public function setContainerName(string $containerName): self
-    {
-        $this->containerName = $containerName;
-
-        return $this;
+        parent::__construct();
+        
+        $this->chats = new ArrayCollection();
+        $this->phones = new ArrayCollection();
     }
 
     public function getStatus(): ?string
@@ -104,14 +94,74 @@ class Parser extends AbstractEntity
         return $this;
     }
 
-    public function getServer(): ?Server
+    public function getHost(): ?Host
     {
-        return $this->server;
+        return $this->host;
     }
 
-    public function setServer(?Server $server): self
+    public function setHost(?Host $host): self
     {
-        $this->server = $server;
+        $this->host = $host;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Phone[]
+     */
+    public function getPhones(): Collection
+    {
+        return $this->phones;
+    }
+
+    public function addPhone(Phone $phone): self
+    {
+        if (!$this->phones->contains($phone)) {
+            $this->phones[] = $phone;
+            $phone->setParser($this);
+        }
+
+        return $this;
+    }
+
+    public function removePhone(Phone $phone): self
+    {
+        if ($this->phones->removeElement($phone)) {
+            // set the owning side to null (unless already changed)
+            if ($phone->getParser() === $this) {
+                $phone->setParser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|Chat[]
+     */
+    public function getChats(): Collection
+    {
+        return $this->chats;
+    }
+
+    public function addChat(Chat $chat): self
+    {
+        if (!$this->chats->contains($chat)) {
+            $this->chats[] = $chat;
+            $chat->setParser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeChat(Chat $chat): self
+    {
+        if ($this->chats->removeElement($chat)) {
+            // set the owning side to null (unless already changed)
+            if ($chat->getParser() === $this) {
+                $chat->setParser(null);
+            }
+        }
 
         return $this;
     }

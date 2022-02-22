@@ -10,7 +10,6 @@ class ProblemNormalizer implements NormalizerInterface
     public function normalize($exception, string $format = null, array $context = [])
     {
         return [
-            'success' => false,
             'code' => $exception->getStatusCode(),
             'message' => $exception->getMessage()
         ];
