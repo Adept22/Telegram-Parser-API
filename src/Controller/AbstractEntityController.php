@@ -91,9 +91,18 @@ abstract class AbstractEntityController extends AbstractController implements Co
         $queryConstraint = new Assert\Collection([
             "fields" => [
                 "_sort" => new Assert\Choice($this->classMetadata->getFieldNames()),
-                "_order" => new Assert\Choice(["ASC", "DESC"]),
-                "_limit" => new Assert\Regex("/\d+/"),
-                "_start" => new Assert\Regex("/\d+/")
+                "_order" => new Assert\Choice([
+                    "choices" => ["ASC", "DESC"], 
+                    "message" => "The value you selected is not a valid choice. Allow one of {{ choices }}."
+                ]),
+                "_limit" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
+                ]),
+                "_start" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _start value invalid."
+                ])
             ],
             "allowMissingFields" => true,
             "missingFieldsMessage" => "Ожидается параметр {{ field }}"
