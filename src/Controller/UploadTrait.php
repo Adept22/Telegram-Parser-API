@@ -30,7 +30,7 @@ trait UploadTrait
 
         $basePath = $this->getParameter('kernel.project_dir') . "/public";
         
-        $file = $file->move($basePath . '/uploads' . static::$alias, (string) $entity->getId() . '.' . $file->getClientOriginalExtension());
+        $file = $file->move($basePath . '/uploads/' . static::$alias, (string) $entity->getId() . '.' . $file->getClientOriginalExtension());
 
         $entity->setPath(str_replace($basePath . '/', '', 'uploads/' . $file->getPathname()));
 
