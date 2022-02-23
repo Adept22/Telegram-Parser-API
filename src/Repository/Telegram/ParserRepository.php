@@ -19,6 +19,28 @@ class ParserRepository extends ServiceEntityRepository
         parent::__construct($registry, Parser::class);
     }
 
+    public function findAllOrderByChatsCount($orderByDirection = "ASC")
+    {
+        return $this->createQueryBuilder("p")
+            ->select("p, COUNT(c.id) as HIDDEN chats_count")
+            ->leftJoin("p.chats", "c")
+            ->orderBy("chats_count", $orderByDirection)
+            ->groupBy("p.id")
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findAllOrderByPhonesCount($orderByDirection = "ASC")
+    {
+        return $this->createQueryBuilder("p")
+            ->select("p, COUNT(ph.id) as HIDDEN phones_count")
+            ->leftJoin("p.phones", "ph")
+            ->orderBy("phones_count", $orderByDirection)
+            ->groupBy("p.id")
+            ->getQuery()
+            ->getResult();
+    }
+
     // /**
     //  * @return Parser[] Returns an array of Parser objects
     //  */

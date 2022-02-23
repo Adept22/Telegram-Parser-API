@@ -38,6 +38,11 @@ class ExportCommand extends Command
      */
     private $basePath;
 
+    /**
+     * @var string $uploadsPath
+     */
+    private $uploadsPath;
+
     protected static $defaultName = 'app:export';
     protected static $defaultDescription = 'Start the export zip archive generator';
 
@@ -47,7 +52,8 @@ class ExportCommand extends Command
         $this->em = $em;
         $this->logger = $logger;
 
-        $this->basePath = $this->container->getParameter('kernel.project_dir') . "/var/export";
+        $this->basePath = $this->container->getParameter('kernel.project_dir') . "/public/uploads/export";
+        $this->uploadsPath = $this->container->getParameter('kernel.project_dir') . "/public/uploads";
 
         parent::__construct(static::$defaultName);
     }
@@ -98,13 +104,14 @@ class ExportCommand extends Command
             try {
                 $exportPath = $this->basePath . "/" . (string) $export->getId();
 
-                // TODO: ПРИКРУТИТЬ ПОДКАЧКУ ФАЙОВ
+                $entities = $export->getEntities();
+                $chat = $export->getChat();
                 
-                if (in_array("members", $export->getEntities())) {
+                if (in_array("members", $entities)) {
                     $file = $this->openCSV($exportPath . "/members/members.csv");
 
                     if ($file) {
-                        $this->makeMembersCSV($file, $export->getChat());
+                        $this->makeMembersCSV($file, $chat);
 
                         fclose($file);
                     } else {
@@ -113,16 +120,16 @@ class ExportCommand extends Command
                     }
                 }
                 
-                if (in_array("messages", $export->getEntities())) {
+                if (in_array("messages", $entities)) {
                     $file = $this->openCSV($exportPath . "/messages/messages.csv");
 
                     if ($file) {
-                        $this->makeMessagesCSV($file, $export->getChat());
+                        $this->makeMessagesCSV($file, $chat);
 
                         fclose($file);
                     } else {
-                        $this->logger->warning('WARNING: Couldn\'t messages members CSV');
-                        $output->writeln('WARNING: Couldn\'t messages members CSV');
+                        $this->logger->warning('WARNING: Couldn\'t create messages CSV');
+                        $output->writeln('WARNING: Couldn\'t create messages CSV');
                     }
                 }
 
@@ -154,6 +161,32 @@ class ExportCommand extends Command
                     }
                 }
 
+                $this->addMedias(
+                    $zip,
+                    (string) $export->getId() . '/media',
+                    $chat->getMedia()
+                );
+
+                if (in_array("members", $entities)) {
+                    foreach ($chat->getMembers() as $chatMember) {
+                        $this->addMedias(
+                            $zip,
+                            (string) $export->getId() . '/members/media',
+                            $chatMember->getMember()->getMedia()
+                        );
+                    }
+                }
+
+                if (in_array("messages", $entities)) {
+                    foreach ($chat->getMessages() as $message) {
+                        $this->addMedias(
+                            $zip, 
+                            (string) $export->getId() . '/messages/media', 
+                            $message->getMedia()
+                        );
+                    }
+                }
+
                 $zip->close();
 
                 $this->deleteDirectory($exportPath);
@@ -178,6 +211,19 @@ class ExportCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    private function addMedias($zip, $zipPath, $medias)
+    {
+        foreach ($medias as $media) {
+            if ($media->getPath() == null) continue;
+
+            $file = realpath($this->uploadsPath . "/" . $media->getPath());
+
+            if (!$file) continue;
+
+            $zip->addFile($file, $zipPath . '/' . basename($file));
+        }
     }
 
     private function openCSV($path)

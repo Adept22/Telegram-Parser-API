@@ -13,7 +13,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	fi
 	ln -sf "$PHP_INI_RECOMMENDED" "$PHP_INI_DIR/php.ini"
 
-	mkdir -p var/cache var/log
+	mkdir -p var/cache var/log public/uploads
 
 	# The first time volumes are mounted, the project needs to be recreated
 	if [ ! -f composer.json ]; then
@@ -34,7 +34,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		composer install --prefer-dist --no-progress --no-interaction
 	fi
 
-	if grep -q ^DATABASE_URL= .env; then
+	if grep -q ^DATABASE_URL= .env.local; then
 		if [ "$CREATION" = "1" ]; then
 			echo "To finish the installation please press Ctrl+C to stop Docker Compose and run: docker-compose up --build"
 			sleep infinity
@@ -68,6 +68,9 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 
 	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX var
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX var
+
+	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads 
+	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads
 
 	echo "Waiting for websocekt to be ready..."
 	if lsof -Pi :$THRUWAY_PORT -s TCP:LISTEN -t > /dev/null; then

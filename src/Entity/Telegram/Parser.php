@@ -165,4 +165,20 @@ class Parser extends AbstractEntity
 
         return $this;
     }
+
+    /**
+     * @Serializer\VirtualProperty()
+     */
+    public function getChatsCount()
+    {
+        return $this->getChats()->count();
+    }
+
+    /**
+     * @Serializer\VirtualProperty()
+     */
+    public function getPhonesCount()
+    {
+        return $this->getPhones()->count();
+    }
 }

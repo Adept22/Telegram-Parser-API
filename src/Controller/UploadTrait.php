@@ -21,18 +21,18 @@ trait UploadTrait
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity ($id) not found.");
         }
-
+        
         $file = $request->files->get('file');
-
+        
         if (!isset($file)) {
             throw new BadRequestHttpException("Unexpected file given.");
         }
 
-        $basePath = $this->getParameter('kernel.project_dir') . "/var/uploads";
+        $basePath = $this->getParameter('kernel.project_dir') . "/public";
         
-        $file = $file->move($basePath . '/' . static::$alias, $file->getClientOriginalName());
+        $file = $file->move($basePath . '/uploads' . static::$alias, (string) $entity->getId() . '.' . $file->getClientOriginalExtension());
 
-        $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
+        $entity->setPath(str_replace($basePath . '/', '', 'uploads/' . $file->getPathname()));
 
         $this->em->persist($entity);
         $this->em->flush();

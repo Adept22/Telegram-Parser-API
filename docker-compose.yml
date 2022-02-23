@@ -10,6 +10,9 @@ services:
                 SKELETON: ${SKELETON:-symfony/skeleton}
                 STABILITY: ${STABILITY:-stable}
         restart: unless-stopped
+        env_file:
+            - .env
+            - .env.local
         volumes:
             - php_socket:/var/run/php
         ports:
@@ -34,6 +37,9 @@ services:
             target: symfony_caddy
         depends_on:
             - php
+        env_file:
+            - .env
+            - .env.local
         environment:
             SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
             MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
