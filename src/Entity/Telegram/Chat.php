@@ -346,4 +346,25 @@ class Chat extends AbstractEntity
 
         return $this;
     }
+
+    /**
+     * @Serializer\VirtualProperty()
+     * 
+     * @return integer
+     */
+    public function getMembersCount()
+    {
+        return $this->getMembers()->count();
+    }
+
+    /**
+     * @Serializer\VirtualProperty()
+     * 
+     * @return integer
+     */
+    public function getMessagesCount()
+    {
+        return $this->getMessages()->count();
+    }
+
 }

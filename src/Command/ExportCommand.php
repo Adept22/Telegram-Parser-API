@@ -38,11 +38,6 @@ class ExportCommand extends Command
      */
     private $basePath;
 
-    /**
-     * @var string $uploadsPath
-     */
-    private $uploadsPath;
-
     protected static $defaultName = 'app:export';
     protected static $defaultDescription = 'Start the export zip archive generator';
 
@@ -52,8 +47,7 @@ class ExportCommand extends Command
         $this->em = $em;
         $this->logger = $logger;
 
-        $this->basePath = $this->container->getParameter('kernel.project_dir') . "/public/uploads/export";
-        $this->uploadsPath = $this->container->getParameter('kernel.project_dir') . "/public/uploads";
+        $this->basePath = $this->container->getParameter('kernel.project_dir') . "/public";
 
         parent::__construct(static::$defaultName);
     }
@@ -102,7 +96,7 @@ class ExportCommand extends Command
             $this->em->flush();
 
             try {
-                $exportPath = $this->basePath . "/" . (string) $export->getId();
+                $exportPath = $this->basePath . "/uploads/export/" . (string) $export->getId();
 
                 $entities = $export->getEntities();
                 $chat = $export->getChat();
@@ -139,8 +133,6 @@ class ExportCommand extends Command
                     throw new \Exception("Couldn't create ZIP archive.");
                 }
 
-                $zip->addEmptyDir(str_replace($this->basePath . '/', '', $exportPath . '/'));
-
                 $files = new \RecursiveIteratorIterator(
                     new \RecursiveDirectoryIterator($exportPath), 
                     \RecursiveIteratorIterator::SELF_FIRST
@@ -154,10 +146,18 @@ class ExportCommand extends Command
 
                     $file = realpath($file);
 
+                    $zipPath = str_replace($this->basePath . "/uploads/export/", '', $file);
+
                     if (is_dir($file) === true) {
-                        $zip->addEmptyDir(str_replace($this->basePath . '/', '', $file . '/'));
+                        $this->logger->debug('Placing zip directory ' . $zipPath . '/ from ' . $file);
+                        $output->writeln('DEBUG: Placing zip directory ' . $zipPath . '/ from ' . $file);
+
+                        $zip->addEmptyDir($zipPath . '/');
                     } else if (is_file($file) === true) {
-                        $zip->addFile($file, str_replace($this->basePath . '/', '', $file));
+                        $this->logger->debug('Placing zip file ' . $zipPath . ' from ' . $file);
+                        $output->writeln('DEBUG: Placing zip file ' . $zipPath . ' from ' . $file);
+
+                        $zip->addFile($file, $zipPath);
                     }
                 }
 
@@ -170,8 +170,8 @@ class ExportCommand extends Command
                 if (in_array("members", $entities)) {
                     foreach ($chat->getMembers() as $chatMember) {
                         $this->addMedias(
-                            $zip,
-                            (string) $export->getId() . '/members/media',
+                            $zip, 
+                            (string) $export->getId() . '/members/media', 
                             $chatMember->getMember()->getMedia()
                         );
                     }
@@ -191,6 +191,7 @@ class ExportCommand extends Command
 
                 $this->deleteDirectory($exportPath);
 
+                $export->setPath("uploads/export/" . (string) $export->getId() . ".zip");
                 $export->setStatus("finished");
 
                 $this->em->persist($export);
@@ -218,7 +219,7 @@ class ExportCommand extends Command
         foreach ($medias as $media) {
             if ($media->getPath() == null) continue;
 
-            $file = realpath($this->uploadsPath . "/" . $media->getPath());
+            $file = realpath($this->basePath . "/" . $media->getPath());
 
             if (!$file) continue;
 
@@ -242,17 +243,12 @@ class ExportCommand extends Command
 
         fputcsv($file, array_merge($memberTitles, $chatMemberRoleTitles), ';');
 
-        $csv = [];
-
         foreach ($chat->getMembers() as $chatMember) {
             $memberRow = $this->getRow($chatMember->getMember(), $memberTitles);
-            $roleRow = $this->getRow($chatMember->getRoles()->last(), $chatMemberRoleTitles, "role_");
+            $role = $chatMember->getRoles()->last();
+            $roleRow = $this->getRow($role !== false ? $role : null, $chatMemberRoleTitles, "role_");
 
-            $csv[] = array_merge($memberRow, $roleRow);
-        }
-
-        foreach ($csv as $row) {
-            fputcsv($file, $row, ';');
+            fputcsv($file, array_merge($memberRow, $roleRow), ';');
         }
     }
 
@@ -264,18 +260,12 @@ class ExportCommand extends Command
 
         fputcsv($file, array_merge($messageTitles, $memberTitles, $replyToTitles), ';');
 
-        $csv = [];
-
         foreach ($chat->getMessages() as $message) {
             $messageRow = $this->getRow($message, $messageTitles);
             $memberRow = $this->getRow($message->getMember(), $memberTitles, "sender_");
             $replyToRow = $this->getRow($message->getReplyTo(), $replyToTitles, "reply_to_");
 
-            $csv[] = array_merge($messageRow, $memberRow, $replyToRow);
-        }
-
-        foreach ($csv as $row) {
-            fputcsv($file, $row, ';');
+            fputcsv($file, array_merge($messageRow, $memberRow, $replyToRow), ';');
         }
     }
 
@@ -299,7 +289,7 @@ class ExportCommand extends Command
     {
         $row = [];
         
-        if (isset($entity)) {
+        if ($entity) {
             foreach ($titles as $title) {
                 $title = str_replace($titlePrefix, '', $title);
 

@@ -32,7 +32,7 @@ trait UploadTrait
         
         $file = $file->move($basePath . '/uploads/' . static::$alias, (string) $entity->getId() . '.' . $file->getClientOriginalExtension());
 
-        $entity->setPath(str_replace($basePath . '/', '', 'uploads/' . $file->getPathname()));
+        $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
 
         $this->em->persist($entity);
         $this->em->flush();
