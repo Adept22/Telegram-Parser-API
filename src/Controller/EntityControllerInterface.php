@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  */
-interface ControllerInterface {
+interface EntityControllerInterface {
     /**
      * Получает сущность
      * 
