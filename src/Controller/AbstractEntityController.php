@@ -17,7 +17,7 @@ use JMS\Serializer\SerializerInterface;
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
  */
-abstract class AbstractEntityController extends AbstractController implements ControllerInterface
+abstract class AbstractEntityController extends AbstractController implements EntityControllerInterface
 {
     /**
      * @var string $entityClassName Класс сущности с которой работает контроллер
@@ -77,7 +77,10 @@ abstract class AbstractEntityController extends AbstractController implements Co
 
         $queryConstraint = new Assert\Collection([
             "fields" => [
-                "_sort" => new Assert\Choice($classMetadata->getFieldNames()),
+                "_sort" => new Assert\Choice([
+                    "choices" => $classMetadata->getFieldNames(), 
+                    "message" => "The value you selected is not a valid choice. Allow one of {{ choices }}."
+                ]),
                 "_order" => new Assert\Choice([
                     "choices" => ["ASC", "DESC"], 
                     "message" => "The value you selected is not a valid choice. Allow one of {{ choices }}."
