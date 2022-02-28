@@ -198,4 +198,21 @@ class Member extends AbstractEntity
 
         return $this;
     }
+    
+    /**
+     * @Serializer\VirtualProperty()
+     * 
+     * @return TelegramMemberMedia|null
+     */
+    public function getLastMedia()
+    {
+        /** @var TelegramMemberMedia|bool */
+        $lastMedia = $this->getMedia()->last();
+
+        if ($lastMedia) {
+            return $lastMedia;
+        }
+
+        return null;
+    }
 }

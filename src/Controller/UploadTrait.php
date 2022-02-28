@@ -16,7 +16,7 @@ trait UploadTrait
      */
     public function _postUpload(string $id, Request $request): Response
     {
-        $entity = $this->repository->find($id);
+        $entity = $this->em->find(static::$entityClassName, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity ($id) not found.");

@@ -32,6 +32,31 @@ class Chat extends AbstractEntity
     private $title;
 
     /**
+     * @ORM\Column(type="text", nullable=true)
+     */
+    private $description;
+
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     */
+    private $systemTitle;
+
+    /**
+     * @ORM\Column(type="text", nullable=true)
+     */
+    private $systemDescription;
+
+    /**
+     * @ORM\Column(type="float", nullable=true)
+     */
+    private $lat;
+
+    /**
+     * @ORM\Column(type="float", nullable=true)
+     */
+    private $lon;
+
+    /**
      * @ORM\Column(type="boolean")
      */
     private $isAvailable = true;
@@ -145,6 +170,66 @@ class Chat extends AbstractEntity
     public function setTitle(string $title): self
     {
         $this->title = $title;
+
+        return $this;
+    }
+
+    public function getDescription(): ?string
+    {
+        return $this->description;
+    }
+
+    public function setDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
+    public function getSystemTitle(): ?string
+    {
+        return $this->systemTitle;
+    }
+
+    public function setSystemTitle(string $systemTitle): self
+    {
+        $this->systemTitle = $systemTitle;
+
+        return $this;
+    }
+
+    public function getSystemDescription(): ?string
+    {
+        return $this->systemDescription;
+    }
+
+    public function setSystemDescription(string $systemDescription): self
+    {
+        $this->systemDescription = $systemDescription;
+
+        return $this;
+    }
+
+    public function getLat(): ?float
+    {
+        return $this->lat;
+    }
+
+    public function setLat(float $lat): self
+    {
+        $this->lat = $lat;
+
+        return $this;
+    }
+
+    public function getLon(): ?float
+    {
+        return $this->lon;
+    }
+
+    public function setLon(float $lon): self
+    {
+        $this->lon = $lon;
 
         return $this;
     }
@@ -345,6 +430,40 @@ class Chat extends AbstractEntity
         }
 
         return $this;
+    }
+
+    /**
+     * @Serializer\VirtualProperty()
+     * 
+     * @return DateTime|null
+     */
+    public function getLastMessageCreatedAt()
+    {
+        /** @var TelegramMessage|bool */
+        $lastMessage = $this->getMessages()->last();
+
+        if ($lastMessage) {
+            return $lastMessage->getCreatedAt();
+        }
+
+        return null;
+    }
+
+    /**
+     * @Serializer\VirtualProperty()
+     * 
+     * @return TelegramChatMedia|null
+     */
+    public function getLastMedia()
+    {
+        /** @var TelegramChatMedia|bool */
+        $lastMedia = $this->getMedia()->last();
+
+        if ($lastMedia) {
+            return $lastMedia;
+        }
+
+        return null;
     }
 
     /**

@@ -11,9 +11,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
-use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\Persistence\Mapping\ClassMetadata;
 use JMS\Serializer\SerializerInterface;
 
 /**
@@ -41,24 +39,11 @@ abstract class AbstractEntityController extends AbstractController implements Co
      */
     protected $validator;
 
-    /**
-     * @var ServiceEntityRepository
-     */
-    protected $repository;
-
-    /**
-     * @var ClassMetadata
-     */
-    protected $classMetadata;
-
     public function __construct(EntityManagerInterface $em, SerializerInterface $serializer, ValidatorInterface $validator)
     {
         $this->em = $em;
         $this->serializer = $serializer;
         $this->validator = $validator;
-        
-        $this->repository = $this->em->getRepository(static::$entityClassName);
-        $this->classMetadata = $this->em->getClassMetadata(static::$entityClassName);
     }
 
     /**
@@ -68,10 +53,10 @@ abstract class AbstractEntityController extends AbstractController implements Co
      */
     public function _get(string $id): Response
     {
-        $entity = $this->repository->find($id);
+        $entity = $this->em->find(static::$entityClassName, $id);
 
-        if (!isset($entity)) {
-            throw new NotFoundHttpException("Entity ($id) not found.");
+        if ($entity == null) {
+            throw new NotFoundHttpException("Entity $id not found.");
         }
 
         $response = $this->serializer->serialize($entity, 'json');
@@ -88,9 +73,11 @@ abstract class AbstractEntityController extends AbstractController implements Co
     {
         $content = json_decode($request->getContent(), true) ?? [];
 
+        $classMetadata = $this->em->getClassMetadata(static::$entityClassName);
+
         $queryConstraint = new Assert\Collection([
             "fields" => [
-                "_sort" => new Assert\Choice($this->classMetadata->getFieldNames()),
+                "_sort" => new Assert\Choice($classMetadata->getFieldNames()),
                 "_order" => new Assert\Choice([
                     "choices" => ["ASC", "DESC"], 
                     "message" => "The value you selected is not a valid choice. Allow one of {{ choices }}."
@@ -129,7 +116,8 @@ abstract class AbstractEntityController extends AbstractController implements Co
             }
         }
 
-        $entities = $this->repository->findBy($content, [$sort => $order], $limit, $start);
+        $entities = $this->em->getRepository(static::$entityClassName)
+            ->findBy($content, [$sort => $order], $limit, $start);
 
         $response = $this->serializer->serialize($entities, 'json');
 
@@ -146,7 +134,7 @@ abstract class AbstractEntityController extends AbstractController implements Co
         $content = json_decode($request->getContent(), true) ?? [];
 
         if (isset($content['id'])) {
-            throw new BadRequestHttpException("Can't create new entity with given uuid.");
+            throw new BadRequestHttpException("Entity id was given. Maybe you mean PUT request?");
         }
 
         $entity = $this->serializer->deserialize($request->getContent(), static::$entityClassName, 'json');
@@ -173,6 +161,12 @@ abstract class AbstractEntityController extends AbstractController implements Co
     {
         $content = json_decode($request->getContent(), true) ?? [];
 
+        $entity = $this->em->find(static::$entityClassName, $id);
+
+        if ($entity == null) {
+            throw new NotFoundHttpException("Entity $id not found.");
+        }
+
         $content['id'] = $id;
 
         $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
@@ -197,12 +191,14 @@ abstract class AbstractEntityController extends AbstractController implements Co
      */
     public function _delete(string $id): Response
     {
-        $entity = $this->repository->find($id);
+        $entity = $this->em->find(static::$entityClassName, $id);
 
-        if ($entity) {
-            $this->em->remove($entity);
-            $this->em->flush();
+        if ($entity == null) {
+            throw new NotFoundHttpException("Entity $id not found.");
         }
+
+        $this->em->remove($entity);
+        $this->em->flush();
 
         return new Response('', Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
     }
