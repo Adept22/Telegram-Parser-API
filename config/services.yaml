@@ -4,209 +4,186 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-    
+
 services:
-    # default configuration for services in *this* file
-    _defaults:
-        autowire: true # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
-    App\:
-        resource: "../src/"
-        exclude:
-            - "../src/DependencyInjection/"
-            - "../src/Entity/"
-            - "../src/Kernel.php"
-            - "../src/Tests/"
+  # makes classes in src/ available to be used as services
+  # this creates a service per class whose id is the fully-qualified class name
+  App\:
+    resource: "../src/"
+    exclude:
+      - "../src/DependencyInjection/"
+      - "../src/Entity/"
+      - "../src/Kernel.php"
+      - "../src/Tests/"
 
+  #
+  # ------ KERNEL ------ #
+  #
 
+  App\Kernel\EventListener\EventListener:
+    tags:
+      - {
+          "name": "kernel.event_listener",
+          "event": "kernel.terminate",
+          "method": "onTerminateEvent",
+        }
 
-    #
-    # ------ KERNEL ------ #
-    #
+  #
+  # ------ ! KERNEL ------ #
+  #
 
-    App\Kernel\EventListener\EventListener:
-        tags:
-            - { 'name': 'kernel.event_listener', 'event': 'kernel.terminate', 'method': 'onTerminateEvent' }
+  #
+  # ------ VORYX ------ #
+  #
 
-    #
-    # ------ ! KERNEL ------ #
-    #
+  voryx.thruway.loop:
+    public: true
+    class: React\EventLoop\LoopInterface
+    factory: ['React\EventLoop\Factory', "create"]
 
-    #
-    # ------ VORYX ------ #
-    #
+  voryx.thruway.ratchet.transport:
+    class: Thruway\Transport\RatchetTransportProvider
+    arguments:
+      $address: "0.0.0.0"
+      $port: 8080
 
-    voryx.thruway.loop:
-        public: true
-        class: React\EventLoop\LoopInterface
-        factory: ['React\EventLoop\Factory', 'create']
+  voryx.thruway.client:
+    public: true
+    class: Thruway\Peer\Client
+    arguments:
+      $realm: "realm1"
 
-    voryx.thruway.ratchet.transport:
-        class: Thruway\Transport\RatchetTransportProvider
-        arguments:
-            $address: '0.0.0.0'
-            $port: 8080
+  voryx.thruway.internal.transport:
+    class: Thruway\Transport\InternalClientTransportProvider
+    arguments:
+      - "@voryx.thruway.client"
 
-    voryx.thruway.client:
-        public: true
-        class: Thruway\Peer\Client
-        arguments:
-            $realm: 'realm1'
+  voryx.thruway.internal.manager:
+    class: Thruway\Transport\InternalClientTransportProvider
 
-    voryx.thruway.internal.transport:
-        class: Thruway\Transport\InternalClientTransportProvider
-        arguments:
-            - '@voryx.thruway.client'
+  voryx.thruway.server:
+    public: true
+    class: Thruway\Peer\Router
+    arguments:
+      - "@voryx.thruway.loop"
+    calls:
+      - addTransportProvider: ["@voryx.thruway.ratchet.transport"]
+      # - addTransportProvider: ['@voryx.thruway.internal.transport']
 
-    voryx.thruway.internal.manager:
-        class: Thruway\Transport\InternalClientTransportProvider
+  voryx.thruway.resource.mapper:
+    public: true
+    class: App\Thruway\ResourceMapper
+    arguments:
+      - "@annotation_reader"
 
-    voryx.thruway.server:
-        public: true
-        class: Thruway\Peer\Router
-        arguments:
-            - '@voryx.thruway.loop'
-        calls:
-            - addTransportProvider: ['@voryx.thruway.ratchet.transport']
-            # - addTransportProvider: ['@voryx.thruway.internal.transport']
+  get_set_stdClass_normalizer:
+    class: App\Thruway\Serialization\StdClassNormalizer
+    tags:
+      - { name: serializer.normalizer }
 
-    voryx.thruway.resource.mapper:
-        public: true
-        class: App\Thruway\ResourceMapper
-        arguments:
-            - '@annotation_reader'
+  wamp_kernel:
+    public: true
+    class: App\Thruway\WampKernel
+    # arguments:
+    #     $resourceMapper: '@voryx.thruway.resource.mapper'
 
-    get_set_stdClass_normalizer:
-        class: App\Thruway\Serialization\StdClassNormalizer
-        tags:
-            - { name: serializer.normalizer }
+  thruway_container:
+    class: Symfony\Component\DependencyInjection\Container
+    factory: ['App\Thruway\ContainerFactory', "createContainer"]
+    arguments:
+      $containerName: "@kernel.container_class"
 
-    wamp_kernel:
-        public: true
-        class: App\Thruway\WampKernel
-        # arguments:
-        #     $resourceMapper: '@voryx.thruway.resource.mapper'
+  thruway.details:
+    class: App\Thruway\Details
 
-    thruway_container:
-        class: Symfony\Component\DependencyInjection\Container
-        factory: ['App\Thruway\ContainerFactory', 'createContainer']
-        arguments:
-            $containerName: '@kernel.container_class'
+  voryx.thruway.authentication.manager:
+    class: Thruway\Authentication\AuthenticationManager
 
-    thruway.details:
-        class: App\Thruway\Details
+  voryx.thruway.auth.manager.transport.provider:
+    class: Thruway\Transport\InternalClientTransportProvider
 
-    voryx.thruway.authentication.manager:
-        class: Thruway\Authentication\AuthenticationManager
+  voryx.thruway.user.db:
+    class: App\Thruway\Authentication\UserDB
 
-    voryx.thruway.auth.manager.transport.provider:
-        class: Thruway\Transport\InternalClientTransportProvider
+  # voryx.thruway.wamp.cra.auth.client:
+  #     class: Thruway\Authentication\WampCraAuthProvider
+  #     arguments:
+  #         $realm: 'realm1'
+  #     calls:
+  #         - setUserDb: ['@voryx.thruway.user.db']
 
-    voryx.thruway.user.db:
-        class: App\Thruway\Authentication\UserDB
+  voryx.thruway.wamp.cra.auth.transport.provider:
+    class: Thruway\Transport\InternalClientTransportProvider
 
-    # voryx.thruway.wamp.cra.auth.client:
-    #     class: Thruway\Authentication\WampCraAuthProvider
-    #     arguments:
-    #         $realm: 'realm1'
-    #     calls:
-    #         - setUserDb: ['@voryx.thruway.user.db']
+  ### Main Thruway Client
+  thruway.client:
+    public: true
+    class: App\Thruway\Client\ClientManager
+    arguments:
+      $config:
+        realm: "realm1"
+        trusted_url: "ws://127.0.0.1:8080"
+      $connector: "@voryx.thruway.client.react_connector"
 
-    voryx.thruway.wamp.cra.auth.transport.provider:
-        class: Thruway\Transport\InternalClientTransportProvider
+  voryx.thruway.topic_state_handler:
+    class: App\Thruway\TopicStateHandler
+    tags:
+      - { name: kernel.event_listener, event: wamp.open, method: onOpen }
 
-    ### Main Thruway Client
-    thruway.client:
-        public: true
-        class: App\Thruway\Client\ClientManager
-        arguments:
-            $config: 
-                realm: 'realm1'
-                trusted_url: 'ws://127.0.0.1:8080'
-            $connector: '@voryx.thruway.client.react_connector'
+  ### Topic State Handler
+  voryx.thruway.topic.state.handler:
+    class: Thruway\Subscription\StateHandlerRegistry
+    arguments:
+      $realm: "realm1"
 
-    voryx.thruway.topic_state_handler:
-        class: App\Thruway\TopicStateHandler
-        tags:
-            - { name: kernel.event_listener, event: wamp.open, method: onOpen }
+  voryx.thruway.client.react_connector:
+    public: true
+    class: React\Socket\Connector
+    # arguments:
+    #     - '@voryx.thruway.loop'
 
-    ### Topic State Handler
-    voryx.thruway.topic.state.handler:
-        class: Thruway\Subscription\StateHandlerRegistry
-        arguments:
-            $realm: 'realm1'
+  #
+  # ------ ! VORYX ------ #
+  #
 
-    ### Register command as public services
-    thruway.command.debug:
-        public: true
-        class: App\Thruway\Command\ThruwayDebugCommand
-        tags:
-            - { name: console.command, command: thruway:debug }
+  #
+  # ------ DOCTRINE ------ #
+  #
 
-    thruway.command.process:
-        public: true
-        class: App\Thruway\Command\ThruwayProcessCommand
-        tags:
-            - { name: console.command, command: thruway:process }
+  App\Doctrine\EventSubscriber\DoctrineLifecycleSubscriber:
+    tags:
+      - { name: doctrine.event_subscriber }
 
-    thruway.command.router:
-        public: true
-        class: App\Thruway\Command\ThruwayRouterCommand
-        tags:
-            - { name: console.command, command: thruway:router:start }
+  gedmo.listener.softdeleteable:
+    class: Gedmo\SoftDeleteable\SoftDeleteableListener
+    tags:
+      - { name: doctrine.event_subscriber, connection: default }
+    calls:
+      - [setAnnotationReader, ["@annotation_reader"]]
 
-    thruway.command.worker:
-        public: true
-        class: App\Thruway\Command\ThruwayWorkerCommand
-        tags:
-            - { name: console.command, command: thruway:worker:start }
+  #
+  # ------ ! DOCTRINE ------ #
+  #
 
-    voryx.thruway.client.react_connector:
-        public: true
-        class: React\Socket\Connector
-        # arguments:
-        #     - '@voryx.thruway.loop'
+  #
+  # ------ SERIALIZER ------ #
+  #
 
-    #
-    # ------ ! VORYX ------ #
-    #
+  Mhujer\JmsSerializer\Uuid\UuidSerializerHandler:
+    tags:
+      - { name: jms_serializer.subscribing_handler }
 
-    #
-    # ------ DOCTRINE ------ #
-    #
+  jms_serializer.unserialize_object_constructor:
+    class: App\Serializer\Construction\UnserializeObjectConstructor
 
-    App\Doctrine\EventSubscriber\DoctrineLifecycleSubscriber:
-        tags:
-            - { name: doctrine.event_subscriber }
+  #
+  # ------ ! SERIALIZER ------ #
+  #
 
-    gedmo.listener.softdeleteable:
-        class: Gedmo\SoftDeleteable\SoftDeleteableListener
-        tags:
-            - { name: doctrine.event_subscriber, connection: default }
-        calls:
-            - [setAnnotationReader, [ '@annotation_reader' ]]
-
-    #
-    # ------ ! DOCTRINE ------ #
-    #
-
-    #
-    # ------ SERIALIZER ------ #
-    #
-
-    Mhujer\JmsSerializer\Uuid\UuidSerializerHandler:
-        tags:
-            - { name: jms_serializer.subscribing_handler }
-
-    jms_serializer.unserialize_object_constructor:
-        class: App\Serializer\Construction\UnserializeObjectConstructor
-
-    #
-    # ------ ! SERIALIZER ------ #
-    #
-
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+  # add more service definitions when explicit configuration is needed
+  # please note that last definitions always *replace* previous ones

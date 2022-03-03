@@ -164,15 +164,15 @@ class ExportCommand extends Command
                 $this->addMedias(
                     $zip,
                     (string) $export->getId() . '/media',
-                    $chat->getMedia()
+                    $chat
                 );
 
                 if (in_array("members", $entities)) {
                     foreach ($chat->getMembers() as $chatMember) {
                         $this->addMedias(
                             $zip, 
-                            (string) $export->getId() . '/members/media', 
-                            $chatMember->getMember()->getMedia()
+                            (string) $export->getId() . '/members/media',
+                            $chatMember->getMember()
                         );
                     }
                 }
@@ -182,7 +182,7 @@ class ExportCommand extends Command
                         $this->addMedias(
                             $zip, 
                             (string) $export->getId() . '/messages/media', 
-                            $message->getMedia()
+                            $message
                         );
                     }
                 }
@@ -214,16 +214,20 @@ class ExportCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function addMedias($zip, $zipPath, $medias)
+    private function addMedias($zip, $zipPath, $entity)
     {
-        foreach ($medias as $media) {
+        $index = 0;
+
+        foreach ($entity->getMedia() as $media) {
             if ($media->getPath() == null) continue;
 
             $file = realpath($this->basePath . "/" . $media->getPath());
 
             if (!$file) continue;
 
-            $zip->addFile($file, $zipPath . '/' . basename($file));
+            $zip->addFile($file, $zipPath . '/' . (string) $entity->getInternalId() . "_" . $index . '.' . pathinfo($file, PATHINFO_EXTENSION));
+
+            $index++;
         }
     }
 
@@ -233,7 +237,10 @@ class ExportCommand extends Command
             mkdir(dirname($path), 0777, true);
         }
 
-        return fopen($path, "a+");
+        $file = fopen($path, "a+");
+        fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+        return $file;
     }
 
     private function makeMembersCSV($file, Telegram\Chat $chat)
@@ -276,7 +283,7 @@ class ExportCommand extends Command
         $entityClassMetadata = $this->em->getClassMetadata($class);
 
         foreach ($entityClassMetadata->fieldMappings as $fieldMapping) {
-            if (in_array($fieldMapping['fieldName'], array_merge(['internalId'], $exclude)))
+            if (in_array($fieldMapping['fieldName'], array_merge([], $exclude)))
                 continue;
 
             $titles[] = $prefix . $fieldMapping['fieldName'];

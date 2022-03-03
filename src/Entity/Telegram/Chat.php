@@ -38,21 +38,29 @@ class Chat extends AbstractEntity
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $systemTitle;
 
     /**
      * @ORM\Column(type="text", nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $systemDescription;
 
     /**
      * @ORM\Column(type="float", nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $lat;
 
     /**
      * @ORM\Column(type="float", nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $lon;
 
@@ -116,7 +124,7 @@ class Chat extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\Exclude
      */
     private $parser;
 
@@ -431,59 +439,4 @@ class Chat extends AbstractEntity
 
         return $this;
     }
-
-    /**
-     * @Serializer\VirtualProperty()
-     * 
-     * @return DateTime|null
-     */
-    public function getLastMessageCreatedAt()
-    {
-        /** @var TelegramMessage|bool */
-        $lastMessage = $this->getMessages()->last();
-
-        if ($lastMessage) {
-            return $lastMessage->getCreatedAt();
-        }
-
-        return null;
-    }
-
-    /**
-     * @Serializer\VirtualProperty()
-     * 
-     * @return TelegramChatMedia|null
-     */
-    public function getLastMedia()
-    {
-        /** @var TelegramChatMedia|bool */
-        $lastMedia = $this->getMedia()->last();
-
-        if ($lastMedia) {
-            return $lastMedia;
-        }
-
-        return null;
-    }
-
-    /**
-     * @Serializer\VirtualProperty()
-     * 
-     * @return integer
-     */
-    public function getMembersCount()
-    {
-        return $this->getMembers()->count();
-    }
-
-    /**
-     * @Serializer\VirtualProperty()
-     * 
-     * @return integer
-     */
-    public function getMessagesCount()
-    {
-        return $this->getMessages()->count();
-    }
-
 }

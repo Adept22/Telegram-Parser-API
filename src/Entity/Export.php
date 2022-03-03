@@ -16,7 +16,7 @@ class Export extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=Telegram\Chat::class, inversedBy="exports")
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $chat;
 

@@ -3,7 +3,7 @@ monolog:
         main:
             type: rotating_file
             path: "%kernel.logs_dir%/%kernel.environment%.log"
-            level: debug
+            level: info
             channels: ["!event"]
             max_files: 10
         # uncomment to get logging in your browser

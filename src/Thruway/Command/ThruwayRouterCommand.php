@@ -2,15 +2,11 @@
 
 namespace App\Thruway\Command;
 
-use Psr\Log\LoggerInterface;
-use Psr\Log\NullLogger;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
-use Thruway\Logging\Logger;
 use Thruway\Transport\RatchetTransportProvider;
 
 class ThruwayRouterCommand extends Command
@@ -21,14 +17,14 @@ class ThruwayRouterCommand extends Command
     protected $container;
     
     /**
-     * @var LoggerInterface $logger
+     * @var \Psr\Log\LoggerInterface $logger
      */
     private $logger;
 
     protected static $defaultName = 'app:thruway:router:start';
     protected static $defaultDescription = 'Start the default Thruway WAMP router';
 
-    public function __construct(ContainerInterface $container, LoggerInterface $logger)
+    public function __construct(ContainerInterface $container, \Psr\Log\LoggerInterface $logger)
     {
         $this->container = $container;
         $this->logger = $logger;
@@ -54,9 +50,9 @@ class ThruwayRouterCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if (!$input->getOption('no-log')) {
-            Logger::set($this->logger);
+            \Thruway\Logging\Logger::set($this->logger);
         } else {
-            Logger::set(new NullLogger());
+            \Thruway\Logging\Logger::set(new \Psr\Log\NullLogger());
         }
 
         try {
