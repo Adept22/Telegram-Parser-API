@@ -72,13 +72,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads 
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads
 
-	echo "Waiting for websocekt to be ready..."
-	if lsof -Pi :$THRUWAY_PORT -s TCP:LISTEN -t > /dev/null; then
-		bin/console app:thruway:router:start -p $THRUWAY_PORT &
-		echo "The websocket is now ready and reachable"
-	else
-		echo "The websocket port $THRUWAY_PORT is bizy"
-	fi
+	bin/console app:thruway:router:start &
 fi
 
 exec docker-php-entrypoint "$@"

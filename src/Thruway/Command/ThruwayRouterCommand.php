@@ -61,10 +61,15 @@ class ThruwayRouterCommand extends Command
             //Get the Router Service
             $server = $this->container->get('voryx.thruway.server');
 
-            //Trusted provider (bound to loopback and requires no authentication)
-            $trustedProvider = new RatchetTransportProvider($input->getOption('ip'), (int) $input->getOption('port'));
-            $trustedProvider->setTrusted(true);
-            $server->addTransportProvider($trustedProvider);
+            if ($input->getOption('ip') !== '0.0.0.0' || $input->getOption('port') !== 8080) {
+                //Trusted provider (bound to loopback and requires no authentication)
+                $trustedProvider = new RatchetTransportProvider(
+                    $input->getOption('ip'), 
+                    (int) $input->getOption('port')
+                );
+                $trustedProvider->setTrusted(true);
+                $server->addTransportProvider($trustedProvider);
+            }
 
             $server->start();
         } catch (\Exception $e) {
