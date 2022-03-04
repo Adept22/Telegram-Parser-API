@@ -23,8 +23,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
      */
     protected $validator;
 
-    protected $updatedEntities = [];
-
     public function __construct(ContainerInterface $container, ValidatorInterface $validator)
     {
         $this->container = $container;
@@ -35,10 +33,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         return [
             Events::prePersist,
-            Events::postPersist,
-            Events::preUpdate,
-            Events::postUpdate,
-            Events::postFlush,
+            Events::preUpdate
         ];
     }
 
@@ -82,13 +77,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         }
     }
 
-    public function postPersist(LifecycleEventArgs $args): void
-    {
-        $entity = $args->getObject();
-
-        $this->updatedEntities[] = $entity;
-    }
-
     public function preUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
@@ -129,24 +117,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
 
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
-        }
-    }
-
-    public function postUpdate(LifecycleEventArgs $args): void
-    {
-        $entity = $args->getObject();
-        
-        $this->updatedEntities[] = $entity;
-    }
-
-    public function postFlush()
-    {
-        $client = $this->container->get('thruway.client');
-
-        foreach ($this->updatedEntities as $updatedEntity) {
-            $class = str_replace("App\Entity\\", '', ClassUtils::getClass($updatedEntity));
-
-            $client->publish("com.app.entity", [['_' => $class, 'entity' => $updatedEntity]]);
         }
     }
 }

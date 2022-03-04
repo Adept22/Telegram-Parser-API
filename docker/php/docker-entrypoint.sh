@@ -13,7 +13,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 	fi
 	ln -sf "$PHP_INI_RECOMMENDED" "$PHP_INI_DIR/php.ini"
 
-	mkdir -p var/cache var/log public/uploads
+	mkdir -p var/cache var/log
 
 	# The first time volumes are mounted, the project needs to be recreated
 	if [ ! -f composer.json ]; then
@@ -34,7 +34,7 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		composer install --prefer-dist --no-progress --no-interaction
 	fi
 
-	if grep -q ^DATABASE_URL= .env.local; then
+	if grep -q ^DATABASE_URL= .env; then
 		if [ "$CREATION" = "1" ]; then
 			echo "To finish the installation please press Ctrl+C to stop Docker Compose and run: docker-compose up --build"
 			sleep infinity
@@ -60,19 +60,10 @@ if [ "$1" = 'php-fpm' ] || [ "$1" = 'php' ] || [ "$1" = 'bin/console' ]; then
 		else
 			echo "The db is now ready and reachable"
 		fi
-
-		if ls -A migrations/*.php >/dev/null 2>&1; then
-			bin/console doctrine:migrations:migrate --no-interaction
-		fi
 	fi
 
 	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX var
 	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX var
-
-	setfacl -R -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads 
-	setfacl -dR -m u:www-data:rwX -m u:"$(whoami)":rwX public/uploads
-
-	bin/console app:thruway:router:start &
 fi
 
 exec docker-php-entrypoint "$@"

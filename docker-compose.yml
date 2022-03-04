@@ -9,15 +9,12 @@ services:
                 SYMFONY_VERSION: ${SYMFONY_VERSION:-}
                 SKELETON: ${SKELETON:-symfony/skeleton}
                 STABILITY: ${STABILITY:-stable}
-        restart: unless-stopped
         env_file:
             - .env
             - .env.local
+        restart: unless-stopped
         volumes:
             - php_socket:/var/run/php
-        ports:
-            # websocket
-            - '${THRUWAY_PORT:-7251}:8080'
         healthcheck:
             interval: 10s
             timeout: 3s
@@ -51,15 +48,15 @@ services:
         ports:
             # HTTP
             - target: 80
-              published: 7006
+              published: 80
               protocol: tcp
             # HTTPS
             - target: 443
-              published: 7449
+              published: 443
               protocol: tcp
             # HTTP/3
             - target: 443
-              published: 7449
+              published: 443
               protocol: udp
 
 volumes:
