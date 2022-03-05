@@ -1,72 +1,71 @@
 version: "3.8"
 
 services:
-    php:
-        build:
-            context: .
-            target: symfony_php
-            args:
-                SYMFONY_VERSION: ${SYMFONY_VERSION:-}
-                SKELETON: ${SKELETON:-symfony/skeleton}
-                STABILITY: ${STABILITY:-stable}
-        restart: unless-stopped
-        env_file:
-            - .env
-            - .env.local
-        volumes:
-            - php_socket:/var/run/php
-        ports:
-            # websocket
-            - '${THRUWAY_PORT:-7251}:8080'
-        healthcheck:
-            interval: 10s
-            timeout: 3s
-            retries: 3
-            start_period: 30s
-        environment:
-            # Run "composer require symfony/orm-pack" to install and configure Doctrine ORM
-            DATABASE_URL: ${DATABASE_URL}
-            # Run "composer require symfony/mercure-bundle" to install and configure the Mercure integration
-            MERCURE_URL: ${CADDY_MERCURE_URL:-http://caddy/.well-known/mercure}
-            MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
-            MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
-    caddy:
-        build:
-            context: .
-            target: symfony_caddy
-        depends_on:
-            - php
-        env_file:
-            - .env
-            - .env.local
-        environment:
-            SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
-            MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
-            MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
-        restart: unless-stopped
-        volumes:
-            - php_socket:/var/run/php
-            - caddy_data:/data
-            - caddy_config:/config
-        ports:
-            # HTTP
-            - target: 80
-              published: 7006
-              protocol: tcp
-            # HTTPS
-            - target: 443
-              published: 7449
-              protocol: tcp
-            # HTTP/3
-            - target: 443
-              published: 7449
-              protocol: udp
+  php:
+    build:
+      context: .
+      target: symfony_php
+      args:
+        SYMFONY_VERSION: ${SYMFONY_VERSION:-}
+        SKELETON: ${SKELETON:-symfony/skeleton}
+        STABILITY: ${STABILITY:-stable}
+    restart: unless-stopped
+    env_file:
+      - .env
+      - .env.local
+    volumes:
+      - php_socket:/var/run/php
+    ports:
+      # websocket
+      - '${THRUWAY_PORT:-7251}:8080'
+    healthcheck:
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    environment:
+      # Run "composer require symfony/orm-pack" to install and configure Doctrine ORM
+      DATABASE_URL: ${DATABASE_URL}
+      # Run "composer require symfony/mercure-bundle" to install and configure the Mercure integration
+      MERCURE_URL: ${CADDY_MERCURE_URL:-http://caddy/.well-known/mercure}
+      MERCURE_PUBLIC_URL: https://${SERVER_NAME:-localhost}/.well-known/mercure
+      MERCURE_JWT_SECRET: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
+  caddy:
+    build:
+      context: .
+      target: symfony_caddy
+    depends_on:
+      - php
+    env_file:
+      - .env
+      - .env.local
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost, caddy:80}
+      MERCURE_PUBLISHER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${CADDY_MERCURE_JWT_SECRET:-!ChangeMe!}
+    restart: unless-stopped
+    volumes:
+      - php_socket:/var/run/php
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      # HTTP
+      - target: 80
+        published: 7006
+        protocol: tcp
+      # HTTPS
+      - target: 443
+        published: 7449
+        protocol: tcp
+      # HTTP/3
+      - target: 443
+        published: 7449
+        protocol: udp
 
 volumes:
-    php_socket: null
-    
-    caddy_data: null
-    caddy_config: null
+  php_socket: null
 
-    ###> symfony/mercure-bundle ###
-    ###< symfony/mercure-bundle ###
+  caddy_data: null
+  caddy_config: null
+  ###> symfony/mercure-bundle ###
+  ###< symfony/mercure-bundle ###
