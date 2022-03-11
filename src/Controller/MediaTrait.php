@@ -23,9 +23,9 @@ trait MediaTrait
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
         }
-        
+
         $file = $request->files->get('file');
-        
+
         if (!isset($file)) {
             throw new BadRequestHttpException("Unexpected file given.");
         }
@@ -35,7 +35,7 @@ trait MediaTrait
 
         $ftp->mkdir($remotePath, true);
 
-        if (!$ftp->put($remotePath . '/' . $filename)) {
+        if (!$ftp->put($remotePath . '/' . $filename, $file->getPathname())) {
             throw new HttpException("Can't save file.");
         }
 

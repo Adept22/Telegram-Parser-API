@@ -41,9 +41,7 @@ services:
   # ------ FTP ------ #
   #
 
-  app.ftp:
-    public: true
-    class: App\Ftp\Ftp
+  App\Ftp\Ftp:
     arguments:
       $url: "%env(resolve:FTP_URL)%"
 

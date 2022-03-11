@@ -8,6 +8,8 @@ class Ftp extends FtpClient
 {
     public function __construct(string $url)
     {
+        parent::__construct();
+
         $parts = parse_url($url);
         $params = [];
 
