@@ -64,7 +64,7 @@ trait MediaTrait
             throw new BadRequestHttpException("Entity doesn't have file.");
         }
 
-        $file = $ftp->getContent('/' . $entity->getPath());
+        $file = $ftp->getContent($entity->getPath());
         
         if ($file === null) {
             throw new NotFoundHttpException("File not found.");

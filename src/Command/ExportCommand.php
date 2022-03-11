@@ -4,6 +4,7 @@ namespace App\Command;
 
 use App\Entity\Telegram;
 use App\Entity\Export;
+use App\Ftp\Ftp;
 use App\Repository\ExportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -19,35 +20,43 @@ use Thruway\Logging\Logger;
 class ExportCommand extends Command
 {
     /**
+     * @const BASE_PATH
+     */
+    private const BASE_PATH = '/tmp/app';
+
+    /**
      * @var ContainerInterface
      */
     protected $container;
-    
+
     /**
      * @var EntityManagerInterface $em
      */
     private $em;
 
     /**
+     * @var Ftp $ftp
+     */
+    private $ftp;
+
+    /**
      * @var LoggerInterface $logger
      */
     private $logger;
 
-    /**
-     * @var string $basePath
-     */
-    private $basePath;
-
     protected static $defaultName = 'app:export';
     protected static $defaultDescription = 'Start the export zip archive generator';
 
-    public function __construct(ContainerInterface $container, EntityManagerInterface $em, LoggerInterface $logger)
-    {
+    public function __construct(
+        ContainerInterface $container,
+        EntityManagerInterface $em,
+        Ftp $ftp,
+        LoggerInterface $logger
+    ) {
         $this->container = $container;
         $this->em = $em;
+        $this->ftp = $ftp;
         $this->logger = $logger;
-
-        $this->basePath = $this->container->getParameter('kernel.project_dir') . "/public";
 
         parent::__construct(static::$defaultName);
     }
@@ -96,106 +105,75 @@ class ExportCommand extends Command
             $this->em->flush();
 
             try {
-                $exportPath = $this->basePath . "/uploads/export/" . (string) $export->getId();
-
-                $entities = $export->getEntities();
-                $chat = $export->getChat();
-                
-                if (in_array("members", $entities)) {
-                    $file = $this->openCSV($exportPath . "/members/members.csv");
-
-                    if ($file) {
-                        $this->makeMembersCSV($file, $chat);
-
-                        fclose($file);
-                    } else {
-                        $this->logger->warning('WARNING: Couldn\'t create members CSV');
-                        $output->writeln('WARNING: Couldn\'t create members CSV');
-                    }
-                }
-                
-                if (in_array("messages", $entities)) {
-                    $file = $this->openCSV($exportPath . "/messages/messages.csv");
-
-                    if ($file) {
-                        $this->makeMessagesCSV($file, $chat);
-
-                        fclose($file);
-                    } else {
-                        $this->logger->warning('WARNING: Couldn\'t create messages CSV');
-                        $output->writeln('WARNING: Couldn\'t create messages CSV');
-                    }
-                }
+                $tempZip  = tempnam(sys_get_temp_dir(), 'ZIP');
 
                 $zip = new \ZipArchive();
 
-                if ($zip->open($exportPath . ".zip", \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== TRUE) {
+                if ($zip->open($tempZip, \ZipArchive::OVERWRITE) !== TRUE) {
                     throw new \Exception("Couldn't create ZIP archive.");
                 }
 
-                $files = new \RecursiveIteratorIterator(
-                    new \RecursiveDirectoryIterator($exportPath), 
-                    \RecursiveIteratorIterator::SELF_FIRST
-                );
+                $zipBase = (string) $export->getId();
 
-                foreach ($files as $file) {
-                    $file = str_replace('\\', '/', $file);
+                $entities = $export->getEntities();
+                $chat = $export->getChat();
 
-                    if (in_array(basename($file), ['.', '..']))
-                        continue;
-
-                    $file = realpath($file);
-
-                    $zipPath = str_replace($this->basePath . "/uploads/export/", '', $file);
-
-                    if (is_dir($file) === true) {
-                        $this->logger->debug('Placing zip directory ' . $zipPath . '/ from ' . $file);
-                        $output->writeln('DEBUG: Placing zip directory ' . $zipPath . '/ from ' . $file);
-
-                        $zip->addEmptyDir($zipPath . '/');
-                    } else if (is_file($file) === true) {
-                        $this->logger->debug('Placing zip file ' . $zipPath . ' from ' . $file);
-                        $output->writeln('DEBUG: Placing zip file ' . $zipPath . ' from ' . $file);
-
-                        $zip->addFile($file, $zipPath);
-                    }
-                }
-
-                $this->addMedias(
-                    $zip,
-                    (string) $export->getId() . '/media',
-                    $chat
-                );
+                $this->addMedias($zip, $zipBase . '/media', $chat);
 
                 if (in_array("members", $entities)) {
+                    $temp = tmpfile();
+
+                    fprintf($temp, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+                    $this->makeMembersCSV($temp, $chat);
+
+                    if (!!$content = stream_get_contents($temp)) {
+                        $zip->addFromString($zipBase . '/members/members.csv', $content);
+                    }
+
+                    fclose($temp);
+
                     foreach ($chat->getMembers() as $chatMember) {
-                        $this->addMedias(
-                            $zip, 
-                            (string) $export->getId() . '/members/media',
-                            $chatMember->getMember()
-                        );
+                        $this->addMedias($zip, $zipBase . '/members/media', $chatMember->getMember());
                     }
                 }
 
                 if (in_array("messages", $entities)) {
+                    $temp = tmpfile();
+
+                    fprintf($temp, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+                    $this->makeMessagesCSV($temp, $chat);
+
+                    if (!!$content = stream_get_contents($temp)) {
+                        $zip->addFromString($zipBase . '/messages/messages.csv', $content);
+                    }
+
+                    fclose($temp);
+                    
                     foreach ($chat->getMessages() as $message) {
-                        $this->addMedias(
-                            $zip, 
-                            (string) $export->getId() . '/messages/media', 
-                            $message
-                        );
+                        $this->addMedias($zip, '/messages/media', $message);
                     }
                 }
 
                 $zip->close();
 
-                $this->deleteDirectory($exportPath);
+                $remotePath = 'uploads/export/' . (string) $export->getId() . ".zip";
 
-                $export->setPath("uploads/export/" . (string) $export->getId() . ".zip");
+                $this->ftp->mkdir(pathinfo($remotePath, PATHINFO_DIRNAME), true);
+
+                if (!$this->ftp->put($remotePath, $tempZip)) {
+                    throw new \Exception("Can't transfer file via FTP.");
+                }
+
+                unlink($tempZip);
+
+                $export->setPath($remotePath);
                 $export->setStatus("finished");
 
                 $this->em->persist($export);
                 $this->em->flush();
+                
             } catch (\Exception $e) {
                 $export->setStatus("error");
 
@@ -214,36 +192,7 @@ class ExportCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function addMedias($zip, $zipPath, $entity)
-    {
-        $index = 0;
-
-        foreach ($entity->getMedia() as $media) {
-            if ($media->getPath() == null) continue;
-
-            $file = realpath($this->basePath . "/" . $media->getPath());
-
-            if (!$file) continue;
-
-            $zip->addFile($file, $zipPath . '/' . (string) $entity->getInternalId() . "_" . $index . '.' . pathinfo($file, PATHINFO_EXTENSION));
-
-            $index++;
-        }
-    }
-
-    private function openCSV($path)
-    {
-        if (!file_exists($path)) {
-            mkdir(dirname($path), 0777, true);
-        }
-
-        $file = fopen($path, "a+");
-        fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-        return $file;
-    }
-
-    private function makeMembersCSV($file, Telegram\Chat $chat)
+    private function makeMembersCSV($file, $chat)
     {
         $memberTitles = $this->getTitles(Telegram\Member::class);
         $chatMemberRoleTitles = $this->getTitles(Telegram\ChatMemberRole::class, "role_", ['id']);
@@ -259,7 +208,7 @@ class ExportCommand extends Command
         }
     }
 
-    private function makeMessagesCSV($file, Telegram\Chat $chat)
+    private function makeMessagesCSV($file, $chat)
     {
         $messageTitles = $this->getTitles(Telegram\Message::class);
         $memberTitles = $this->getTitles(Telegram\Member::class, "sender_");
@@ -273,6 +222,28 @@ class ExportCommand extends Command
             $replyToRow = $this->getRow($message->getReplyTo(), $replyToTitles, "reply_to_");
 
             fputcsv($file, array_merge($messageRow, $memberRow, $replyToRow), ';');
+        }
+    }
+
+    private function addMedias($zip, $zipPath, $entity)
+    {
+        $index = 0;
+
+        foreach ($entity->getMedia() as $media) {
+            $path = $media->getPath();
+
+            if ($path === null) continue;
+
+            $file = $this->ftp->getContent($path);
+
+            if ($file === null) continue;
+
+            $internalId = (string) $entity->getInternalId();
+            $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+            $zip->addFromString("{$zipPath}/{$internalId}_{$index}.{$extension}", $file);
+
+            $index++;
         }
     }
 
@@ -290,12 +261,12 @@ class ExportCommand extends Command
         }
 
         return $titles;
-    } 
+    }
 
     private function getRow($entity, array $titles, string $titlePrefix = ""): array
     {
         $row = [];
-        
+
         if ($entity) {
             foreach ($titles as $title) {
                 $title = str_replace($titlePrefix, '', $title);
@@ -320,15 +291,15 @@ class ExportCommand extends Command
     }
 
     private function deleteDirectory($directory)
-    { 
-        $files = array_diff(scandir($directory), ['.', '..']); 
+    {
+        $files = array_diff(scandir($directory), ['.', '..']);
 
-        foreach ($files as $file) { 
-            (is_dir("$directory/$file")) 
-                ? $this->deleteDirectory("$directory/$file") 
-                : unlink("$directory/$file"); 
+        foreach ($files as $file) {
+            (is_dir("$directory/$file"))
+                ? $this->deleteDirectory("$directory/$file")
+                : unlink("$directory/$file");
         }
 
-        return rmdir($directory); 
-    } 
+        return rmdir($directory);
+    }
 }
