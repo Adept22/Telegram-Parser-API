@@ -42,9 +42,10 @@ services:
   #
 
   app.ftp:
+    public: true
     class: App\Ftp\Ftp
-    calls:
-      - [connect_url, ["%env(resolve:FTP_URL)%"]]
+    arguments:
+      $url: "%env(resolve:FTP_URL)%"
 
   #
   # ------ ! FTP ------ #

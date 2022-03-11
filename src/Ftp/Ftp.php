@@ -6,7 +6,7 @@ use FtpClient\FtpClient;
 
 class Ftp extends FtpClient
 {
-    public function connect_url(string $url)
+    public function __construct(string $url)
     {
         $parts = parse_url($url);
         $params = [];
