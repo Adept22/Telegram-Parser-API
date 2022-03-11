@@ -38,6 +38,19 @@ services:
   #
 
   #
+  # ------ FTP ------ #
+  #
+
+  app.ftp:
+    class: App\Ftp\Ftp
+    calls:
+      - [connect_url, ["%env(resolve:FTP_URL)%"]]
+
+  #
+  # ------ ! FTP ------ #
+  #
+
+  #
   # ------ DOCTRINE ------ #
   #
 

@@ -3,7 +3,7 @@
 namespace App\Controller\Telegram;
 
 use App\Controller\AbstractEntityController;
-use App\Controller\UploadTrait;
+use App\Controller\MediaTrait;
 use App\Entity\Telegram\MessageMedia;
 use Symfony\Component\Routing\Annotation\Route;
 
@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class MessageMediaController extends AbstractEntityController
 {
-    use UploadTrait;
+    use MediaTrait;
 
     /**
      * {@inheritdoc}
