@@ -16,7 +16,7 @@ trait MediaTrait
      * 
      * @Route("/{id}/upload", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"POST"})
      */
-    public function _postUpload(string $id, Request $request): Response
+    public function _postUpload(string $id, Request $request, Ftp $ftp): Response
     {
         $entity = $this->em->find(static::$entityClassName, $id);
 
@@ -33,9 +33,6 @@ trait MediaTrait
         $remotePath = 'uploads/' . static::$alias;
         $filename = (string) $entity->getId() . '.' . $file->getClientOriginalExtension();
 
-        /** @var Ftp */
-        $ftp = $this->get('app.ftp');
-        
         $ftp->mkdir($remotePath, true);
 
         if (!$ftp->put($remotePath . '/' . $filename)) {
@@ -55,7 +52,7 @@ trait MediaTrait
      * 
      * @Route("/{id}/download", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"POST"})
      */
-    public function _postDownload(string $id): Response
+    public function _postDownload(string $id, Ftp $ftp): Response
     {
         $entity = $this->em->find(static::$entityClassName, $id);
 
@@ -67,8 +64,6 @@ trait MediaTrait
             throw new BadRequestHttpException("Entity doesn't have file.");
         }
 
-        /** @var Ftp */
-        $ftp = $this->get('app.ftp');
         $file = $ftp->getContent('/' . $entity->getPath());
         
         if ($file === null) {
