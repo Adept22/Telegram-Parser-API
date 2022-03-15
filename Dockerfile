@@ -10,7 +10,7 @@ ARG CADDY_VERSION=2
 # "php" stage
 FROM php:${PHP_VERSION}-fpm-alpine AS symfony_php
 
-ARG HTTP_PROXY="http://172.16.199.61:9458:
+ARG HTTP_PROXY="http://172.16.199.61:9458"
 
 # persistent / runtime deps
 RUN apk add --no-cache \
