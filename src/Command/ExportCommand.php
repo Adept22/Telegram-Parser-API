@@ -5,7 +5,6 @@ namespace App\Command;
 use App\Entity\Telegram;
 use App\Entity\Export;
 use App\Ftp\Ftp;
-use App\Repository\ExportRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
@@ -19,11 +18,6 @@ use Thruway\Logging\Logger;
 
 class ExportCommand extends Command
 {
-    /**
-     * @const BASE_PATH
-     */
-    private const BASE_PATH = '/tmp/app';
-
     /**
      * @var ContainerInterface
      */

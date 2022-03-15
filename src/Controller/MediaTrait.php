@@ -46,13 +46,12 @@ trait MediaTrait
 
         return new Response(null, Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
     }
-
     /**
      * {@inheritdoc}
      * 
-     * @Route("/{id}/download", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"POST"})
+     * @Route("/{id}/download", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"GET"})
      */
-    public function _postDownload(string $id, Ftp $ftp): Response
+    public function _getDownload(string $id, Ftp $ftp): Response
     {
         $entity = $this->em->find(static::$entityClassName, $id);
 
@@ -70,14 +69,25 @@ trait MediaTrait
             throw new NotFoundHttpException("File not found.");
         }
 
+        $filename = basename($entity->getPath());
+
         $response = new Response($file);
 
         $disposition = HeaderUtils::makeDisposition(
             HeaderUtils::DISPOSITION_ATTACHMENT,
-            basename($entity->getPath())
+            $filename
         );
 
         $response->headers->set('Content-Disposition', $disposition);
+        
+        // Set the mimetype with the guesser or manually
+        if($mimeTypeGuesser->isSupported()){
+            // Guess the mimetype of the file according to the extension of the file
+            $response->headers->set('Content-Type', $mimeTypeGuesser->guess($filename));
+        }else{
+            // Set the mimetype of the file manually, in this case for a text file is text/plain
+            $response->headers->set('Content-Type', 'text/plain');
+        }
 
         return $response;
     }
