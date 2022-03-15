@@ -81,7 +81,7 @@ trait MediaTrait
 
         $response->headers->set('Content-Disposition', $disposition);
         
-        if ($mimetype = (new \finfo(FILEINFO_MIME))->buffer($file) !== false) {
+        if (($mimetype = (new \finfo(FILEINFO_MIME))->buffer($file)) !== false) {
             $response->headers->set('Content-Type', $mimetype);
         } else {
             $response->headers->set('Content-Type', 'text/plain');
