@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Ftp\Ftp;
 use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\File\MimeType\FileinfoMimeTypeGuesser;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -46,6 +47,7 @@ trait MediaTrait
 
         return new Response(null, Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
     }
+    
     /**
      * {@inheritdoc}
      * 
@@ -79,6 +81,9 @@ trait MediaTrait
         );
 
         $response->headers->set('Content-Disposition', $disposition);
+        
+        // To generate a file download, you need the mimetype of the file
+        $mimeTypeGuesser = new FileinfoMimeTypeGuesser();
         
         // Set the mimetype with the guesser or manually
         if($mimeTypeGuesser->isSupported()){
