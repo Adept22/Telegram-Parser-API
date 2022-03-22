@@ -76,6 +76,11 @@ class Message extends AbstractEntity
      */
     private $media;
 
+    /**
+     * @ORM\Column(type="datetimetz", nullable=true)
+     */
+    private $date;
+
     public function __construct()
     {
         parent::__construct();
@@ -217,6 +222,18 @@ class Message extends AbstractEntity
                 $medium->setMessage(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }

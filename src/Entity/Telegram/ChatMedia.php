@@ -30,6 +30,11 @@ class ChatMedia extends AbstractEntity
      */
     private $path;
 
+    /**
+     * @ORM\Column(type="datetimetz", nullable=true)
+     */
+    private $date;
+
     public function getChat(): ?Chat
     {
         return $this->chat;
@@ -62,6 +67,18 @@ class ChatMedia extends AbstractEntity
     public function setPath(string $path): self
     {
         $this->path = $path;
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }

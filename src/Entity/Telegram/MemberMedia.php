@@ -31,6 +31,11 @@ class MemberMedia extends AbstractEntity
      */
     private $path;
 
+    /**
+     * @ORM\Column(type="datetimetz", nullable=true)
+     */
+    private $date;
+
     public function getMember(): ?Member
     {
         return $this->member;
@@ -63,6 +68,18 @@ class MemberMedia extends AbstractEntity
     public function setPath(string $path): self
     {
         $this->path = $path;
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }

@@ -292,22 +292,22 @@ class Chat extends AbstractEntity
         return $this->media;
     }
 
-    public function addMedia(ChatMedia $media): self
+    public function addMedium(ChatMedia $medium): self
     {
-        if (!$this->media->contains($media)) {
-            $this->media[] = $media;
-            $media->setChat($this);
+        if (!$this->media->contains($medium)) {
+            $this->media[] = $medium;
+            $medium->setChat($this);
         }
 
         return $this;
     }
 
-    public function removeMedia(ChatMedia $media): self
+    public function removeMedium(ChatMedia $medium): self
     {
-        if ($this->media->removeElement($media)) {
+        if ($this->media->removeElement($medium)) {
             // set the owning side to null (unless already changed)
-            if ($media->getChat() === $this) {
-                $media->setChat(null);
+            if ($medium->getChat() === $this) {
+                $medium->setChat(null);
             }
         }
 
