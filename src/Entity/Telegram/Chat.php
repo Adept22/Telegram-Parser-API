@@ -92,25 +92,31 @@ class Chat extends AbstractEntity
 
     /**
      * @ORM\OneToOne(targetEntity=Message::class)
-     *
      * @ORM\Column(name="last_message_id", nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $lastMessage;
 
     /**
      * @ORM\OneToOne(targetEntity=ChatMedia::class)
-     *
      * @ORM\Column(name="last_media_id", nullable=true)
+     * 
+     * @Serializer\Exclude
      */
     private $lastMedia;
 
     /**
      * @ORM\Column(type="integer", options={"default": 0})
+     * 
+     * @Serializer\Exclude
      */
     private $membersCount = 0;
 
     /**
      * @ORM\Column(type="integer", options={"default": 0})
+     * 
+     * @Serializer\Exclude
      */
     private $messagesCount = 0;
 
