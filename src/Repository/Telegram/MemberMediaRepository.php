@@ -2,6 +2,7 @@
 
 namespace App\Repository\Telegram;
 
+use App\Entity\Telegram\Member;
 use App\Entity\Telegram\MemberMedia;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -17,6 +18,16 @@ class MemberMediaRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, MemberMedia::class);
+    }
+
+    public function findLastByMember(Member $member)
+    {
+        return $this->createQueryBuilder("mm")
+            ->andWhere('mm.member = :member')
+            ->setParameter('member', $member)
+            ->orderBy('mm.createdAt', 'ASC')
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     // /**

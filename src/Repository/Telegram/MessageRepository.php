@@ -2,6 +2,7 @@
 
 namespace App\Repository\Telegram;
 
+use App\Entity\Telegram\Chat;
 use App\Entity\Telegram\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -17,6 +18,16 @@ class MessageRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Message::class);
+    }
+
+    public function findLastByChat(Chat $chat)
+    {
+        return $this->createQueryBuilder("m")
+            ->andWhere('m.chat = :chat')
+            ->setParameter('chat', $value)
+            ->orderBy('m.createdAt', 'ASC')
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     // /**

@@ -4,7 +4,6 @@ namespace App\Doctrine\EventSubscriber;
 
 use App\Entity\Telegram;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
-use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -80,6 +79,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     public function preUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
+        $om = $args->getObjectManager();
 
         if ($entity instanceof Telegram\Chat) {
             $parser = $entity->getParser();
@@ -113,6 +113,48 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
                     $entity->removePhone($phone);
                 });
             }
+        }
+
+        if ($entity instanceof Telegram\ChatMedia) {
+            $chat = $entity->getChat();
+
+            /** @var \App\Repository\Telegram\ChatMediaRepository */
+            $chatMediaRepository = $om->getRepository(Telegram\ChatMedia::class);
+            $chat->setLastMedia($chatMediaRepository->findLastByChat($chat));
+
+            $om->persist($chat);
+        }
+
+        if ($entity instanceof Telegram\ChatMember) {
+            $chat = $entity->getChat();
+
+            /** @var \App\Repository\Telegram\ChatMemberRepository */
+            $chatMemberRepository = $om->getRepository(Telegram\ChatMember::class);
+            $chat->setMembersCount($chatMemberRepository->count(['chat' => $chat]));
+
+            $om->persist($chat);
+        }
+
+        if ($entity instanceof Telegram\Message) {
+            $chat = $entity->getChat();
+
+            /** @var \App\Repository\Telegram\MessageRepository */
+            $messageRepository = $om->getRepository(Telegram\Message::class);
+            $chat->setLastMessage($messageRepository->findLastByChat($chat));
+
+            $chat->setMessagesCount($messageRepository->count(['chat' => $chat]));
+
+            $om->persist($chat);
+        }
+
+        if ($entity instanceof Telegram\MemberMedia) {
+            $member = $entity->getMember();
+
+            /** @var \App\Repository\Telegram\MemberMediaRepository */
+            $memberMediaRepository = $om->getRepository(Telegram\MemberMedia::class);
+            $member->setLastMedia($memberMediaRepository->findLastByMember($member));
+
+            $om->persist($member);
         }
 
         if (count($violations = $this->validator->validate($entity)) > 0) {

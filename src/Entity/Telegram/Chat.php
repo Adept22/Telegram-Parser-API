@@ -91,6 +91,26 @@ class Chat extends AbstractEntity
     private $messages;
 
     /**
+     * @ORM\OneToOne(targetEntity=Message::class, nullable=true)
+     */
+    private $lastMessage;
+
+    /**
+     * @ORM\OneToOne(targetEntity=ChatMedia::class, nullable=true)
+     */
+    private $lastMedia;
+
+    /**
+     * @ORM\Column(type="integer")
+     */
+    private $membersCount = 0;
+
+    /**
+     * @ORM\Column(type="integer")
+     */
+    private $messagesCount = 0;
+
+    /**
      * @ORM\ManyToMany(targetEntity=Phone::class)
      * @ORM\JoinTable(name="telegram_chat_available_telegram_phone",
      *      joinColumns={
@@ -262,22 +282,22 @@ class Chat extends AbstractEntity
         return $this->media;
     }
 
-    public function addMedium(ChatMedia $medium): self
+    public function addMedia(ChatMedia $media): self
     {
-        if (!$this->media->contains($medium)) {
-            $this->media[] = $medium;
-            $medium->setChat($this);
+        if (!$this->media->contains($media)) {
+            $this->media[] = $media;
+            $media->setChat($this);
         }
 
         return $this;
     }
 
-    public function removeMedium(ChatMedia $medium): self
+    public function removeMedia(ChatMedia $media): self
     {
-        if ($this->media->removeElement($medium)) {
+        if ($this->media->removeElement($media)) {
             // set the owning side to null (unless already changed)
-            if ($medium->getChat() === $this) {
-                $medium->setChat(null);
+            if ($media->getChat() === $this) {
+                $media->setChat(null);
             }
         }
 
@@ -340,6 +360,54 @@ class Chat extends AbstractEntity
                 $message->setChat(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getLastMessage(): ?Message
+    {
+        return $this->lastMessage;
+    }
+
+    public function setLastMessage(?Message $lastMessage): self
+    {
+        $this->lastMessage = $lastMessage;
+
+        return $this;
+    }
+
+    public function getLastMedia(): ?ChatMedia
+    {
+        return $this->lastMedia;
+    }
+
+    public function setLastMedia(?ChatMedia $lastMedia): self
+    {
+        $this->lastMedia = $lastMedia;
+
+        return $this;
+    }
+
+    public function getMembersCount(): ?int
+    {
+        return $this->membersCount;
+    }
+
+    public function setMembersCount(int $membersCount): self
+    {
+        $this->membersCount = $membersCount;
+
+        return $this;
+    }
+
+    public function getMessagesCount(): ?int
+    {
+        return $this->messagesCount;
+    }
+
+    public function setMessagesCount(int $messagesCount): self
+    {
+        $this->messagesCount = $messagesCount;
 
         return $this;
     }

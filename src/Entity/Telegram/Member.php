@@ -59,6 +59,11 @@ class Member extends AbstractEntity
      */
     private $chats;
 
+    /**
+     * @ORM\OneToOne(targetEntity=MemberMedia::class, nullable=true)
+     */
+    private $lastMedia;
+
     public function __construct()
     {
         parent::__construct();
@@ -198,21 +203,16 @@ class Member extends AbstractEntity
 
         return $this;
     }
-    
-    /**
-     * @Serializer\VirtualProperty()
-     * 
-     * @return TelegramMemberMedia|null
-     */
-    public function getLastMedia()
+
+    public function getLastMedia(): ?MemberMedia
     {
-        /** @var TelegramMemberMedia|bool */
-        $lastMedia = $this->getMedia()->last();
+        return $this->lastMedia;
+    }
 
-        if ($lastMedia) {
-            return $lastMedia;
-        }
+    public function setLastMedia(?MemberMedia $lastMedia): self
+    {
+        $this->lastMedia = $lastMedia;
 
-        return null;
+        return $this;
     }
 }
