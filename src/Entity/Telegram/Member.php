@@ -60,7 +60,9 @@ class Member extends AbstractEntity
     private $chats;
 
     /**
-     * @ORM\OneToOne(targetEntity=MemberMedia::class, nullable=true)
+     * @ORM\OneToOne(targetEntity=MemberMedia::class)
+     *
+     * @ORM\Column(name="last_media_id", nullable=true)
      */
     private $lastMedia;
 

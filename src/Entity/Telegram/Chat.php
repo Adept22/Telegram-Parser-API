@@ -91,22 +91,26 @@ class Chat extends AbstractEntity
     private $messages;
 
     /**
-     * @ORM\OneToOne(targetEntity=Message::class, nullable=true)
+     * @ORM\OneToOne(targetEntity=Message::class)
+     *
+     * @ORM\Column(name="last_message_id", nullable=true)
      */
     private $lastMessage;
 
     /**
-     * @ORM\OneToOne(targetEntity=ChatMedia::class, nullable=true)
+     * @ORM\OneToOne(targetEntity=ChatMedia::class)
+     *
+     * @ORM\Column(name="last_media_id", nullable=true)
      */
     private $lastMedia;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", options={"default": 0})
      */
     private $membersCount = 0;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="integer", options={"default": 0})
      */
     private $messagesCount = 0;
 
