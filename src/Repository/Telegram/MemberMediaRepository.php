@@ -20,16 +20,6 @@ class MemberMediaRepository extends ServiceEntityRepository
         parent::__construct($registry, MemberMedia::class);
     }
 
-    public function findLastByMember(Member $member)
-    {
-        return $this->createQueryBuilder("mm")
-            ->andWhere('mm.member = :member')
-            ->setParameter('member', $member)
-            ->orderBy('mm.createdAt', 'ASC')
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
     // /**
     //  * @return MemberMedia[] Returns an array of MemberMedia objects
     //  */

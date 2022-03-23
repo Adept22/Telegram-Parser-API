@@ -20,16 +20,6 @@ class ChatMediaRepository extends ServiceEntityRepository
         parent::__construct($registry, ChatMedia::class);
     }
 
-    public function findLastByChat(Chat $chat)
-    {
-        return $this->createQueryBuilder("m")
-            ->andWhere('m.chat = :chat')
-            ->setParameter('chat', $value)
-            ->orderBy('m.createdAt', 'ASC')
-            ->getQuery()
-            ->getOneOrNullResult();
-    }
-
     // /**
     //  * @return ChatMedia[] Returns an array of ChatMedia objects
     //  */

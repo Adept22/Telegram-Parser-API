@@ -19,6 +19,94 @@ class ChatRepository extends ServiceEntityRepository
         parent::__construct($registry, Chat::class);
     }
 
+    public function incrementMembersCount(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set('c.members_count', 'c.members_count + 1')
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
+    public function incrementMessagesCount(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set('c.messages_count', 'c.messages_count + 1')
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
+    public function decrementMembersCount(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set('c.members_count', 'c.members_count - 1')
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
+    public function decrementMessagesCount(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set('c.messages_count', 'c.messages_count - 1')
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
+    public function updateLastMedia(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set(
+                'c.last_media_id', 
+                '(' . 
+                    $this->createQueryBuilder('cma')
+                        ->select('cma.id')
+                        ->where('cma.chat_id = :chat_id')
+                        ->setParameter('chat_id', $entity->getId())
+                        ->orderBy('cma.date', 'DESC')
+                        ->setMaxResults(1)
+                        ->getDQL()
+                . ')'
+            )
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
+    public function updateLastMessage(Chat $entity): void
+    {
+        $this->createQueryBuilder('c')
+            ->update()
+            ->set(
+                'c.last_message_id', 
+                '(' .
+                    $this->createQueryBuilder('cms')
+                        ->select('cms.id')
+                        ->where('cms.chat_id = :chat_id')
+                        ->setParameter('chat_id', $entity->getId())
+                        ->orderBy('cms.date', 'DESC')
+                        ->setMaxResults(1)
+                        ->getDQL()
+                . ')'
+            )
+            ->where('c.id = :id')
+            ->setParameter('id', $entity->getId())
+            ->getQuery()
+            ->execute();
+    }
+
     // /**
     //  * @return Chat[] Returns an array of Chat objects
     //  */
