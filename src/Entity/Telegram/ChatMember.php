@@ -32,6 +32,11 @@ class ChatMember extends AbstractEntity
     private $member;
 
     /**
+     * @ORM\Column(type="datetimetz", nullable=true)
+     */
+    private $date;
+
+    /**
      * @ORM\Column(type="boolean")
      */
     private $isLeft = false;
@@ -78,6 +83,18 @@ class ChatMember extends AbstractEntity
     public function setMember(?Member $member): self
     {
         $this->member = $member;
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }

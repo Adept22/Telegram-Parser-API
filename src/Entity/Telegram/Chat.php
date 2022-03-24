@@ -70,6 +70,11 @@ class Chat extends AbstractEntity
     private $isAvailable = true;
 
     /**
+     * @ORM\Column(type="datetimetz", nullable=true)
+     */
+    private $date;
+
+    /**
      * @ORM\OneToMany(targetEntity=ChatMedia::class, mappedBy="chat")
      * 
      * @Serializer\Exclude
@@ -280,6 +285,18 @@ class Chat extends AbstractEntity
     public function setIsAvailable(bool $isAvailable): self
     {
         $this->isAvailable = $isAvailable;
+
+        return $this;
+    }
+
+    public function getDate(): ?\DateTimeInterface
+    {
+        return $this->date;
+    }
+
+    public function setDate(\DateTimeInterface $date): self
+    {
+        $this->date = $date;
 
         return $this;
     }
