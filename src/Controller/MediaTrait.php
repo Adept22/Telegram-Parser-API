@@ -27,7 +27,11 @@ trait MediaTrait
         $file = $request->files->get('file');
 
         if (!isset($file)) {
-            throw new BadRequestHttpException("Unexpected file given.");
+            throw new BadRequestHttpException("File expected.");
+        }
+
+        if (!$file->isValid()) {
+            throw new BadRequestHttpException($file->getErrorMessage());
         }
 
         $remotePath = 'uploads/' . static::$alias;
