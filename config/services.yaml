@@ -38,18 +38,6 @@ services:
   #
 
   #
-  # ------ FTP ------ #
-  #
-
-  App\Ftp\Ftp:
-    arguments:
-      $url: "%env(resolve:FTP_URL)%"
-
-  #
-  # ------ ! FTP ------ #
-  #
-
-  #
   # ------ DOCTRINE ------ #
   #
 

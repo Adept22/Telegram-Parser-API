@@ -101,7 +101,7 @@ abstract class AbstractEntityController extends AbstractController implements En
         $errors = $this->validator->validate($request->query->all(), $queryConstraint);
         
         if ($errors->count() > 0) {
-            throw new BadRequestHttpException($errors->get(count($errors) - 1)->getMessage());
+            throw new BadRequestHttpException($errors->get(0)->getMessage());
         }
         
         $sort = $request->query->get('_sort') ?? "id";
@@ -145,7 +145,7 @@ abstract class AbstractEntityController extends AbstractController implements En
         try {
             $this->em->persist($entity);
         } catch (ValidationFailedException $ex) {
-            throw new BadRequestHttpException($ex->getMessage());
+            throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
         $this->em->flush();
@@ -177,7 +177,7 @@ abstract class AbstractEntityController extends AbstractController implements En
         try {
             $this->em->persist($entity);
         } catch (ValidationFailedException $ex) {
-            throw new BadRequestHttpException($ex->getMessage());
+            throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
         $this->em->flush();

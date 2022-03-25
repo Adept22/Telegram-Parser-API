@@ -61,7 +61,6 @@ class Member extends AbstractEntity
 
     /**
      * @ORM\OneToOne(targetEntity=MemberMedia::class)
-     * @ORM\Column(name="last_media_id", nullable=true)
      * 
      * @Serializer\Exclude
      */

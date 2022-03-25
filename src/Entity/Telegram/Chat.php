@@ -97,7 +97,6 @@ class Chat extends AbstractEntity
 
     /**
      * @ORM\OneToOne(targetEntity=Message::class)
-     * @ORM\Column(name="last_message_id", nullable=true)
      * 
      * @Serializer\Exclude
      */
@@ -105,7 +104,6 @@ class Chat extends AbstractEntity
 
     /**
      * @ORM\OneToOne(targetEntity=ChatMedia::class)
-     * @ORM\Column(name="last_media_id", nullable=true)
      * 
      * @Serializer\Exclude
      */
