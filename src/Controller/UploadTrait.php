@@ -2,15 +2,20 @@
 
 namespace App\Controller;
 
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Process\Exception\ProcessFailedException;
+use Symfony\Component\Process\Process;
+use Webmozart\Assert\Assert;
 
 trait UploadTrait
 {
     /**
-     * {@inheritdoc}
+     * Загружает цельный файл
      * 
      * @Route("/{id}/upload", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"POST"})
      */
@@ -22,6 +27,7 @@ trait UploadTrait
             throw new NotFoundHttpException("Entity not found.");
         }
 
+        /** @var UploadedFile */
         $file = $request->files->get('file');
 
         if (!isset($file)) {
@@ -44,6 +50,160 @@ trait UploadTrait
         $this->em->persist($entity);
         $this->em->flush();
 
-        return new Response(null, Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Загружает кусок файла
+     * 
+     * @Route("/{id}/chunk", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"POST"})
+     */
+    public function _postChunkUpload(string $id, Request $request): Response
+    {
+        $entity = $this->em->find(static::$entityClassName, $id);
+
+        if (!isset($entity)) {
+            throw new NotFoundHttpException("Entity not found.");
+        }
+
+        /** @var UploadedFile */
+        $chunk = $request->files->get('chunk');
+
+        if (!isset($chunk)) {
+            throw new BadRequestHttpException("File expected.");
+        }
+
+        if (!$chunk->isValid()) {
+            throw new BadRequestHttpException($chunk->getErrorMessage());
+        }
+
+        $queryConstraint = new Assert\Collection([
+            "fields" => [
+                "filename" => new Assert\Sequentially([
+                    new Assert\Type("string"), 
+                    new Assert\NotBlank()
+                ]),
+                "chunkNumber" => new Assert\Sequentially([
+                    new Assert\Type("integer"), 
+                    new Assert\NotBlank(),
+                    new Assert\GreaterThanOrEqual(0)
+                ]),
+                "totalChunks" => new Assert\Sequentially([
+                    new Assert\Type("integer"), 
+                    new Assert\NotBlank(),
+                    new Assert\GreaterThanOrEqual(0)
+                ]),
+                "totalSize" => new Assert\Sequentially([
+                    new Assert\Type("integer"), 
+                    new Assert\NotBlank(),
+                    new Assert\GreaterThanOrEqual(0)
+                ])
+            ]
+        ]);
+
+        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        
+        if ($errors->count() > 0) {
+            throw new BadRequestHttpException($errors->get(0)->getMessage());
+        }
+
+        $filename = $this->request->get('filename');
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+        $chunkNumber = $this->request->get('chunkNumber');
+        $totalChunks = $this->request->get('totalChunks');
+        $totalSize = $this->request->get('totalSize');
+
+        $tmpBase = sys_get_temp_dir();
+
+        $chunk = $chunk->move($tmpBase, $filename . ".part$chunkNumber");
+
+        if ($chunkNumber >= $totalChunks - 1) {
+            $chunks = glob($tmpBase . "/" . $filename . ".part[0-9]*");
+            $totalChunksSize = 0;
+
+            foreach ($chunks as $filename) $totalChunksSize += filesize($filename);
+
+            if ($totalChunksSize >= $totalSize) {
+                natsort($chunks);
+
+                $process = new Process(array_merge(["cat"], $chunks, ["> $tmpBase/$filename"]));
+                $process->run();
+
+                if (!$process->isSuccessful()) {
+                    throw new ProcessFailedException($process);
+                }
+                
+                $file = new File("$tmpBase/$filename");
+
+                $basePath = $this->getParameter('kernel.project_dir') . "/public";
+
+                $file = $file->move(
+                    $basePath . "/uploads/" . static::$alias, 
+                    (string) $entity->getId() . '.' . $extension
+                );
+
+                $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
+        
+                $this->em->persist($entity);
+                $this->em->flush();
+            } else {
+                throw new \Exception("Not all chunks was uploaded.");
+            }
+        }
+
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    /**
+     * Проверяет загрузился ли кусок
+     * 
+     * @Route("/{id}/chunk", requirements={"id"="^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}$"}, methods={"GET"})
+     */
+    public function _getChunk(string $id, Request $request): Response
+    {
+        $entity = $this->em->find(static::$entityClassName, $id);
+
+        if (!isset($entity)) {
+            throw new NotFoundHttpException("Entity not found.");
+        }
+
+        $queryConstraint = new Assert\Collection([
+            "fields" => [
+                "filename" => new Assert\Sequentially([
+                    new Assert\Type("string"), 
+                    new Assert\NotBlank()
+                ]),
+                "chunkNumber" => new Assert\Sequentially([
+                    new Assert\Type("integer"), 
+                    new Assert\NotBlank(),
+                    new Assert\GreaterThanOrEqual(0)
+                ]),
+                "chunkSize" => new Assert\Sequentially([
+                    new Assert\Type("integer"), 
+                    new Assert\NotBlank(),
+                    new Assert\GreaterThanOrEqual(0)
+                ])
+            ]
+        ]);
+
+        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        
+        if ($errors->count() > 0) {
+            throw new BadRequestHttpException($errors->get(0)->getMessage());
+        }
+
+        $filename = $this->request->get('filename');
+        $chunkNumber = $this->request->get('chunkNumber');
+        $chunkSize = $this->request->get('chunkSize');
+
+        $tmpBase = sys_get_temp_dir();
+
+        $chunkPathname = $tmpBase . "/" . $filename . ".part$chunkNumber";
+
+        if (file_exists($chunkPathname) && filesize($chunkPathname) >= $chunkSize) {
+            return new Response(null, Response::HTTP_NO_CONTENT);
+        }
+        
+        throw new NotFoundHttpException("Chunk not uploaded");
     }
 }
