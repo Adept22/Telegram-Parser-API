@@ -83,21 +83,18 @@ trait UploadTrait
                     new Assert\Type("string"), 
                     new Assert\NotBlank()
                 ]),
-                "chunkNumber" => new Assert\Sequentially([
-                    new Assert\Type("integer"), 
-                    new Assert\NotBlank(),
-                    new Assert\GreaterThanOrEqual(0)
+                "chunkNumber" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
                 ]),
-                "totalChunks" => new Assert\Sequentially([
-                    new Assert\Type("integer"), 
-                    new Assert\NotBlank(),
-                    new Assert\GreaterThanOrEqual(0)
+                "totalChunks" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
                 ]),
-                "totalSize" => new Assert\Sequentially([
-                    new Assert\Type("integer"), 
-                    new Assert\NotBlank(),
-                    new Assert\GreaterThanOrEqual(0)
-                ])
+                "totalSize" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
+                ]),
             ]
         ]);
 
