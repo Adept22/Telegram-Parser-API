@@ -97,7 +97,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             $chatRepository = $om->getRepository(Telegram\Chat::class);
 
             $chatRepository->incrementMessagesCount($chat);
-            $chatRepository->updateLastMessage($chat);
+            $chatRepository->updateLastMessageDate($chat);
         }
 
         if ($entity instanceof Telegram\MemberMedia) {
@@ -186,7 +186,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             $chatRepository = $om->getRepository(Telegram\Chat::class);
 
             $chatRepository->decrementMessagesCount($chat);
-            $chatRepository->updateLastMessage($chat);
+            $chatRepository->updateLastMessageDate($chat);
         }
 
         if ($entity instanceof Telegram\MemberMedia) {

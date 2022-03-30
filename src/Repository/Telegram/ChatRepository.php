@@ -85,15 +85,15 @@ class ChatRepository extends ServiceEntityRepository
             ->execute();
     }
 
-    public function updateLastMessage(Chat $entity): void
+    public function updateLastMessageDate(Chat $entity): void
     {
         $this->createQueryBuilder('c')
             ->update()
             ->set(
-                'c.last_message_id', 
+                'c.last_message_date', 
                 '(' .
                     $this->createQueryBuilder('cms')
-                        ->select('cms.id')
+                        ->select('cms.date')
                         ->where('cms.chat_id = :chat_id')
                         ->setParameter('chat_id', $entity->getId())
                         ->orderBy('cms.date', 'DESC')
