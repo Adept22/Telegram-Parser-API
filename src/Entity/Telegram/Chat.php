@@ -96,11 +96,9 @@ class Chat extends AbstractEntity
     private $messages;
 
     /**
-     * @ORM\OneToOne(targetEntity=Message::class)
-     * 
-     * @Serializer\Exclude
+     * @ORM\Column(type="datetimetz", nullable=true)
      */
-    private $lastMessage;
+    private $lastMessageDate;
 
     /**
      * @ORM\OneToOne(targetEntity=ChatMedia::class)
@@ -389,14 +387,14 @@ class Chat extends AbstractEntity
         return $this;
     }
 
-    public function getLastMessage(): ?Message
+    public function getLastMessageDate(): ?\DateTimeInterface
     {
-        return $this->lastMessage;
+        return $this->lastMessageDate;
     }
 
-    public function setLastMessage(?Message $lastMessage): self
+    public function setLastMessageDate(?\DateTimeInterface $lastMessageDate): self
     {
-        $this->lastMessage = $lastMessage;
+        $this->lastMessageDate = $lastMessageDate;
 
         return $this;
     }
