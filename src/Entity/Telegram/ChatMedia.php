@@ -16,7 +16,7 @@ class ChatMedia extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=Chat::class, inversedBy="media")
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $chat;
 

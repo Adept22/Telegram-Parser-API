@@ -19,7 +19,7 @@ class ChatMember extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Chat::class, inversedBy="members")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $chat;
 
@@ -27,7 +27,7 @@ class ChatMember extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Member::class, inversedBy="chats", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $member;
 

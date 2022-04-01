@@ -66,7 +66,7 @@ class Phone extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="phones")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $parser;
 
