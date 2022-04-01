@@ -17,7 +17,7 @@ class ChatMemberRole extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=ChatMember::class, inversedBy="roles", cascade={"all"})
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 

@@ -132,7 +132,7 @@ class Chat extends AbstractEntity
      *      }
      * )
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $availablePhones;
     
@@ -147,7 +147,7 @@ class Chat extends AbstractEntity
      *      }
      * )
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $phones;
 

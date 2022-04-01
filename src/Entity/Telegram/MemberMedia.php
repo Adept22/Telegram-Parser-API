@@ -17,7 +17,7 @@ class MemberMedia extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Member::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(1)
+     * @Serializer\MaxDepth(2)
      */
     private $member;
 
