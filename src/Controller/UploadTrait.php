@@ -8,8 +8,6 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Process\Exception\ProcessFailedException;
-use Symfony\Component\Process\Process;
 use Symfony\Component\Validator\Constraints as Assert;
 
 trait UploadTrait
@@ -104,51 +102,70 @@ trait UploadTrait
             throw new BadRequestHttpException($errors->get(0)->getMessage());
         }
 
-        $filename = $this->request->get('filename');
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-        $chunkNumber = $this->request->get('chunkNumber');
-        $totalChunks = $this->request->get('totalChunks');
-        $totalSize = $this->request->get('totalSize');
+        $filename = $request->get('filename');
+        $chunkNumber = (int) $request->get('chunkNumber');
+        $totalChunks = (int) $request->get('totalChunks');
+        $totalSize = (int) $request->get('totalSize');
 
         $tmpBase = sys_get_temp_dir();
 
         $chunk = $chunk->move($tmpBase, $filename . ".part$chunkNumber");
 
         if ($chunkNumber >= $totalChunks - 1) {
-            $chunks = glob($tmpBase . "/" . $filename . ".part[0-9]*");
             $totalChunksSize = 0;
+            
+            $chunks = glob($tmpBase . "/$filename.part[0-9]*");
 
-            foreach ($chunks as $filename) $totalChunksSize += filesize($filename);
+            foreach ($chunks as $pathname) $totalChunksSize += (int) filesize($pathname);
 
             if ($totalChunksSize >= $totalSize) {
                 natsort($chunks);
 
-                $process = new Process(array_merge(["cat"], $chunks, ["> $tmpBase/$filename"]));
-                $process->run();
+                try {
+                    if (($tmp = tempnam(sys_get_temp_dir(), 'php')) === false) {
+                        throw new \Exception("Couldn't create temp file.");
+                    }
+            
+                    $this->completeFile($tmp, $filename, $chunks, $entity);
+                } catch (\Exception $ex) {
+                    foreach ($chunks as $chunk) @unlink($chunk);
+                    
+                    @unlink($tmp);
 
-                if (!$process->isSuccessful()) {
-                    throw new ProcessFailedException($process);
+                    throw $ex;
                 }
-                
-                $file = new File("$tmpBase/$filename");
-
-                $basePath = $this->getParameter('kernel.project_dir') . "/public";
-
-                $file = $file->move(
-                    $basePath . "/uploads/" . static::$alias, 
-                    (string) $entity->getId() . '.' . $extension
-                );
-
-                $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
-        
-                $this->em->persist($entity);
-                $this->em->flush();
             } else {
                 throw new \Exception("Not all chunks was uploaded.");
             }
         }
 
         return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    private function completeFile($tmp, $filename, $chunks, $entity)
+    {
+        foreach ($chunks as $part) {
+            if (exec("cat $part >> $tmp", $output, $code) === false) {
+                throw new \Exception(implode("\n", $output));
+            }
+
+            unlink($part);
+        }
+
+        $file = new File($tmp);
+
+        $basePath = $this->getParameter('kernel.project_dir') . "/public";
+        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+
+        $file = $file->move(
+            $basePath . "/uploads/" . static::$alias, 
+            (string) $entity->getId() . '.' . $extension
+        );
+
+        $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
+
+        $this->em->persist($entity);
+        $this->em->flush();
     }
 
     /**
@@ -170,15 +187,13 @@ trait UploadTrait
                     new Assert\Type("string"), 
                     new Assert\NotBlank()
                 ]),
-                "chunkNumber" => new Assert\Sequentially([
-                    new Assert\Type("integer"), 
-                    new Assert\NotBlank(),
-                    new Assert\GreaterThanOrEqual(0)
+                "chunkNumber" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
                 ]),
-                "chunkSize" => new Assert\Sequentially([
-                    new Assert\Type("integer"), 
-                    new Assert\NotBlank(),
-                    new Assert\GreaterThanOrEqual(0)
+                "chunkSize" => new Assert\Regex([
+                    "pattern" => "/^\d+$/", 
+                    "message" => "Property _limit value invalid."
                 ])
             ]
         ]);
@@ -195,9 +210,9 @@ trait UploadTrait
 
         $tmpBase = sys_get_temp_dir();
 
-        $chunkPathname = $tmpBase . "/" . $filename . ".part$chunkNumber";
+        $chunkName = $tmpBase . "/" . $filename . ".part$chunkNumber";
 
-        if (file_exists($chunkPathname) && filesize($chunkPathname) >= $chunkSize) {
+        if (file_exists($chunkName) && filesize($chunkName) >= $chunkSize) {
             return new Response(null, Response::HTTP_NO_CONTENT);
         }
         
