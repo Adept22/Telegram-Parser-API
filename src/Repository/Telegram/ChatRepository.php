@@ -23,7 +23,7 @@ class ChatRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.members_count', 'c.members_count + 1')
+            ->set('c.membersCount', 'c.membersCount + 1')
             ->where('c.id = :id')
             ->setParameter('id', $entity->getId())
             ->getQuery()
@@ -34,7 +34,7 @@ class ChatRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.messages_count', 'c.messages_count + 1')
+            ->set('c.messagesCount', 'c.messagesCount + 1')
             ->where('c.id = :id')
             ->setParameter('id', $entity->getId())
             ->getQuery()
@@ -45,7 +45,7 @@ class ChatRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.members_count', 'c.members_count - 1')
+            ->set('c.membersCount', 'c.membersCount - 1')
             ->where('c.id = :id')
             ->setParameter('id', $entity->getId())
             ->getQuery()
@@ -56,7 +56,7 @@ class ChatRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.messages_count', 'c.messages_count - 1')
+            ->set('c.messagesCount', 'c.messagesCount - 1')
             ->where('c.id = :id')
             ->setParameter('id', $entity->getId())
             ->getQuery()
@@ -68,19 +68,19 @@ class ChatRepository extends ServiceEntityRepository
         $this->createQueryBuilder('c')
             ->update()
             ->set(
-                'c.last_media_id', 
+                'c.lastMedia', 
                 '(' . 
                     $this->createQueryBuilder('cma')
                         ->select('cma.id')
-                        ->where('cma.chat_id = :chat_id')
-                        ->setParameter('chat_id', $entity->getId())
+                        ->where('cma.chat = :chat')
+                        ->setParameter('chat', $entity)
                         ->orderBy('cma.date', 'DESC')
                         ->setMaxResults(1)
                         ->getDQL()
                 . ')'
             )
             ->where('c.id = :id')
-            ->setParameter('id', $entity->getId())
+            ->setParameter('id', $entity)
             ->getQuery()
             ->execute();
     }
@@ -90,19 +90,19 @@ class ChatRepository extends ServiceEntityRepository
         $this->createQueryBuilder('c')
             ->update()
             ->set(
-                'c.last_message_date', 
+                'c.lastMessageDate', 
                 '(' .
                     $this->createQueryBuilder('cms')
                         ->select('cms.date')
-                        ->where('cms.chat_id = :chat_id')
-                        ->setParameter('chat_id', $entity->getId())
+                        ->where('cms.chat = :chat')
+                        ->setParameter('chat', $entity)
                         ->orderBy('cms.date', 'DESC')
                         ->setMaxResults(1)
                         ->getDQL()
                 . ')'
             )
             ->where('c.id = :id')
-            ->setParameter('id', $entity->getId())
+            ->setParameter('id', $entity)
             ->getQuery()
             ->execute();
     }
