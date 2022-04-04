@@ -70,8 +70,7 @@ class ChatRepository extends ServiceEntityRepository
         $select = $this->_em->createQueryBuilder()
             ->select('cm.id')
             ->from(ChatMedia::class, 'cm')
-            ->where('cm.chat = :chat')
-            ->setParameter('chat', $entity->getId())
+            ->where('cm.chat = :chat_id')
             ->orderBy('cm.date', 'DESC')
             ->setMaxResults(1)
             ->getDQL();
@@ -79,8 +78,8 @@ class ChatRepository extends ServiceEntityRepository
         $this->createQueryBuilder('c')
             ->update()
             ->set('c.lastMedia', "($select)")
-            ->where('c.id = :id')
-            ->setParameter('id', $entity->getId())
+            ->where('c.id = :chat_id')
+            ->setParameter('chat_id', $entity->getId())
             ->getQuery()
             ->execute();
     }
@@ -90,8 +89,7 @@ class ChatRepository extends ServiceEntityRepository
         $select = $this->_em->createQueryBuilder()
             ->select('m.date')
             ->from(Message::class, 'm')
-            ->where('m.chat = :chat')
-            ->setParameter('chat', $entity->getId())
+            ->where('m.chat = :chat_id')
             ->orderBy('m.date', 'DESC')
             ->setMaxResults(1)
             ->getDQL();
@@ -99,8 +97,8 @@ class ChatRepository extends ServiceEntityRepository
         $this->createQueryBuilder('c')
             ->update()
             ->set('c.lastMessageDate', "($select)")
-            ->where('c.id = :id')
-            ->setParameter('id', $entity->getId())
+            ->where('c.id = :chat_id')
+            ->setParameter('chat_id', $entity->getId())
             ->getQuery()
             ->execute();
     }
