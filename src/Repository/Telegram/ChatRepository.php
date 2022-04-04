@@ -3,6 +3,8 @@
 namespace App\Repository\Telegram;
 
 use App\Entity\Telegram\Chat;
+use App\Entity\Telegram\ChatMedia;
+use App\Entity\Telegram\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -65,44 +67,40 @@ class ChatRepository extends ServiceEntityRepository
 
     public function updateLastMedia(Chat $entity): void
     {
+        $select = $this->_em->createQueryBuilder()
+            ->select('cm.id')
+            ->from(ChatMedia::class, 'cm')
+            ->where('cm.chat_id = :chat_id')
+            ->setParameter('chat_id', $entity->getId())
+            ->orderBy('cm.date', 'DESC')
+            ->setMaxResults(1)
+            ->getDQL();
+
         $this->createQueryBuilder('c')
             ->update()
-            ->set(
-                'c.lastMedia', 
-                '(' . 
-                    $this->createQueryBuilder('cma')
-                        ->select('cma.id')
-                        ->where('cma.chat = :chat')
-                        ->setParameter('chat', $entity)
-                        ->orderBy('cma.date', 'DESC')
-                        ->setMaxResults(1)
-                        ->getDQL()
-                . ')'
-            )
+            ->set('c.lastMedia', "($select)")
             ->where('c.id = :id')
-            ->setParameter('id', $entity)
+            ->setParameter('id', $entity->getId())
             ->getQuery()
             ->execute();
     }
 
     public function updateLastMessageDate(Chat $entity): void
     {
+        $select = $this->_em->createQueryBuilder()
+            ->select('m.date')
+            ->from(Message::class, 'm')
+            ->where('m.chat_id = :chat_id')
+            ->setParameter('chat_id', $entity->getId())
+            ->orderBy('m.date', 'DESC')
+            ->setMaxResults(1)
+            ->getDQL();
+
         $this->createQueryBuilder('c')
             ->update()
-            ->set(
-                'c.lastMessageDate', 
-                '(' .
-                    $this->createQueryBuilder('cms')
-                        ->select('cms.date')
-                        ->where('cms.chat = :chat')
-                        ->setParameter('chat', $entity)
-                        ->orderBy('cms.date', 'DESC')
-                        ->setMaxResults(1)
-                        ->getDQL()
-                . ')'
-            )
+            ->set('c.lastMessageDate', "($select)")
             ->where('c.id = :id')
-            ->setParameter('id', $entity)
+            ->setParameter('id', $entity->getId())
             ->getQuery()
             ->execute();
     }
