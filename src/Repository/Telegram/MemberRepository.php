@@ -3,6 +3,7 @@
 namespace App\Repository\Telegram;
 
 use App\Entity\Telegram\Member;
+use App\Entity\Telegram\MemberMedia;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -17,6 +18,24 @@ class MemberRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Member::class);
+    }
+
+    public function updateLastMedia(Member $entity): void
+    {
+        $select = $this->_em->createQueryBuilder()
+            ->select('mm.id')
+            ->from(MemberMedia::class, 'mm')
+            ->where('mm.member = :member_id')
+            ->orderBy('mm.date', 'DESC')
+            ->getDQL();
+
+        $this->createQueryBuilder('m')
+            ->update()
+            ->set('m.lastMedia', "($select LIMIT 1)")
+            ->where('m.id = :member_id')
+            ->setParameter('member_id', $entity->getId())
+            ->getQuery()
+            ->execute();
     }
 
     // /**
