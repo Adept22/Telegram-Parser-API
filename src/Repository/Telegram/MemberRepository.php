@@ -22,19 +22,17 @@ class MemberRepository extends ServiceEntityRepository
 
     public function updateLastMedia(Member $entity): void
     {
-        $select = $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select('mm.id')
-            ->from(MemberMedia::class, 'mm')
-            ->where('mm.member = :member_id')
-            ->orderBy('mm.date', 'DESC')
-            ->setFirstResult(0)
-            ->setMaxResults(1)
-            ->getDQL();
-
         $this->createQueryBuilder('m')
             ->update()
-            ->set('m.lastMedia', "($select limit 1)")
+            ->set('m.lastMedia', "FIRST(" . 
+                $this->getEntityManager()
+                    ->createQueryBuilder()
+                    ->select('mm.id')
+                    ->from(MemberMedia::class, 'mm')
+                    ->where('mm.member = :member_id')
+                    ->orderBy('mm.date', 'DESC')
+                    ->getDQL()
+            . ")")
             ->where('m.id = :member_id')
             ->setParameter('member_id', $entity->getId())
             ->getQuery()

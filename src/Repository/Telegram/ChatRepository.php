@@ -75,19 +75,17 @@ class ChatRepository extends ServiceEntityRepository
 
     public function updateLastMedia(Chat $entity): void
     {
-        $select = $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select('cm.id')
-            ->from(ChatMedia::class, 'cm')
-            ->where('cm.chat = :chat_id')
-            ->orderBy('cm.date', 'DESC')
-            ->getDQL();
-
-        $this->logger->critical($select);
-
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.lastMedia', "($select limit 1)")
+            ->set('c.lastMedia', "FIRST(" . 
+                $this->getEntityManager()
+                    ->createQueryBuilder()
+                    ->select('cm.id')
+                    ->from(ChatMedia::class, 'cm')
+                    ->where('cm.chat = :chat_id')
+                    ->orderBy('cm.date', 'DESC')
+                    ->getDQL()
+            . ")")
             ->where('c.id = :chat_id')
             ->setParameter('chat_id', $entity->getId())
             ->getQuery()
@@ -96,19 +94,17 @@ class ChatRepository extends ServiceEntityRepository
 
     public function updateLastMessageDate(Chat $entity): void
     {
-        $select = $this->getEntityManager()
-            ->createQueryBuilder()
-            ->select('m.date')
-            ->from(Message::class, 'm')
-            ->where('m.chat = :chat_id')
-            ->orderBy('m.date', 'DESC')
-            ->getDQL();
-
-        $this->logger->critical($select);
-
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.lastMessageDate', "($select limit 1)")
+            ->set('c.lastMessageDate', "(" . 
+                $this->getEntityManager()
+                    ->createQueryBuilder()
+                    ->select('MAX(m.date)')
+                    ->from(Message::class, 'm')
+                    ->where('m.chat = :chat_id')
+                    ->orderBy('m.date', 'DESC')
+                    ->getDQL()
+            . ")")
             ->where('c.id = :chat_id')
             ->setParameter('chat_id', $entity->getId())
             ->getQuery()

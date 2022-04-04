@@ -21,3 +21,6 @@ doctrine:
                 is_bundle: false
                 prefix: App\Entity
                 alias: App
+        dql:
+            string_functions:
+                FIRST: App\Doctrine\ORM\FirstFunction
