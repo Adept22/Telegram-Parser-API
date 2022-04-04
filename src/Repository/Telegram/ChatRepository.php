@@ -96,10 +96,10 @@ class ChatRepository extends ServiceEntityRepository
     {
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.lastMessageDate', "(" . 
+            ->set('c.lastMessageDate', "FIRST(" . 
                 $this->getEntityManager()
                     ->createQueryBuilder()
-                    ->select('MAX(m.date)')
+                    ->select('m.date')
                     ->from(Message::class, 'm')
                     ->where('m.chat = :chat_id')
                     ->orderBy('m.date', 'DESC')
