@@ -7,6 +7,7 @@ use App\Entity\Telegram\ChatMedia;
 use App\Entity\Telegram\Message;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Psr\Log\LoggerInterface;
 
 /**
  * @method Chat|null find($id, $lockMode = null, $lockVersion = null)
@@ -16,9 +17,16 @@ use Doctrine\Persistence\ManagerRegistry;
  */
 class ChatRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    /**
+     * @var LoggerInterface
+     */
+    public $logger;
+
+    public function __construct(ManagerRegistry $registry, LoggerInterface $logger)
     {
         parent::__construct($registry, Chat::class);
+
+        $this->logger = $logger;
     }
 
     public function incrementMembersCount(Chat $entity): void
@@ -75,6 +83,8 @@ class ChatRepository extends ServiceEntityRepository
             ->setMaxResults(1)
             ->getDQL();
 
+        $this->logger->critical($select);
+
         $this->createQueryBuilder('c')
             ->update()
             ->set('c.lastMedia', "($select)")
@@ -93,6 +103,8 @@ class ChatRepository extends ServiceEntityRepository
             ->orderBy('m.date', 'DESC')
             ->setMaxResults(1)
             ->getDQL();
+
+        $this->logger->critical($select);
 
         $this->createQueryBuilder('c')
             ->update()

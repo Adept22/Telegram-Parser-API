@@ -101,10 +101,12 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         }
 
         if ($entity instanceof Telegram\MemberMedia) {
+            $member = $entity->getMember();
+
             /** @var \App\Repository\Telegram\MemberRepository */
             $memberRepository = $om->getRepository(Telegram\Member::class);
 
-            $memberRepository->updateLastMedia($chat);
+            $memberRepository->updateLastMedia($member);
         }
 
         if (count($violations = $this->validator->validate($entity)) > 0) {
@@ -195,7 +197,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             /** @var \App\Repository\Telegram\MemberRepository */
             $memberRepository = $om->getRepository(Telegram\Member::class);
 
-            $memberRepository->updateLastMedia($chat);
+            $memberRepository->updateLastMedia($member);
         }
     }
 }
