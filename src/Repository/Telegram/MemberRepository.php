@@ -22,7 +22,8 @@ class MemberRepository extends ServiceEntityRepository
 
     public function updateLastMedia(Member $entity): void
     {
-        $select = $this->_em->createQueryBuilder()
+        $select = $this->getEntityManager()
+            ->createQueryBuilder()
             ->select('mm.id')
             ->from(MemberMedia::class, 'mm')
             ->where('mm.member = :member_id')
@@ -33,7 +34,7 @@ class MemberRepository extends ServiceEntityRepository
 
         $this->createQueryBuilder('m')
             ->update()
-            ->set('m.lastMedia', "($select LIMIT 1)")
+            ->set('m.lastMedia', "($select limit 1)")
             ->where('m.id = :member_id')
             ->setParameter('member_id', $entity->getId())
             ->getQuery()

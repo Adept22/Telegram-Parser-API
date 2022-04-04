@@ -75,20 +75,19 @@ class ChatRepository extends ServiceEntityRepository
 
     public function updateLastMedia(Chat $entity): void
     {
-        $select = $this->_em->createQueryBuilder()
+        $select = $this->getEntityManager()
+            ->createQueryBuilder()
             ->select('cm.id')
             ->from(ChatMedia::class, 'cm')
             ->where('cm.chat = :chat_id')
             ->orderBy('cm.date', 'DESC')
-            ->setFirstResult(0)
-            ->setMaxResults(1)
             ->getDQL();
 
         $this->logger->critical($select);
 
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.lastMedia', "($select LIMIT 1)")
+            ->set('c.lastMedia', "($select limit 1)")
             ->where('c.id = :chat_id')
             ->setParameter('chat_id', $entity->getId())
             ->getQuery()
@@ -97,20 +96,19 @@ class ChatRepository extends ServiceEntityRepository
 
     public function updateLastMessageDate(Chat $entity): void
     {
-        $select = $this->_em->createQueryBuilder()
+        $select = $this->getEntityManager()
+            ->createQueryBuilder()
             ->select('m.date')
             ->from(Message::class, 'm')
             ->where('m.chat = :chat_id')
             ->orderBy('m.date', 'DESC')
-            ->setFirstResult(0)
-            ->setMaxResults(1)
             ->getDQL();
 
         $this->logger->critical($select);
 
         $this->createQueryBuilder('c')
             ->update()
-            ->set('c.lastMessageDate', "($select LIMIT 1)")
+            ->set('c.lastMessageDate', "($select limit 1)")
             ->where('c.id = :chat_id')
             ->setParameter('chat_id', $entity->getId())
             ->getQuery()
