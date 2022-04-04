@@ -27,6 +27,8 @@ class MemberRepository extends ServiceEntityRepository
             ->from(MemberMedia::class, 'mm')
             ->where('mm.member = :member_id')
             ->orderBy('mm.date', 'DESC')
+            ->setFirstResult(0)
+            ->setMaxResults(1)
             ->getDQL();
 
         $this->createQueryBuilder('m')
