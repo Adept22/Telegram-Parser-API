@@ -222,7 +222,7 @@ class ExportCommand extends Command
 
                         $this->logger->debug("Pushing message $messageIndex/$messagesCount medias");
                 
-                        $messageMedias = $member->getMedia();
+                        $messageMedias = $message->getMedia();
                         $messageMediasCount = $messageMedias->count();
                 
                         foreach ($messageMedias as $messageMediaIndex => $messageMedia) {
@@ -236,7 +236,7 @@ class ExportCommand extends Command
                                 continue;
                             }
                 
-                            $internalId = (string) $member->getInternalId();
+                            $internalId = (string) $message->getInternalId();
                             $extension = pathinfo($path, PATHINFO_EXTENSION);
                 
                             $zip->addFile(
