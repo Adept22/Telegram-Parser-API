@@ -175,7 +175,7 @@ abstract class AbstractEntityController extends AbstractController implements En
 
         $content = json_decode($request->getContent(), true) ?? [];
 
-        $entity = $this->entity(json_encode([ ...$content, 'id' => $id ]));
+        $entity = $this->entity(json_encode(array_merge($content, [ 'id' => $id ])));
 
         try {
             $this->get('doctrine.orm.entity_manager')->persist($entity);
