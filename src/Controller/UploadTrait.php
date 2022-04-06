@@ -26,7 +26,8 @@ trait UploadTrait
      */
     public function _postUpload(string $id, Request $request): Response
     {
-        $entity = $this->em->find($this->entityClass, $id);
+        $entity = $this->get('doctrine.orm.entity_manager')
+            ->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
@@ -52,8 +53,8 @@ trait UploadTrait
 
         $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
 
-        $this->em->persist($entity);
-        $this->em->flush();
+        $this->get('doctrine.orm.entity_manager')->persist($entity);
+        $this->get('doctrine.orm.entity_manager')->flush();
 
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
@@ -65,7 +66,8 @@ trait UploadTrait
      */
     public function _postChunkUpload(string $id, Request $request): Response
     {
-        $entity = $this->em->find($this->entityClass, $id);
+        $entity = $this->get('doctrine.orm.entity_manager')
+            ->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
@@ -103,7 +105,8 @@ trait UploadTrait
             ]
         ]);
 
-        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        $errors = $this->get('validator')
+            ->validate($request->query->all(), $queryConstraint);
         
         if ($errors->count() > 0) {
             throw new BadRequestHttpException($errors->get(0)->getMessage());
@@ -171,8 +174,8 @@ trait UploadTrait
 
         $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
 
-        $this->em->persist($entity);
-        $this->em->flush();
+        $this->get('doctrine.orm.entity_manager')->persist($entity);
+        $this->get('doctrine.orm.entity_manager')->flush();
     }
 
     /**
@@ -182,7 +185,8 @@ trait UploadTrait
      */
     public function _getChunk(string $id, Request $request): Response
     {
-        $entity = $this->em->find($this->entityClass, $id);
+        $entity = $this->get('doctrine.orm.entity_manager')
+            ->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
@@ -205,7 +209,8 @@ trait UploadTrait
             ]
         ]);
 
-        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        $errors = $this->get('validator')
+            ->validate($request->query->all(), $queryConstraint);
         
         if ($errors->count() > 0) {
             throw new BadRequestHttpException($errors->get(0)->getMessage());
