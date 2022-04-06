@@ -97,15 +97,11 @@ class Chat extends AbstractEntity
 
     /**
      * @ORM\Column(type="datetimetz", nullable=true)
-     * 
-     * @Serializer\Exclude
      */
     private $lastMessageDate;
 
     /**
      * @ORM\OneToOne(targetEntity=ChatMedia::class)
-     * 
-     * @Serializer\Exclude
      */
     private $lastMedia;
 
