@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,6 +14,7 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use JMS\Serializer\SerializerInterface;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
@@ -148,7 +150,11 @@ abstract class AbstractEntityController extends AbstractController implements En
             throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
-        $this->em->flush();
+        try {
+            $this->em->flush();
+        } catch (UniqueConstraintViolationException $ex) {
+            throw new ConflictHttpException("Unique constraint violation error.", $ex);
+        }
 
         $response = $this->serializer->serialize($entity, 'json');
 
@@ -180,7 +186,11 @@ abstract class AbstractEntityController extends AbstractController implements En
             throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
-        $this->em->flush();
+        try {
+            $this->em->flush();
+        } catch (UniqueConstraintViolationException $ex) {
+            throw new ConflictHttpException("Unique constraint violation error.", $ex);
+        }
 
         $response = $this->serializer->serialize($entity, 'json');
 
