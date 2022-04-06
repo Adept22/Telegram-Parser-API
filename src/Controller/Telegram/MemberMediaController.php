@@ -18,7 +18,7 @@ class MemberMediaController extends AbstractEntityController
     
     public function __construct()
     {
-        parent::__construct(Message::class);
+        parent::__construct(MemberMedia::class);
 
         $this->setMediaPath('member');
     }
