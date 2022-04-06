@@ -16,13 +16,10 @@ class MessageMediaController extends AbstractEntityController
 {
     use UploadTrait;
 
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = MessageMedia::class;
-    
-    /**
-     * {@inheritdoc}
-     */
-    protected static $alias = 'message';
+    public function __construct()
+    {
+        parent::__construct(MessageMedia::class);
+
+        $this->setMediaPath('message');
+    }
 }

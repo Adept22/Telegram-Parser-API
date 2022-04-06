@@ -13,8 +13,8 @@ use App\Entity\Telegram\Host;
  */
 class HostController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Host::class;
+    public function __construct()
+    {
+        parent::__construct(Host::class);
+    }
 }

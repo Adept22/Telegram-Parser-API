@@ -12,6 +12,13 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 trait UploadTrait
 {
+    protected $path;
+
+    public function setMediaPath(string $path)
+    {
+        $this->path = $path;
+    }
+
     /**
      * Загружает цельный файл
      * 
@@ -19,7 +26,7 @@ trait UploadTrait
      */
     public function _postUpload(string $id, Request $request): Response
     {
-        $entity = $this->em->find(static::$entityClassName, $id);
+        $entity = $this->em->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
@@ -39,7 +46,7 @@ trait UploadTrait
         $basePath = $this->getParameter('kernel.project_dir') . "/public";
         
         $file = $file->move(
-            $basePath . "/uploads/" . static::$alias, 
+            $basePath . "/uploads/" . $this->path, 
             (string) $entity->getId() . '.' . $file->getClientOriginalExtension()
         );
 
@@ -58,7 +65,7 @@ trait UploadTrait
      */
     public function _postChunkUpload(string $id, Request $request): Response
     {
-        $entity = $this->em->find(static::$entityClassName, $id);
+        $entity = $this->em->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");
@@ -158,7 +165,7 @@ trait UploadTrait
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
 
         $file = $file->move(
-            $basePath . "/uploads/" . static::$alias, 
+            $basePath . "/uploads/" . $this->path, 
             (string) $entity->getId() . '.' . $extension
         );
 
@@ -175,7 +182,7 @@ trait UploadTrait
      */
     public function _getChunk(string $id, Request $request): Response
     {
-        $entity = $this->em->find(static::$entityClassName, $id);
+        $entity = $this->em->find($this->entityClass, $id);
 
         if (!isset($entity)) {
             throw new NotFoundHttpException("Entity not found.");

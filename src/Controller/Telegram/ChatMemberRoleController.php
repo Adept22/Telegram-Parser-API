@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class ChatMemberRoleController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = ChatMemberRole::class;
+    public function __construct()
+    {
+        parent::__construct(ChatMemberRole::class);
+    }
 }

@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 final class ParserController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Parser::class;
+    public function __construct()
+    {
+        parent::__construct(Parser::class);
+    }
 }

@@ -16,13 +16,10 @@ class ChatMediaController extends AbstractEntityController
 {
     use UploadTrait;
     
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = ChatMedia::class;
-    
-    /**
-     * {@inheritdoc}
-     */
-    protected static $alias = 'chat';
+    public function __construct()
+    {
+        parent::__construct(ChatMedia::class);
+
+        $this->setMediaPath('chat');
+    }
 }

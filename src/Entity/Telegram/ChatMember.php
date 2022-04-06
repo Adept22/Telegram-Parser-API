@@ -10,7 +10,13 @@ use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(name="telegram.chats_members")
+ * @ORM\Table(
+ *  name="telegram.chats_members", 
+ *  uniqueConstraints={
+ *      @UniqueConstraint(name="chat_member_unique", 
+ *      columns={"chat_id", "member_id"})
+ *  }
+ * )
  * @ORM\Entity(repositoryClass=ChatMemberRepository::class)
  */
 class ChatMember extends AbstractEntity

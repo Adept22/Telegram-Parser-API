@@ -14,7 +14,9 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use JMS\Serializer\SerializerInterface;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
+use Symfony\Component\HttpKernel\Exception\ServiceUnavailableHttpException;
 
 /**
  * @author Владислав Теренчук <v.terenchuk@soccard.ru>
@@ -22,30 +24,25 @@ use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 abstract class AbstractEntityController extends AbstractController implements EntityControllerInterface
 {
     /**
-     * @var string $entityClassName Класс сущности с которой работает контроллер
+     * @var string $entityClass Класс сущности с которой работает контроллер
      */
-    protected static $entityClassName;
+    protected $entityClass;
 
-    /**
-     * @var EntityManagerInterface
-     */
-    protected $em;
-
-    /**
-     * @var SerializerInterface
-     */
-    protected $serializer;
-
-    /**
-     * @var ValidatorInterface
-     */
-    protected $validator;
-
-    public function __construct(EntityManagerInterface $em, SerializerInterface $serializer, ValidatorInterface $validator)
+    public function __construct(string $entityClass)
     {
-        $this->em = $em;
-        $this->serializer = $serializer;
-        $this->validator = $validator;
+        $this->entityClass = $entityClass;
+    }
+
+    public static function getSubscribedServices()
+    {
+        $services = parent::getSubscribedServices();
+
+        return [
+            ...$services,
+            'doctrine.orm.entity_manager' => '?'.EntityManagerInterface::class,
+            'jms_serializer' => '?'.SerializerInterface::class,
+            'validator' => '?'.ValidatorInterface::class
+        ];
     }
 
     /**
@@ -55,15 +52,19 @@ abstract class AbstractEntityController extends AbstractController implements En
      */
     public function _get(string $id): Response
     {
-        $entity = $this->em->find(static::$entityClassName, $id);
+        if ($this->has('doctrine.orm.entity_manager')) {
+            $em = $this->get('doctrine.orm.entity_manager');
+        } else {
+            throw new ServiceUnavailableHttpException();
+        }
+
+        $entity = $em->find($this->entityClass, $id);
 
         if ($entity == null) {
             throw new NotFoundHttpException("Entity $id not found.");
         }
 
-        $response = $this->serializer->serialize($entity, 'json');
-
-        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
+        return $this->json($entity, Response::HTTP_OK);
     }
 
     /**
@@ -75,7 +76,7 @@ abstract class AbstractEntityController extends AbstractController implements En
     {
         $content = json_decode($request->getContent(), true) ?? [];
 
-        $classMetadata = $this->em->getClassMetadata(static::$entityClassName);
+        $classMetadata = $this->get('doctrine.orm.entity_manager')->getClassMetadata($this->entityClass);
 
         $queryConstraint = new Assert\Collection([
             "fields" => [
@@ -100,7 +101,8 @@ abstract class AbstractEntityController extends AbstractController implements En
             "missingFieldsMessage" => "Ожидается параметр {{ field }}"
         ]);
 
-        $errors = $this->validator->validate($request->query->all(), $queryConstraint);
+        $errors = $this->get('validator')
+            ->validate($request->query->all(), $queryConstraint);
         
         if ($errors->count() > 0) {
             throw new BadRequestHttpException($errors->get(0)->getMessage());
@@ -121,12 +123,11 @@ abstract class AbstractEntityController extends AbstractController implements En
             }
         }
 
-        $entities = $this->em->getRepository(static::$entityClassName)
+        $entities = $this->get('doctrine.orm.entity_manager')
+            ->getRepository($this->entityClass)
             ->findBy($content, [$sort => $order], $limit, $start);
 
-        $response = $this->serializer->serialize($entities, 'json');
-
-        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
+        return $this->json($entities, Response::HTTP_OK);
     }
 
     /**
@@ -142,23 +143,21 @@ abstract class AbstractEntityController extends AbstractController implements En
             throw new BadRequestHttpException("Entity id was given. Maybe you mean PUT request?");
         }
 
-        $entity = $this->serializer->deserialize($request->getContent(), static::$entityClassName, 'json');
+        $entity = $this->entity($request->getContent());
 
         try {
-            $this->em->persist($entity);
+            $this->get('doctrine.orm.entity_manager')->persist($entity);
         } catch (ValidationFailedException $ex) {
             throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
         try {
-            $this->em->flush();
+            $this->get('doctrine.orm.entity_manager')->flush();
         } catch (UniqueConstraintViolationException $ex) {
             throw new ConflictHttpException("Unique constraint violation error.", $ex);
         }
 
-        $response = $this->serializer->serialize($entity, 'json');
-
-        return new Response($response, Response::HTTP_CREATED, ['content-type' => 'application/json']);
+        return $this->json($entity, Response::HTTP_CREATED);
     }
 
     /**
@@ -168,33 +167,30 @@ abstract class AbstractEntityController extends AbstractController implements En
      */
     public function _put(string $id, Request $request): Response
     {
-        $content = json_decode($request->getContent(), true) ?? [];
-
-        $entity = $this->em->find(static::$entityClassName, $id);
-
+        $entity = $this->get('doctrine.orm.entity_manager')
+            ->find($this->entityClass, $id);
+        
         if ($entity == null) {
             throw new NotFoundHttpException("Entity $id not found.");
         }
 
-        $content['id'] = $id;
+        $content = json_decode($request->getContent(), true) ?? [];
 
-        $entity = $this->serializer->deserialize(json_encode($content), static::$entityClassName, 'json');
+        $entity = $this->entity(json_encode([ ...$content, 'id' => $id ]));
 
         try {
-            $this->em->persist($entity);
+            $this->get('doctrine.orm.entity_manager')->persist($entity);
         } catch (ValidationFailedException $ex) {
             throw new BadRequestHttpException($ex->getViolations()->get(0)->getMessage());
         }
 
         try {
-            $this->em->flush();
+            $this->get('doctrine.orm.entity_manager')->flush();
         } catch (UniqueConstraintViolationException $ex) {
             throw new ConflictHttpException("Unique constraint violation error.", $ex);
         }
 
-        $response = $this->serializer->serialize($entity, 'json');
-
-        return new Response($response, Response::HTTP_OK, ['content-type' => 'application/json']);
+        return $this->json($entity, Response::HTTP_OK);
     }
 
     /**
@@ -204,15 +200,30 @@ abstract class AbstractEntityController extends AbstractController implements En
      */
     public function _delete(string $id): Response
     {
-        $entity = $this->em->find(static::$entityClassName, $id);
+        $entity = $this->get('doctrine.orm.entity_manager')->find($this->entityClass, $id);
 
         if ($entity == null) {
             throw new NotFoundHttpException("Entity $id not found.");
         }
 
-        $this->em->remove($entity);
-        $this->em->flush();
+        $this->get('doctrine.orm.entity_manager')->remove($entity);
+        $this->get('doctrine.orm.entity_manager')->flush();
 
         return new Response('', Response::HTTP_NO_CONTENT, ['content-type' => 'application/json']);
+    }
+
+    protected function entity(string $data)
+    {
+        return $this->get('jms_serializer')->deserialize($data, $this->entityClass, 'json');
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    protected function json($data, int $status = 200, array $headers = [], array $context = []): JsonResponse
+    {
+        $json = $this->get('jms_serializer')->serialize($data, 'json');
+
+        return new JsonResponse($json, $status, $headers, true);
     }
 }

@@ -13,8 +13,8 @@ use App\Entity\Export;
  */
 class ExportController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Export::class;
+    public function __construct()
+    {
+        parent::__construct(Export::class);
+    }
 }

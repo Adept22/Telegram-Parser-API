@@ -15,14 +15,11 @@ use Symfony\Component\Routing\Annotation\Route;
 class MemberMediaController extends AbstractEntityController
 {
     use UploadTrait;
-
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = MemberMedia::class;
     
-    /**
-     * {@inheritdoc}
-     */
-    protected static $alias = 'member';
+    public function __construct()
+    {
+        parent::__construct(Message::class);
+
+        $this->setMediaPath('member');
+    }
 }

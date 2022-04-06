@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class MessageController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Message::class;
+    public function __construct()
+    {
+        parent::__construct(Message::class);
+    }
 }

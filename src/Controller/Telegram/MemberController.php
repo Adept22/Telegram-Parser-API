@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class MemberController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Member::class;
+    public function __construct()
+    {
+        parent::__construct(Member::class);
+    }
 }

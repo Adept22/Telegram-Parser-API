@@ -8,7 +8,13 @@ use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(name="telegram.chats_members_roles")
+ * @ORM\Table(
+ *  name="telegram.chats_members_roles", 
+ *  uniqueConstraints={
+ *      @UniqueConstraint(name="chat_member_role_unique", 
+ *      columns={"member_id", "title", "code"})
+ *  }
+ * )
  * @ORM\Entity(repositoryClass=ChatMemberRoleRepository::class)
  */
 class ChatMemberRole extends AbstractEntity

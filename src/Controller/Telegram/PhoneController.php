@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 final class PhoneController extends AbstractEntityController
 {
-    /**
-     * {@inheritdoc}
-     */
-    protected static $entityClassName = Phone::class;
+    public function __construct()
+    {
+        parent::__construct(Phone::class);
+    }
 }
