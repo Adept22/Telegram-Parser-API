@@ -13,7 +13,7 @@ use JMS\Serializer\Annotation as Serializer;
  * @ORM\Table(
  *  name="telegram.messages", 
  *  uniqueConstraints={
- *      @UniqueConstraint(name="message_unique", 
+ *      @@ORM\UniqueConstraint(name="message_unique", 
  *      columns={"internal_id", "chat_id"})
  *  }
  * )
