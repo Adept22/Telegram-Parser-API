@@ -37,12 +37,11 @@ abstract class AbstractEntityController extends AbstractController implements En
     {
         $services = parent::getSubscribedServices();
 
-        return [
-            ...$services,
-            'doctrine.orm.entity_manager' => '?'.EntityManagerInterface::class,
-            'jms_serializer' => '?'.SerializerInterface::class,
-            'validator' => '?'.ValidatorInterface::class
-        ];
+        $services['doctrine.orm.entity_manager'] = '?'.EntityManagerInterface::class;
+        $services['jms_serializer'] = '?'.SerializerInterface::class;
+        $services['validator'] = '?'.ValidatorInterface::class;
+
+        return $services;
     }
 
     /**
