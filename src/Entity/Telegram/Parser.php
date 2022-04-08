@@ -31,7 +31,7 @@ class Parser extends AbstractEntity
     private $api_hash;
 
     /**
-     * @ORM\ManyToOne(targetEntity=Host::class, inversedBy="parsers", cascade={"all"})
+     * @ORM\ManyToOne(targetEntity=Host::class, inversedBy="parsers")
      * @ORM\JoinColumn(nullable=false)
      */
     private $host;
