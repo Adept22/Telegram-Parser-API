@@ -44,15 +44,15 @@ services:
     ports:
       # HTTP
       - target: 80
-        published: 80
+        published: 8080
         protocol: tcp
       # HTTPS
       - target: 443
-        published: 443
+        published: 4443
         protocol: tcp
       # HTTP/3
       - target: 443
-        published: 443
+        published: 4443
         protocol: udp
 
 volumes:
