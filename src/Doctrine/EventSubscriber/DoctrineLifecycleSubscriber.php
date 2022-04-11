@@ -32,8 +32,9 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         return [
             Events::prePersist,
+            Events::postPersist,
             Events::preUpdate,
-            Events::preRemove
+            Events::postRemove
         ];
     }
 
@@ -72,6 +73,16 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             }
         }
 
+        if (count($violations = $this->validator->validate($entity)) > 0) {
+            throw new ValidationFailedException($entity, $violations);
+        }
+    }
+
+    public function postPersist(LifecycleEventArgs $args): void
+    {
+        $om = $args->getObjectManager();
+        $entity = $args->getObject();
+
         if ($entity instanceof Telegram\ChatMedia) {
             $chat = $entity->getChat();
 
@@ -107,10 +118,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
             $memberRepository = $om->getRepository(Telegram\Member::class);
 
             $memberRepository->updateLastMedia($member);
-        }
-
-        if (count($violations = $this->validator->validate($entity)) > 0) {
-            throw new ValidationFailedException($entity, $violations);
         }
     }
 
@@ -158,7 +165,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         }
     }
 
-    public function preRemove(LifecycleEventArgs $args): void
+    public function postRemove(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
         $om = $args->getObjectManager();
