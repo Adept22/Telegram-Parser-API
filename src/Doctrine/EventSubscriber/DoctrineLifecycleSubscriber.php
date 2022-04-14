@@ -84,40 +84,40 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         $entity = $args->getObject();
 
         if ($entity instanceof Telegram\ChatMedia) {
-            $chat = $entity->getChat();
-
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->updateLastMedia($chat);
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
+    
+                $chatRepository->updateLastMedia($chat);
+            }
         }
 
         if ($entity instanceof Telegram\ChatMember) {
-            $chat = $entity->getChat();
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
 
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->incrementMembersCount($chat);
+                $chatRepository->incrementMembersCount($chat);
+            }
         }
 
         if ($entity instanceof Telegram\Message) {
-            $chat = $entity->getChat();
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
 
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->incrementMessagesCount($chat);
-            $chatRepository->updateLastMessageDate($chat);
+                $chatRepository->incrementMessagesCount($chat);
+                $chatRepository->updateLastMessageDate($chat);
+            }
         }
 
         if ($entity instanceof Telegram\MemberMedia) {
-            $member = $entity->getMember();
+            if (($member = $entity->getMember()) !== null) {
+                /** @var \App\Repository\Telegram\MemberRepository */
+                $memberRepository = $om->getRepository(Telegram\Member::class);
 
-            /** @var \App\Repository\Telegram\MemberRepository */
-            $memberRepository = $om->getRepository(Telegram\Member::class);
-
-            $memberRepository->updateLastMedia($member);
+                $memberRepository->updateLastMedia($member);
+            }
         }
     }
 
@@ -171,40 +171,40 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         $om = $args->getObjectManager();
 
         if ($entity instanceof Telegram\ChatMedia) {
-            $chat = $entity->getChat();
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
 
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->updateLastMedia($chat);
+                $chatRepository->updateLastMedia($chat);
+            }
         }
 
         if ($entity instanceof Telegram\ChatMember) {
-            $chat = $entity->getChat();
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
 
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->decrementMembersCount($chat);
+                $chatRepository->decrementMembersCount($chat);
+            }
         }
 
         if ($entity instanceof Telegram\Message) {
-            $chat = $entity->getChat();
+            if (($chat = $entity->getChat()) !== null) {
+                /** @var \App\Repository\Telegram\ChatRepository */
+                $chatRepository = $om->getRepository(Telegram\Chat::class);
 
-            /** @var \App\Repository\Telegram\ChatRepository */
-            $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-            $chatRepository->decrementMessagesCount($chat);
-            $chatRepository->updateLastMessageDate($chat);
+                $chatRepository->decrementMessagesCount($chat);
+                $chatRepository->updateLastMessageDate($chat);
+            }
         }
 
         if ($entity instanceof Telegram\MemberMedia) {
-            $member = $entity->getMember();
+            if (($member = $entity->getMember()) !== null) {
+                /** @var \App\Repository\Telegram\MemberRepository */
+                $memberRepository = $om->getRepository(Telegram\Member::class);
 
-            /** @var \App\Repository\Telegram\MemberRepository */
-            $memberRepository = $om->getRepository(Telegram\Member::class);
-
-            $memberRepository->updateLastMedia($member);
+                $memberRepository->updateLastMedia($member);
+            }
         }
     }
 }

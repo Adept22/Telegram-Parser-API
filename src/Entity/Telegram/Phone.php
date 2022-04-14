@@ -51,7 +51,7 @@ class Phone extends AbstractEntity
     private $isBanned = false;
     
     /**
-     * @ORM\Column(type="string", length=6, nullable=true)
+     * @ORM\Column(type="integer", nullable=true)
      */
     private $code;
 
