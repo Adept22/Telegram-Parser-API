@@ -32,6 +32,11 @@ class Chat extends AbstractEntity
     private $title;
 
     /**
+     * @ORM\Column(type="string", length=10, nullable=true)
+     */
+    private $type;
+
+    /**
      * @ORM\Column(type="text", nullable=true)
      */
     private $description;
@@ -211,6 +216,18 @@ class Chat extends AbstractEntity
     public function setTitle(string $title): self
     {
         $this->title = $title;
+
+        return $this;
+    }
+
+    public function getType(): ?string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): self
+    {
+        $this->type = $type;
 
         return $this;
     }
