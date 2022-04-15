@@ -216,9 +216,9 @@ trait UploadTrait
             throw new BadRequestHttpException($errors->get(0)->getMessage());
         }
 
-        $filename = $this->request->get('filename');
-        $chunkNumber = $this->request->get('chunkNumber');
-        $chunkSize = $this->request->get('chunkSize');
+        $filename = $request->get('filename');
+        $chunkNumber = $request->get('chunkNumber');
+        $chunkSize = $request->get('chunkSize');
 
         $tmpBase = sys_get_temp_dir();
 

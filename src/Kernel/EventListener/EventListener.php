@@ -30,9 +30,7 @@ class EventListener
 
     public function onTerminateEvent(TerminateEvent $event)
     {
-        list($controllerClass, $function) = explode("::", $event->getRequest()->get("_controller"));
-
-        if ($controllerClass === ExportController::class && $function == "_post") {
+        if ($event->getRequest()->get("_controller") === ExportController::class . "::_post") {
             $response = $event->getResponse();
             $data = json_decode($response->getContent(), true);
 
