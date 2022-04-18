@@ -3,6 +3,7 @@
 namespace App\Doctrine\EventSubscriber;
 
 use App\Entity\Telegram;
+use App\Entity\Telegram\ChatAvailablePhone;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
@@ -68,7 +69,11 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
 
             if ($entity->getParser() != null) {
                 foreach ($entity->getParser()->getPhones() as $phone) {
-                    $entity->addAvailablePhone($phone);
+                    $availablePhone = new ChatAvailablePhone();
+                    $availablePhone->setChat($entity);
+                    $availablePhone->setParserPhone($phone);
+                    
+                    $om->persist($availablePhone);
                 }
             }
         }
@@ -125,40 +130,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         $entity = $args->getObject();
         $om = $args->getObjectManager();
-
-        if ($entity instanceof Telegram\Chat) {
-            $parser = $entity->getParser();
-
-            if ($parser != null) {
-                $phones = $parser->getPhones();
-
-                $entity->getAvailablePhones()->map(function ($availablePhone) use ($entity, $phones) {
-                    $exist = $phones->exists(function ($key, $phone) use ($availablePhone) {
-                        return (string) $phone->getId() === (string) $availablePhone->getId();
-                    });
-
-                    if (!$exist) $entity->removeAvailablePhone($availablePhone);
-                });
-
-                $availablePhones = $entity->getAvailablePhones();
-
-                $entity->getPhones()->map(function ($phone) use ($entity, $availablePhones) {
-                    $exist = $availablePhones->exists(function ($key, $availablePhone) use ($phone) {
-                        return (string) $availablePhone->getId() === (string) $phone->getId();
-                    });
-
-                    if (!$exist) $entity->removePhone($phone);
-                });
-            } else {
-                $entity->getAvailablePhones()->map(function ($availablePhone) use ($entity) {
-                    $entity->removeAvailablePhone($availablePhone);
-                });
-
-                $entity->getPhones()->map(function ($phone) use ($entity) {
-                    $entity->removePhone($phone);
-                });
-            }
-        }
 
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
