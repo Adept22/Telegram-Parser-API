@@ -124,29 +124,10 @@ class Chat extends AbstractEntity
     private $messagesCount = 0;
 
     /**
-     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="chat")
-     */
-    private $phones;
-
-    /**
-     * @ORM\OneToMany(targetEntity=ChatAvailablePhone::class, mappedBy="chat")
-     */
-    private $availablePhones;
-
-    /**
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
-     * 
-     * @Serializer\Exclude
      */
     private $parser;
-
-    /**
-     * @ORM\OneToMany(targetEntity=Export::class, mappedBy="chat")
-     * 
-     * @Serializer\Exclude
-     */
-    private $exports;
 
     public function __construct()
     {
@@ -154,9 +135,6 @@ class Chat extends AbstractEntity
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
-        $this->phones = new ArrayCollection();
-        $this->availablePhones = new ArrayCollection();
-        $this->exports = new ArrayCollection();
     }
 
     public function getInternalId(): ?int
@@ -417,66 +395,6 @@ class Chat extends AbstractEntity
         return $this;
     }
 
-    /**
-     * @return Collection|ChatPhone[]
-     */
-    public function getPhones(): Collection
-    {
-        return $this->phones;
-    }
-
-    public function addPhone(ChatPhone $chatPhone): self
-    {
-        if (!$this->phones->contains($chatPhone)) {
-            $this->phones[] = $chatPhone;
-            $chatPhone->setChat($this);
-        }
-
-        return $this;
-    }
-
-    public function removePhone(ChatPhone $chatPhone): self
-    {
-        if ($this->phones->removeElement($chatPhone)) {
-            // set the owning side to null (unless already changed)
-            if ($chatPhone->getChat() === $this) {
-                $chatPhone->setChat(null);
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|ChatPhone[]
-     */
-    public function getAvailablePhones(): Collection
-    {
-        return $this->availablePhones;
-    }
-
-    public function addAvailablePhone(ChatAvailablePhone $chatAvailablePhone): self
-    {
-        if (!$this->availablePhones->contains($chatAvailablePhone)) {
-            $this->availablePhones[] = $chatAvailablePhone;
-            $chatAvailablePhone->setChat($this);
-        }
-
-        return $this;
-    }
-
-    public function removeAvailablePhone(ChatAvailablePhone $chatAvailablePhone): self
-    {
-        if ($this->availablePhones->removeElement($chatAvailablePhone)) {
-            // set the owning side to null (unless already changed)
-            if ($chatAvailablePhone->getChat() === $this) {
-                $chatAvailablePhone->setChat(null);
-            }
-        }
-
-        return $this;
-    }
-
     public function getParser(): ?Parser
     {
         return $this->parser;
@@ -485,36 +403,6 @@ class Chat extends AbstractEntity
     public function setParser(?Parser $parser): self
     {
         $this->parser = $parser;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|Export[]
-     */
-    public function getExports(): Collection
-    {
-        return $this->exports;
-    }
-
-    public function addExport(Export $export): self
-    {
-        if (!$this->exports->contains($export)) {
-            $this->exports[] = $export;
-            $export->setChat($this);
-        }
-
-        return $this;
-    }
-
-    public function removeExport(Export $export): self
-    {
-        if ($this->exports->removeElement($export)) {
-            // set the owning side to null (unless already changed)
-            if ($export->getChat() === $this) {
-                $export->setChat(null);
-            }
-        }
 
         return $this;
     }
