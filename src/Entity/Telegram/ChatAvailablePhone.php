@@ -36,7 +36,7 @@ class ChatAvailablePhone extends AbstractEntity
     private $parserPhone;
 
     /**
-     * @ORM\OneToOne(targetEntity=ChatPhone::class, mappedBy="availablePhone")
+     * @ORM\OneToOne(targetEntity=ChatPhone::class, mappedBy="availablePhone", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */

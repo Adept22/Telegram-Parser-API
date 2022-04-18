@@ -8,13 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(
- *  name="telegram.chats_phones", 
- *  uniqueConstraints={
- *      @ORM\UniqueConstraint(name="chat_phone_unique", 
- *      columns={"chat_id", "chat_available_phone_id"})
- *  }
- * )
+ * @ORM\Table(name="telegram.chats_phones")
  * @ORM\Entity(repositoryClass=ChatPhoneRepository::class)
  */
 class ChatPhone extends AbstractEntity
@@ -28,15 +22,7 @@ class ChatPhone extends AbstractEntity
     private $chat;
 
     /**
-     * @ORM\ManyToOne(targetEntity=ParserPhone::class, inversedBy="chatPhones")
-     * @ORM\JoinColumn(nullable=false)
-     * 
-     * @Serializer\MaxDepth(1)
-     */
-    private $parserPhone;
-
-    /**
-     * @ORM\OneToOne(targetEntity=ChatAvailablePhone::class, inversedBy="chatPhone")
+     * @ORM\OneToOne(targetEntity=ChatAvailablePhone::class)
      * @ORM\JoinColumn(nullable=false)
      * 
      * @Serializer\Exclude
@@ -51,18 +37,6 @@ class ChatPhone extends AbstractEntity
     public function setChat(?Chat $chat): self
     {
         $this->chat = $chat;
-
-        return $this;
-    }
-
-    public function getParserPhone(): ?ParserPhone
-    {
-        return $this->parserPhone;
-    }
-
-    public function setParserPhone(?ParserPhone $parserPhone): self
-    {
-        $this->parserPhone = $parserPhone;
 
         return $this;
     }
