@@ -56,17 +56,24 @@ class Phone extends AbstractEntity
     private $code;
 
     /**
-     * @ORM\OneToOne(targetEntity=ParserPhone::class, mappedBy="phone")
+     * @ORM\OneToOne(targetEntity=Parser::class, mappedBy="phone")
      * 
      * @Serializer\Exclude
      */
     private $parser;
 
+    /**
+     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="phone")
+     * 
+     * @Serializer\Exclude
+     */
+    private $chats;
+
     public function __construct()
     {
         parent::__construct();
         
-        $this->createdAt = new \DateTime();
+        $this->chats = new ArrayCollection();
     }
 
     public function getInternalId(): ?int
@@ -165,14 +172,38 @@ class Phone extends AbstractEntity
         return $this;
     }
 
-    public function getParser(): ?ParserPhone
+    public function getParser(): ?Parser
     {
         return $this->parser;
     }
 
-    public function setParser(?ParserPhone $parser): self
+    public function setParser(?Parser $parser): self
     {
         $this->parser = $parser;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|ChatPhone[]
+     */
+    public function getChatPhones(): Collection
+    {
+        return $this->chats;
+    }
+
+    public function addChatPhone(ChatPhone $chat): self
+    {
+        if (!$this->chats->contains($chat)) {
+            $this->chats[] = $chat;
+        }
+
+        return $this;
+    }
+
+    public function removeChatPhone(ChatPhone $chat): self
+    {
+        $this->chats->removeElement($chat);
 
         return $this;
     }

@@ -8,7 +8,13 @@ use Doctrine\ORM\Mapping as ORM;
 use JMS\Serializer\Annotation as Serializer;
 
 /**
- * @ORM\Table(name="telegram.chats_phones")
+ * @ORM\Table(
+ *  name="telegram.chats_phones"
+ *  uniqueConstraints={
+ *      @ORM\UniqueConstraint(name="chat_phone_unique", 
+ *      columns={"chat_id", "phone_id"})
+ *  }
+ * )
  * @ORM\Entity(repositoryClass=ChatPhoneRepository::class)
  */
 class ChatPhone extends AbstractEntity
@@ -22,12 +28,17 @@ class ChatPhone extends AbstractEntity
     private $chat;
 
     /**
-     * @ORM\OneToOne(targetEntity=ChatAvailablePhone::class)
+     * @ORM\ManyToOne(targetEntity=Phone::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\Exclude
+     * @Serializer\MaxDepth(1)
      */
-    private $availablePhone;
+    private $phone;
+
+    /**
+     * @ORM\Column(type="boolean", options={"default": false})
+     */
+    private $isUsing = false;
 
     public function getChat(): ?Chat
     {
@@ -41,14 +52,26 @@ class ChatPhone extends AbstractEntity
         return $this;
     }
 
-    public function getChatAvailablePhone(): ?ChatAvailablePhone
+    public function getPhone(): ?Phone
     {
-        return $this->availablePhone;
+        return $this->phone;
     }
 
-    public function setChatAvailablePhone(?ChatAvailablePhone $availablePhone): self
+    public function setPhone(?Phone $phone): self
     {
-        $this->availablePhone = $availablePhone;
+        $this->phone = $phone;
+
+        return $this;
+    }
+
+    public function getIsUsing(): ?bool
+    {
+        return $this->isUsing;
+    }
+
+    public function setIsUsing(bool $isUsing): self
+    {
+        $this->isUsing = $isUsing;
 
         return $this;
     }

@@ -44,7 +44,7 @@ class Parser extends AbstractEntity
     private $chats;
 
     /**
-     * @ORM\OneToMany(targetEntity=ParserPhone::class, mappedBy="parser", orphanRemoval=true)
+     * @ORM\OneToMany(targetEntity=Phone::class, mappedBy="parser", orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
@@ -107,14 +107,14 @@ class Parser extends AbstractEntity
     }
 
     /**
-     * @return Collection|ParserPhone[]
+     * @return Collection|Phone[]
      */
     public function getPhones(): Collection
     {
         return $this->phones;
     }
 
-    public function addPhone(ParserPhone $phone): self
+    public function addPhone(Phone $phone): self
     {
         if (!$this->phones->contains($phone)) {
             $this->phones[] = $phone;
@@ -124,7 +124,7 @@ class Parser extends AbstractEntity
         return $this;
     }
 
-    public function removePhone(ParserPhone $phone): self
+    public function removePhone(Phone $phone): self
     {
         if ($this->phones->removeElement($phone)) {
             // set the owning side to null (unless already changed)

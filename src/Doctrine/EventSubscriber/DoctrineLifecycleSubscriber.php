@@ -3,7 +3,7 @@
 namespace App\Doctrine\EventSubscriber;
 
 use App\Entity\Telegram;
-use App\Entity\Telegram\ChatAvailablePhone;
+use App\Entity\Telegram\ChatPhone;
 use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
 use Doctrine\ORM\Events;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
@@ -69,11 +69,11 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
 
             if ($entity->getParser() != null) {
                 foreach ($entity->getParser()->getPhones() as $phone) {
-                    $availablePhone = new ChatAvailablePhone();
-                    $availablePhone->setChat($entity);
-                    $availablePhone->setParserPhone($phone);
+                    $chatPhone = new ChatPhone();
+                    $chatPhone->setChat($entity);
+                    $chatPhone->setPhone($phone);
                     
-                    $om->persist($availablePhone);
+                    $om->persist($chatPhone);
                 }
             }
         }
