@@ -9,7 +9,7 @@ use JMS\Serializer\Annotation as Serializer;
 
 /**
  * @ORM\Table(
- *  name="telegram.chats_phones"
+ *  name="telegram.chats_phones", 
  *  uniqueConstraints={
  *      @ORM\UniqueConstraint(name="chat_phone_unique", 
  *      columns={"chat_id", "phone_id"})
