@@ -126,6 +126,8 @@ class Chat extends AbstractEntity
     /**
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
+     * 
+     * @Serializer\Exclude
      */
     private $parser;
 
