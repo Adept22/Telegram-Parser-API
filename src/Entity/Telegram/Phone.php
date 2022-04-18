@@ -56,17 +56,9 @@ class Phone extends AbstractEntity
     private $code;
 
     /**
-     * @ORM\ManyToMany(targetEntity=Chat::class, mappedBy="phones")
+     * @ORM\OneToOne(targetEntity=ParserPhone::class, mappedBy="phone")
      * 
      * @Serializer\Exclude
-     */
-    private $chats;
-
-    /**
-     * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="phones")
-     * @ORM\JoinColumn(nullable=false)
-     * 
-     * @Serializer\MaxDepth(2)
      */
     private $parser;
 
@@ -74,7 +66,6 @@ class Phone extends AbstractEntity
     {
         parent::__construct();
         
-        $this->chats = new ArrayCollection();
         $this->createdAt = new \DateTime();
     }
 
@@ -174,47 +165,15 @@ class Phone extends AbstractEntity
         return $this;
     }
 
-    /**
-     * @return Collection|Chat[]
-     */
-    public function getChats(): Collection
-    {
-        return $this->chats;
-    }
-
-    public function addChat(Chat $chat): self
-    {
-        if (!$this->chats->contains($chat)) {
-            $this->chats[] = $chat;
-        }
-
-        return $this;
-    }
-
-    public function removeChat(Chat $chat): self
-    {
-        $this->chats->removeElement($chat);
-
-        return $this;
-    }
-
-    public function getParser(): ?Parser
+    public function getParser(): ?ParserPhone
     {
         return $this->parser;
     }
 
-    public function setParser(?Parser $parser): self
+    public function setParser(?ParserPhone $parser): self
     {
         $this->parser = $parser;
 
         return $this;
-    }
-    
-    /**
-     * @Serializer\VirtualProperty()
-     */
-    public function getChatsCount()
-    {
-        return $this->getChats()->count();
     }
 }

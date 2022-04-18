@@ -22,7 +22,7 @@ class MessageMedia extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=Message::class, inversedBy="media")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $message;
 

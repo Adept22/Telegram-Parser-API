@@ -124,34 +124,14 @@ class Chat extends AbstractEntity
     private $messagesCount = 0;
 
     /**
-     * @ORM\ManyToMany(targetEntity=Phone::class)
-     * @ORM\JoinTable(name="telegram_chat_available_telegram_phone",
-     *      joinColumns={
-     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
-     *      },
-     *      inverseJoinColumns={
-     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
-     *      }
-     * )
-     * 
-     * @Serializer\MaxDepth(2)
-     */
-    private $availablePhones;
-    
-    /**
-     * @ORM\ManyToMany(targetEntity=Phone::class, inversedBy="chats")
-     * @ORM\JoinTable(name="telegram_chat_telegram_phone",
-     *      joinColumns={
-     *          @ORM\JoinColumn(name="telegram_chat_id", referencedColumnName="id")
-     *      },
-     *      inverseJoinColumns={
-     *          @ORM\JoinColumn(name="telegram_phone_id", referencedColumnName="id")
-     *      }
-     * )
-     * 
-     * @Serializer\MaxDepth(2)
+     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="chat")
      */
     private $phones;
+
+    /**
+     * @ORM\OneToMany(targetEntity=ChatAvailablePhone::class, mappedBy="chat")
+     */
+    private $availablePhones;
 
     /**
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
@@ -174,8 +154,8 @@ class Chat extends AbstractEntity
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
-        $this->availablePhones = new ArrayCollection();
         $this->phones = new ArrayCollection();
+        $this->availablePhones = new ArrayCollection();
         $this->exports = new ArrayCollection();
     }
 
@@ -438,54 +418,60 @@ class Chat extends AbstractEntity
     }
 
     /**
-     * @return Collection|Phone[]
-     */
-    public function getAvailablePhones(): Collection
-    {
-        return $this->availablePhones;
-    }
-
-    public function addAvailablePhone(Phone $availablePhone): self
-    {
-        if (!$this->availablePhones->contains($availablePhone)) {
-            $this->availablePhones[] = $availablePhone;
-            $availablePhone->addChat($this);
-        }
-
-        return $this;
-    }
-
-    public function removeAvailablePhone(Phone $availablePhone): self
-    {
-        if ($this->availablePhones->removeElement($availablePhone)) {
-            $availablePhone->removeChat($this);
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return Collection|Phone[]
+     * @return Collection|ChatPhone[]
      */
     public function getPhones(): Collection
     {
         return $this->phones;
     }
 
-    public function addPhone(Phone $phone): self
+    public function addPhone(ChatPhone $chatPhone): self
     {
-        if (!$this->phones->contains($phone)) {
-            $this->phones[] = $phone;
-            $phone->addChat($this);
+        if (!$this->phones->contains($chatPhone)) {
+            $this->phones[] = $chatPhone;
+            $chatPhone->setChat($this);
         }
 
         return $this;
     }
 
-    public function removePhone(Phone $phone): self
+    public function removePhone(ChatPhone $chatPhone): self
     {
-        if ($this->phones->removeElement($phone)) {
-            $phone->removeChat($this);
+        if ($this->phones->removeElement($chatPhone)) {
+            // set the owning side to null (unless already changed)
+            if ($chatPhone->getChat() === $this) {
+                $chatPhone->setChat(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|ChatPhone[]
+     */
+    public function getAvailablePhones(): Collection
+    {
+        return $this->availablePhones;
+    }
+
+    public function addAvailablePhone(ChatAvailablePhone $chatAvailablePhone): self
+    {
+        if (!$this->availablePhones->contains($chatAvailablePhone)) {
+            $this->availablePhones[] = $chatAvailablePhone;
+            $chatAvailablePhone->setChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailablePhone(ChatAvailablePhone $chatAvailablePhone): self
+    {
+        if ($this->availablePhones->removeElement($chatAvailablePhone)) {
+            // set the owning side to null (unless already changed)
+            if ($chatAvailablePhone->getChat() === $this) {
+                $chatAvailablePhone->setChat(null);
+            }
         }
 
         return $this;

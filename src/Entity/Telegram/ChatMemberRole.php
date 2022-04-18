@@ -23,7 +23,7 @@ class ChatMemberRole extends AbstractEntity
      * @ORM\ManyToOne(targetEntity=ChatMember::class, inversedBy="roles")
      * @ORM\JoinColumn(nullable=false)
      * 
-     * @Serializer\MaxDepth(2)
+     * @Serializer\MaxDepth(1)
      */
     private $member;
 
