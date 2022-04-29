@@ -124,6 +124,13 @@ class Chat extends AbstractEntity
     private $messagesCount = 0;
 
     /**
+     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="phones", cascade={"remove"}, orphanRemoval=true)
+     * 
+     * @Serializer\Exclude
+     */
+    private $phones;
+
+    /**
      * @ORM\ManyToOne(targetEntity=Parser::class, inversedBy="chats")
      * @ORM\JoinColumn(nullable=false)
      * 
@@ -137,6 +144,7 @@ class Chat extends AbstractEntity
         $this->media = new ArrayCollection();
         $this->members = new ArrayCollection();
         $this->messages = new ArrayCollection();
+        $this->phones = new ArrayCollection();
     }
 
     public function getInternalId(): ?int
@@ -393,6 +401,36 @@ class Chat extends AbstractEntity
     public function setMessagesCount(int $messagesCount): self
     {
         $this->messagesCount = $messagesCount;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|ChatPhone[]
+     */
+    public function getPhones(): Collection
+    {
+        return $this->phones;
+    }
+
+    public function addPhone(ChatPhone $phone): self
+    {
+        if (!$this->phones->contains($phone)) {
+            $this->phones[] = $phone;
+            $phone->setChat($this);
+        }
+
+        return $this;
+    }
+
+    public function removePhone(ChatPhone $phone): self
+    {
+        if ($this->phones->removeElement($phone)) {
+            // set the owning side to null (unless already changed)
+            if ($phone->getChat() === $this) {
+                $phone->setChat(null);
+            }
+        }
 
         return $this;
     }
