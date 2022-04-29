@@ -26,6 +26,11 @@ class Export extends AbstractEntity
     private $entities = ["members", "messages"];
 
     /**
+     * @ORM\Column(type="json", nullable=true)
+     */
+    private $interval;
+
+    /**
      * @ORM\Column(type="string", length=255, nullable=true)
      */
     private $path;
@@ -60,6 +65,18 @@ class Export extends AbstractEntity
     public function setEntities(array $entities): self
     {
         $this->entities = $entities;
+
+        return $this;
+    }
+
+    public function getInterval(): ?array
+    {
+        return $this->interval;
+    }
+
+    public function setInterval(array $interval): self
+    {
+        $this->interval = $interval;
 
         return $this;
     }

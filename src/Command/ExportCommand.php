@@ -106,6 +106,7 @@ class ExportCommand extends Command
 
                 $chat = $export->getChat();
                 $chatId = (string) $chat->getId();
+                $interval = $export->getInterval();
 
                 $chatMedias = $chat->getMedia();
                 $chatMediasCount = $chatMedias->count();
@@ -142,21 +143,20 @@ class ExportCommand extends Command
                     $memberTitles = $this->getTitles(Telegram\Member::class);
                     $chatMemberRoleTitles = $this->getTitles(Telegram\ChatMemberRole::class, "role_", ['id']);
 
-                    fputcsv($temp, array_merge($memberTitles, $chatMemberRoleTitles), ';');
+                    fputcsv($temp, array_merge($memberTitles, $chatMemberRoleTitles));
 
                     $chatMembers = $chat->getMembers();
                     $chatMembersCount = $chatMembers->count();
 
                     foreach ($chatMembers as $chatMemberIndex => $chatMember) {
                         $this->logger->debug("Try to push member $chatMemberIndex/$chatMembersCount to CSV");
-
+                        
                         $member = $chatMember->getMember();
 
-                        $memberRow = $this->getRow($member, $memberTitles);
-                        $role = $chatMember->getRoles()->last();
-                        $roleRow = $this->getRow($role !== false ? $role : null, $chatMemberRoleTitles, "role_");
+                        $memberRow = $this->getRow(Telegram\Member::class, $member, $memberTitles);
+                        $roleRow = $this->getRow(Telegram\ChatMemberRole::class, $chatMember->getRoles()->last(), $chatMemberRoleTitles, "role_");
 
-                        fputcsv($temp, array_merge($memberRow, $roleRow), ';');
+                        fputcsv($temp, array_merge($memberRow, $roleRow));
 
                         $this->logger->debug("Member $chatMemberIndex/$chatMembersCount data pushed to CSV");
                         
@@ -201,22 +201,44 @@ class ExportCommand extends Command
                     fprintf($temp, chr(0xEF) . chr(0xBB) . chr(0xBF));
             
                     $messageTitles = $this->getTitles(Telegram\Message::class);
-                    $memberTitles = $this->getTitles(Telegram\Member::class, "sender_");
+                    $chatMemberTitles = $this->getTitles(Telegram\ChatMember::class, "chat_member_");
+                    $memberTitles = $this->getTitles(Telegram\Member::class, "member_");
                     $replyToTitles = $this->getTitles(Telegram\Message::class, "reply_to_", ['id']);
             
-                    fputcsv($temp, array_merge($messageTitles, $memberTitles, $replyToTitles), ';');
+                    fputcsv($temp, array_merge($messageTitles, $chatMemberTitles, $memberTitles, $replyToTitles));
+                    
+                    $qb = $this->em->createQueryBuilder()
+                        ->select('m')
+                        ->from(Telegram\Message::class, 'm')
+                        ->where('m.chat_id = :chat_id')
+                        ->setParameter('chat_id', $chatId);
+                    
+                    if ($interval !== null) {
+                        if (isset($interval["from"])) {
+                            $qb->andWhere($qb->expr()->gte("m.date", ":from"))
+                                ->setParameter('from', $interval["from"]);
+                        }
 
-                    $messages = $chat->getMessages();
+                        if (isset($interval["to"])) {
+                            $qb->andWhere($qb->expr()->lte("m.date", ":to"))
+                                ->setParameter('to', $interval["to"]);
+                        }
+                    }
+
+                    $messages = $qb->getQuery()->getResult();
                     $messagesCount = $messages->count();
             
                     foreach ($messages as $messageIndex => $message) {
                         $this->logger->debug("Try to push message $messageIndex/$messagesCount to CSV");
+
+                        $messageRow = $this->getRow(Telegram\Message::class, $message, $messageTitles);
+                        $chatMmeber = $message->getMember();
+                        $chatMemberRow = $this->getRow(Telegram\ChatMember::class, $chatMmeber, $chatMemberTitles, "chat_member_");
+                        $member =  $chatMmeber !== null ? $chatMmeber->getMember() : null;
+                        $memberRow = $this->getRow(Telegram\Member::class, $member, $memberTitles, "member_");
+                        $replyToRow = $this->getRow(Telegram\Message::class, $message->getReplyTo(), $replyToTitles, "reply_to_");
             
-                        $messageRow = $this->getRow($message, $messageTitles);
-                        $memberRow = $this->getRow($message->getMember(), $memberTitles, "sender_");
-                        $replyToRow = $this->getRow($message->getReplyTo(), $replyToTitles, "reply_to_");
-            
-                        fputcsv($temp, array_merge($messageRow, $memberRow, $replyToRow), ';');
+                        fputcsv($temp, array_merge($messageRow, $chatMemberRow, $memberRow, $replyToRow));
             
                         $this->logger->debug("Message $messageIndex/$messagesCount data pushed to CSV");
 
@@ -255,13 +277,17 @@ class ExportCommand extends Command
 
                 $zip->close();
 
-                foreach ($tempFiles as $temp) fclose($temp);
-
-                if (!copy($tempZip, $this->baseDir . '/uploads/export/' . (string) $export->getId() . '.zip')) {
+                if (@copy($tempZip, $this->baseDir . '/uploads/export/' . (string) $export->getId() . '.zip') === false) {
                     throw new \Exception("Cannot create ZIP file from temp.");
                 }
 
-                unlink($tempZip);
+                if (@chmod($this->baseDir . '/uploads/export/' . (string) $export->getId() . '.zip', 0664) === false) {
+                    throw new \Exception("Cannot change permissions on ZIP file.");
+                }
+
+                foreach ($tempFiles as $temp) @fclose($temp);
+
+                @unlink($tempZip);
                 
                 $this->logger->info("ZIP created. Updating export entity.");
 
@@ -297,9 +323,9 @@ class ExportCommand extends Command
 
         $titles = [];
 
-        $entityClassMetadata = $this->em->getClassMetadata($class);
+        $classMetadata = $this->em->getClassMetadata($class);
 
-        foreach ($entityClassMetadata->fieldMappings as $fieldMapping) {
+        foreach ($classMetadata->fieldMappings as $fieldMapping) {
             if (in_array($fieldMapping['fieldName'], array_merge([], $exclude)))
                 continue;
 
@@ -311,31 +337,36 @@ class ExportCommand extends Command
         return $titles;
     }
 
-    private function getRow($entity, array $titles, string $titlePrefix = ""): array
+    private function getRow($entityClass, $entity, array $titles, string $titlePrefix = ""): array
     {
         $this->logger->debug("Creating CSV row");
 
+        if (!$entity) {
+            $this->logger->debug("CSV row created");
+
+            return array_fill(0, count($titles), null);
+        }
+
+        $entity = $this->em->createQueryBuilder()
+            ->select('e')
+            ->from($entityClass, 'e')
+            ->where('e.id = :id')
+            ->setParameter('id', (string) $entity->getId())
+            ->getQuery()
+            ->getOneOrNullResult();
+        
         $row = [];
 
-        if ($entity) {
+        $classMetadata = $this->em->getClassMetadata($entityClass);
+        
+        foreach ($titles as $title) {
+            $value = $classMetadata->getFieldValue($entity, str_replace($titlePrefix, '', $title));
 
-            foreach ($titles as $title) {
-                $title = str_replace($titlePrefix, '', $title);
-
-                $getter = 'get' . ucfirst($title);
-
-                if (method_exists($entity, $getter)) {
-                    $value = $entity->$getter();
-
-                    if ($value instanceof \DateTime) {
-                        $value = $value->format("d.m.Y H:i:s");
-                    }
-
-                    $row[] = $value;
-                } else {
-                    $row[] = null;
-                }
+            if ($value instanceof \DateTime) {
+                $value = $value->format("d.m.Y H:i:s");
             }
+
+            $row[] = (string) $value;
         }
 
         $this->logger->debug("CSV row created");
