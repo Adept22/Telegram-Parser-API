@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20220429084258 extends AbstractMigration
+final class Version20220429103808 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -20,7 +20,8 @@ final class Version20220429084258 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE app.export ADD interval JSON DEFAULT NULL');
+        $this->addSql('ALTER TABLE app.export ADD interval TEXT DEFAULT NULL');
+        $this->addSql('COMMENT ON COLUMN app.export.interval IS \'(DC2Type:array)\'');
     }
 
     public function down(Schema $schema): void
