@@ -54,6 +54,14 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
                     $entity->setParser($parsers[0]);
                 }
             }
+
+            foreach ($entity->getParser()->getChats() as $chat) {
+                $chatPhone = new ChatPhone();
+                $chatPhone->setPhone($entity);
+                $chatPhone->setChat($chat);
+                
+                $om->persist($chatPhone);
+            }
         }
 
         if ($entity instanceof Telegram\Chat) {
@@ -67,14 +75,12 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
                 }
             }
 
-            if ($entity->getParser() != null) {
-                foreach ($entity->getParser()->getPhones() as $phone) {
-                    $chatPhone = new ChatPhone();
-                    $chatPhone->setChat($entity);
-                    $chatPhone->setPhone($phone);
-                    
-                    $om->persist($chatPhone);
-                }
+            foreach ($entity->getParser()->getPhones() as $phone) {
+                $chatPhone = new ChatPhone();
+                $chatPhone->setChat($entity);
+                $chatPhone->setPhone($phone);
+                
+                $om->persist($chatPhone);
             }
         }
 
