@@ -26,7 +26,7 @@ class Export extends AbstractEntity
     private $entities = ["members", "messages"];
 
     /**
-     * @ORM\Column(type="json", nullable=true)
+     * @ORM\Column(type="json_array", nullable=true)
      */
     private $interval;
 
@@ -39,11 +39,6 @@ class Export extends AbstractEntity
      * @ORM\Column(type="string", length=255)
      */
     private $status = "created";
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public function getChat(): ?Telegram\Chat
     {
