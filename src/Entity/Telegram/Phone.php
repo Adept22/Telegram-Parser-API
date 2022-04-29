@@ -64,7 +64,7 @@ class Phone extends AbstractEntity
     private $parser;
 
     /**
-     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="phone")
+     * @ORM\OneToMany(targetEntity=ChatPhone::class, mappedBy="phone", cascade={"remove"}, orphanRemoval=true)
      * 
      * @Serializer\Exclude
      */
