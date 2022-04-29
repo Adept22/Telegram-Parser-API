@@ -26,7 +26,7 @@ class Export extends AbstractEntity
     private $entities = ["members", "messages"];
 
     /**
-     * @ORM\Column(type="json_array", nullable=true)
+     * @ORM\Column(type="array", nullable=true)
      */
     private $interval;
 
