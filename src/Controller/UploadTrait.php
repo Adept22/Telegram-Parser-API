@@ -126,23 +126,34 @@ trait UploadTrait
             
             $chunks = glob($tmpBase . "/$filename.part[0-9]*");
 
-            foreach ($chunks as $pathname) $totalChunksSize += (int) filesize($pathname);
+            if ($chunks != false) {
+                foreach ($chunks as $pathname) $totalChunksSize += (int) filesize($pathname);
 
-            if ($totalChunksSize >= $totalSize) {
-                natsort($chunks);
+                if ($totalChunksSize >= $totalSize) {
+                    natsort($chunks);
 
-                try {
-                    if (($tmp = tempnam(sys_get_temp_dir(), 'php')) === false) {
-                        throw new \Exception("Couldn't create temp file.");
+                    try {
+                        $basePath = $this->getParameter('kernel.project_dir') . "/public";
+                        $extension = pathinfo($filename, PATHINFO_EXTENSION);
+                        $file = "uploads/" . $this->path . '/' . (string) $entity->getId() . '.' . $extension;
+
+                        if (exec("cat " . implode(" ", $chunks) . " > " . $basePath . '/' . $file, $output, $code) === false) {
+                            throw new \Exception(implode("\n", $output));
+                        }
+
+                        foreach ($chunks as $part) @unlink($part);
+
+                        $entity->setPath(str_replace($basePath . '/', '', $file));
+
+                        $this->get('doctrine.orm.entity_manager')->persist($entity);
+                        $this->get('doctrine.orm.entity_manager')->flush();
+                    } catch (\Exception $ex) {
+                        foreach ($chunks as $chunk) @unlink($chunk);
+
+                        throw $ex;
                     }
-            
-                    $this->completeFile($tmp, $filename, $chunks, $entity);
-                } catch (\Exception $ex) {
-                    foreach ($chunks as $chunk) @unlink($chunk);
-                    
-                    @unlink($tmp);
-
-                    throw $ex;
+                } else {
+                    throw new \Exception("Not all chunks was uploaded.");
                 }
             } else {
                 throw new \Exception("Not all chunks was uploaded.");
@@ -150,32 +161,6 @@ trait UploadTrait
         }
 
         return new Response(null, Response::HTTP_NO_CONTENT);
-    }
-
-    private function completeFile($tmp, $filename, $chunks, $entity)
-    {
-        foreach ($chunks as $part) {
-            if (exec("cat $part >> $tmp", $output, $code) === false) {
-                throw new \Exception(implode("\n", $output));
-            }
-
-            unlink($part);
-        }
-
-        $file = new File($tmp);
-
-        $basePath = $this->getParameter('kernel.project_dir') . "/public";
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-
-        $file = $file->move(
-            $basePath . "/uploads/" . $this->path, 
-            (string) $entity->getId() . '.' . $extension
-        );
-
-        $entity->setPath(str_replace($basePath . '/', '', $file->getPathname()));
-
-        $this->get('doctrine.orm.entity_manager')->persist($entity);
-        $this->get('doctrine.orm.entity_manager')->flush();
     }
 
     /**
