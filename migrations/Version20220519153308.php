@@ -20,7 +20,7 @@ final class Version20220519153308 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP INDEX uniq_31f81ed5f85e0677');
+        $this->addSql('DROP INDEX telegram.uniq_31f81ed5f85e0677');
         $this->addSql('ALTER TABLE telegram.phones ADD last_name VARCHAR(255) DEFAULT NULL');
         $this->addSql('ALTER TABLE telegram.phones DROP username');
         $this->addSql('ALTER TABLE telegram.phones ALTER first_name DROP NOT NULL');
