@@ -33,9 +33,7 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     {
         return [
             Events::prePersist,
-            Events::postPersist,
-            Events::preUpdate,
-            Events::postRemove
+            Events::preUpdate
         ];
     }
 
@@ -89,49 +87,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
         }
     }
 
-    public function postPersist(LifecycleEventArgs $args): void
-    {
-        $om = $args->getObjectManager();
-        $entity = $args->getObject();
-
-        if ($entity instanceof Telegram\ChatMedia) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-    
-                $chatRepository->updateLastMedia($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\ChatMember) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-                $chatRepository->incrementMembersCount($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\Message) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-                $chatRepository->incrementMessagesCount($chat);
-                $chatRepository->updateLastMessageDate($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\MemberMedia) {
-            if (($member = $entity->getMember()) !== null) {
-                /** @var \App\Repository\Telegram\MemberRepository */
-                $memberRepository = $om->getRepository(Telegram\Member::class);
-
-                $memberRepository->updateLastMedia($member);
-            }
-        }
-    }
-
     public function preUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
@@ -139,49 +94,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
 
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
-        }
-    }
-
-    public function postRemove(LifecycleEventArgs $args): void
-    {
-        $entity = $args->getObject();
-        $om = $args->getObjectManager();
-
-        if ($entity instanceof Telegram\ChatMedia) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-                $chatRepository->updateLastMedia($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\ChatMember) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-                $chatRepository->decrementMembersCount($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\Message) {
-            if (($chat = $entity->getChat()) !== null) {
-                /** @var \App\Repository\Telegram\ChatRepository */
-                $chatRepository = $om->getRepository(Telegram\Chat::class);
-
-                $chatRepository->decrementMessagesCount($chat);
-                $chatRepository->updateLastMessageDate($chat);
-            }
-        }
-
-        if ($entity instanceof Telegram\MemberMedia) {
-            if (($member = $entity->getMember()) !== null) {
-                /** @var \App\Repository\Telegram\MemberRepository */
-                $memberRepository = $om->getRepository(Telegram\Member::class);
-
-                $memberRepository->updateLastMedia($member);
-            }
         }
     }
 }
