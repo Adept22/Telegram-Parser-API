@@ -26,6 +26,8 @@ RUN apk add --no-cache \
 # see https://github.com/docker-library/php/issues/240#issuecomment-763112749
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so
 
+ADD docker/php/pecl /tmp
+
 ARG APCU_VERSION=5.1.20
 RUN set -eux; \
 	apk add --no-cache --virtual .build-deps \
@@ -53,9 +55,8 @@ RUN set -eux; \
 	; \
         pear config-set http_proxy ${HTTP_PROXY}; \
 	pecl install \
-		apcu-${APCU_VERSION} \
+		/tmp/apcu-${APCU_VERSION}.tgz \
 	; \
-	pecl clear-cache; \
 	docker-php-ext-enable \
 		apcu \
 		opcache \
@@ -169,6 +170,6 @@ FROM symfony_php AS symfony_php_debug
 ARG XDEBUG_VERSION=3.0.4
 RUN set -eux; \
 	apk add --no-cache --virtual .build-deps $PHPIZE_DEPS; \
-	pecl install xdebug-$XDEBUG_VERSION; \
+	pecl install -O /tmp/xdebug-$XDEBUG_VERSION.tgz; \
 	docker-php-ext-enable xdebug; \
 	apk del .build-deps
