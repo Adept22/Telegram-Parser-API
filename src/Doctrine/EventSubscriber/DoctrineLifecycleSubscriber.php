@@ -90,7 +90,6 @@ final class DoctrineLifecycleSubscriber implements EventSubscriberInterface
     public function preUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
-        $om = $args->getObjectManager();
 
         if (count($violations = $this->validator->validate($entity)) > 0) {
             throw new ValidationFailedException($entity, $violations);
