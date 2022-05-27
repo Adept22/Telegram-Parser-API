@@ -24,6 +24,7 @@ jsonfield==3.1.0
 kombu==5.2.4
 lxml==4.8.0
 Markdown==3.3.7
+names==0.3.0
 opentele==1.15.1
 packaging==21.3
 prompt-toolkit==3.0.29

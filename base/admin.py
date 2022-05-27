@@ -60,7 +60,7 @@ class ChatPhoneAdmin(admin.ModelAdmin):
     search_fields = ['chat', 'phone']
 
 
-class RoleAdmin(admin.ModelAdmin):
+class ChatMemberRoleAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'created')
 
 
@@ -117,6 +117,6 @@ admin.site.register(base_models.Parser, ParserAdmin)
 admin.site.register(base_models.Host, HostAdmin)
 admin.site.register(base_models.MemberMedia, MemberMediaAdmin)
 admin.site.register(base_models.ChatMember, ChatMemberAdmin)
+admin.site.register(base_models.ChatMemberRole, ChatMemberRoleAdmin)
 admin.site.register(base_models.ChatMedia, ChatMediaAdmin)
 admin.site.register(base_models.Bot, BotAdmin)
-admin.site.register(base_models.Role, RoleAdmin)

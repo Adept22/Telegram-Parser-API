@@ -12,28 +12,70 @@ from django.dispatch import receiver
 from telethon import TelegramClient, sessions, sync
 from base.tasks import make_telegram_bot
 
+def attachment_path(instance, filename):
+    os.umask(0)
+    att_path = os.path.join(settings.MEDIA_ROOT, "attachments")
+    if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
+        if not os.path.exists(att_path):
+            os.makedirs(att_path, 755)
+    return os.path.join("attachments", filename)
 
-class AbstractUUID(models.Model):
+class BaseModel(models.Model):
     """ Абстрактная модель для использования UUID в качестве PK."""
     # Параметр blank=True позволяет работать с формами, он никогда не
     # будет пустым, см. метод save()
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid1, editable=False)
+    created_at = models.DateTimeField(u'дата создания', auto_now_add=True)
 
     class Meta:
         abstract = True
 
+class Host(BaseModel):
+    public_ip = models.CharField(max_length=15, blank=True, null=True)
+    local_ip = models.CharField(max_length=15, blank=True, null=True)
+    name = models.CharField(max_length=255, blank=True, null=True)
 
-class Phone(AbstractUUID):
+    class Meta:
+        verbose_name = u'Host'
+        verbose_name_plural = u'Hosts'
+
+    def __str__(self):
+        return u'{}. {}'.format(self.id, self.name)
+
+class Parser(BaseModel):
+    NEW_STATUS = 1
+    IN_PROGRESS_STATUS = 2
+    FAILED_STATUS = 3
+
+    STATUS_CHOICES = (
+        (NEW_STATUS, u'Создан'),
+        (IN_PROGRESS_STATUS, u'В работе'),
+        (FAILED_STATUS, u'Ошибка'),
+    )
+
+    host = models.ForeignKey(Host, verbose_name=u'host', on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, blank=True, null=True)
+    api_id = models.IntegerField(u'api id')
+    api_hash = models.CharField(max_length=255)
+
+    class Meta:
+        verbose_name = u'Parser'
+        verbose_name_plural = u'Parsers'
+
+    def __str__(self):
+        return u'{}. {}'.format(self.id, self.api_id)
+
+class Phone(BaseModel):
     number = models.CharField(u'номер', max_length=20, blank=False)
     first_name = models.CharField(u'first name', max_length=255, blank=True)
-    is_verified = models.BooleanField(u'is verified', default=True)
-    is_banned = models.BooleanField(u'is banned', default=False)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    code = models.CharField(u'code', max_length=10, blank=True)
-    session = models.CharField(u'session', max_length=512, blank=True)
-    internal_id = models.BigIntegerField(blank=True, null=True)
     last_name = models.CharField(u'last name', max_length=255, blank=True)
+    is_verified = models.BooleanField(u'is verified', default=False)
+    is_banned = models.BooleanField(u'is banned', default=False)
+    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE)
+    code = models.CharField(u'code', max_length=10, blank=True)
+    session = models.CharField(u'session', max_length=512, null=True, blank=True)
+    internal_id = models.BigIntegerField(blank=True, null=True, blank=True)
     wait = models.DateTimeField(blank=True, null=True)
 
     class Meta:
@@ -69,15 +111,13 @@ class Phone(AbstractUUID):
         return False
     token_is_valid = property(_token_is_valid)
 
-
-class Member(AbstractUUID):
-    internal_id = models.IntegerField(blank=True, null=True)
-    username = models.CharField(u'username', max_length=255, blank=True)
+class Member(BaseModel):
+    internal_id = models.IntegerField(blank=True)
+    username = models.CharField(u'username', max_length=255, blank=True, null=True)
     first_name = models.CharField(u'first name', max_length=255, blank=True, null=True)
     last_name = models.CharField(u'last name', max_length=255, blank=True, null=True)
     about = models.TextField(u'about', blank=True, null=True)
-    phone = models.CharField(u'phone', max_length=255, blank=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
+    phone = models.CharField(u'phone', max_length=255, blank=True, null=True)
 
     class Meta:
         verbose_name = u'Member'
@@ -86,21 +126,10 @@ class Member(AbstractUUID):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.username)
 
-
-def attachment_path(instance, filename):
-    os.umask(0)
-    att_path = os.path.join(settings.MEDIA_ROOT, "attachments")
-    if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
-        if not os.path.exists(att_path):
-            os.makedirs(att_path, 755)
-    return os.path.join("attachments", filename)
-
-
-class MemberMedia(AbstractUUID):
-    member = models.ForeignKey(Member, verbose_name=u'member media', blank=True, null=True, on_delete=models.CASCADE)
+class MemberMedia(BaseModel):
+    member = models.ForeignKey(Member, verbose_name=u'member media', on_delete=models.CASCADE)
     path = models.CharField(u'path', max_length=255, blank=True, null=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    internal_id = models.BigIntegerField(u'internal id', blank=True, null=True)
+    internal_id = models.BigIntegerField(u'internal id')
     date = models.DateTimeField(u'date', blank=True, null=True)
     file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
@@ -117,17 +146,98 @@ class MemberMedia(AbstractUUID):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.member)
 
+class Chat(BaseModel):
+    NEW_STATUS = 1
+    IN_PROGRESS_STATUS = 2
+    DONE_STATUS = 3
+    FAILED_STATUS = 4
 
-class Message(AbstractUUID):
-    member = models.ForeignKey(Member, verbose_name=u'member', blank=True, null=True, on_delete=models.CASCADE)
-    reply_to_id = models.UUIDField(default=uuid.uuid4)
-    internal_id = models.BigIntegerField(u'internal id', blank=True, null=True)
+    STATUS_CHOICES = (
+        (NEW_STATUS, u'Новый'),
+        (IN_PROGRESS_STATUS, u'В работе'),
+        (DONE_STATUS, u'Готово'),
+        (FAILED_STATUS, u'Ошибка'),
+    )
+
+    internal_id = models.BigIntegerField('internal id')
+    title = models.CharField(u'title', max_length=255, blank=True)
+    link = models.CharField(u'link', max_length=255, blank=False, unique=True)
+    is_available = models.BooleanField(u'is available', default=False)
+    description = models.TextField(u'description', blank=True, null=True)
+    system_title = models.CharField(u'system title', max_length=255, blank=False, null=True)
+    system_description = models.TextField(u'system description', blank=True, null=True)
+    lat = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
+    lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
+    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE)
+    date = models.DateField(u'date', blank=True, null=True)
+
+    class Meta:
+        verbose_name = u'Chat'
+        verbose_name_plural = u'Chats'
+
+    def __str__(self):
+        return u'{}. {}'.format(self.id, self.link)
+
+class ChatPhone(BaseModel):
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
+    phone = models.ForeignKey(Phone, verbose_name=u'phone', on_delete=models.CASCADE)
+    is_using = models.BooleanField(u'is using', default=False)
+
+    class Meta:
+        verbose_name = u'ChatPhone'
+        verbose_name_plural = u'ChatPhones'
+
+    def __str__(self):
+        return u'{}. {} - {}'.format(self.id, self.chat, self.phone)
+
+class ChatMember(BaseModel):
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, verbose_name=u'member', on_delete=models.CASCADE)
+    is_left = models.BooleanField(u'is left', default=False)
+    date = models.DateTimeField(u'дата', blank=True, null=True)
+
+    class Meta:
+        verbose_name = u'ChatMember'
+        verbose_name_plural = u'ChatMembers'
+
+    def __str__(self):
+        return u'{}. {} - {}'.format(self.id, self.chat, self.member)
+
+class ChatMemberRole(BaseModel):
+    member = models.ForeignKey(ChatMember, verbose_name=u'member', on_delete=models.CASCADE)
+    title = models.CharField(u'title', max_length=100)
+    code = models.CharField(u'code', max_length=10)
+
+    class Meta:
+        verbose_name = u'ChatMemberRole'
+        verbose_name_plural = u'ChatMemberRoles'
+
+    def __str__(self):
+        return u'{}. {}'.format(self.id, self.title)
+
+class ChatMedia(BaseModel):
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
+    path = models.CharField(max_length=3000, blank=True, null=True)
+    internal_id = models.BigIntegerField(u'internal id')
+    date = models.DateTimeField(u'дата', blank=True, null=True)
+    file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
+
+    class Meta:
+        verbose_name = u'ChatMedia'
+        verbose_name_plural = u'ChatMedias'
+
+    def __str__(self):
+        return u'{}. {}'.format(self.id, self.chat)
+
+class Message(BaseModel):
+    member = models.ForeignKey(ChatMember, verbose_name=u'member', on_delete=models.CASCADE)
+    reply_to = models.ForeignKey("self", verbose_name=u'reply_to', blank=True, null=True, on_delete=models.CASCADE)
+    internal_id = models.BigIntegerField(u'internal id')
     text = models.TextField()
     is_pinned = models.BooleanField(u'is pinned', default=False)
     forwarded_from_id = models.BigIntegerField(u'forwarded from id', blank=True, null=True)
     forwarded_from_name = models.CharField(max_length=255, blank=True, null=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    chat_id = models.UUIDField(default=uuid.uuid4)
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
     grouped_id = models.BigIntegerField(u'grouped id', blank=True, null=True)
     date = models.DateTimeField(u'date', blank=True, null=True)
 
@@ -138,12 +248,10 @@ class Message(AbstractUUID):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.text)
 
-
-class MessageMedia(AbstractUUID):
+class MessageMedia(BaseModel):
     message = models.ForeignKey(Message, verbose_name=u'message media', on_delete=models.CASCADE)
     path = models.CharField(u'path', max_length=255, blank=True, null=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    internal_id = models.BigIntegerField(u'internal id', blank=True, null=True)
+    internal_id = models.BigIntegerField(u'internal id')
     date = models.DateTimeField(u'date', blank=True, null=True)
     # file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
@@ -159,136 +267,6 @@ class MessageMedia(AbstractUUID):
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.message)
-
-
-class Chat(AbstractUUID):
-    NEW_STATUS = 1
-    IN_PROGRESS_STATUS = 2
-    DONE_STATUS = 3
-    FAILED_STATUS = 4
-
-    STATUS_CHOICES = (
-        (NEW_STATUS, u'Новый'),
-        (IN_PROGRESS_STATUS, u'В работе'),
-        (DONE_STATUS, u'Готово'),
-        (FAILED_STATUS, u'Ошибка'),
-    )
-
-    internal_id = models.BigIntegerField('internal id', blank=True, null=True)
-    title = models.CharField(u'title', max_length=255, blank=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    link = models.CharField(u'link', max_length=255, blank=False, unique=True)
-    is_available = models.BooleanField(u'is available', default=False)
-    description = models.TextField(u'description', blank=True, null=True)
-    system_title = models.CharField(u'system title', max_length=255, blank=False, null=True)
-    system_description = models.TextField(u'system description', blank=True, null=True)
-    lat = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
-    lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
-    parser = models.ForeignKey('Parser', verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=True)
-    date = models.DateField(u'date', blank=True, null=True)
-
-    class Meta:
-        verbose_name = u'Chat'
-        verbose_name_plural = u'Chats'
-
-    def __str__(self):
-        return u'{}. {}'.format(self.id, self.link)
-
-
-class Host(AbstractUUID):
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    public_ip = models.CharField(max_length=15, blank=True, null=True)
-    local_ip = models.CharField(max_length=15, blank=True, null=True)
-    name = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        verbose_name = u'Host'
-        verbose_name_plural = u'Hosts'
-
-    def __str__(self):
-        return u'{}. {}'.format(self.id, self.name)
-
-
-class Parser(models.Model):
-    id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, primary_key=True)
-    host = models.ForeignKey(Host, verbose_name=u'host', blank=True, null=True, on_delete=models.CASCADE)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    status = models.CharField(max_length=20, blank=True, null=True)
-    api_id = models.IntegerField(u'api id', blank=True)
-    api_hash = models.CharField(max_length=255, blank=True, null=True)
-
-    class Meta:
-        verbose_name = u'Parser'
-        verbose_name_plural = u'Parsers'
-
-    def __str__(self):
-        return u'{}. {}'.format(self.id, self.api_id)
-
-
-# @receiver(pre_save, sender=Chat)
-# def create_chat(sender, instance, *args, **kwargs):
-#     # get_chat_info(chat_id=instance.id)
-#     try:
-#         phone = Phone.objects.first() #filter(is_banned=False, is_verified=True)
-#     except Phone.DoesNotExist:
-#         return False
-#     loop = asyncio.new_event_loop()
-#     asyncio.set_event_loop(loop)
-#     client = TelegramClient(
-#         connection_retries=-1,
-#         retry_delay=5,
-#         session=sessions.StringSession(phone.session),
-#         api_id=settings.API_ID,
-#         api_hash=settings.API_HASH
-#     )
-#     client.connect()
-#     print(client.get_me())
-
-
-class ChatPhone(AbstractUUID):
-    chat = models.ForeignKey(Chat, verbose_name=u'chat', blank=True, null=True, on_delete=models.CASCADE)
-    phone = models.ForeignKey(Phone, verbose_name=u'phone', blank=True, null=True, on_delete=models.CASCADE)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    is_using = models.BooleanField(u'is using', default=False)
-
-    class Meta:
-        verbose_name = u'ChatPhone'
-        verbose_name_plural = u'ChatPhones'
-
-    def __str__(self):
-        return u'{}. {} - {}'.format(self.id, self.chat, self.phone)
-
-
-class ChatMember(AbstractUUID):
-    chat = models.ForeignKey(Chat, verbose_name=u'chat', blank=True, null=True, on_delete=models.CASCADE)
-    member = models.ForeignKey(Member, verbose_name=u'member', blank=True, null=True, on_delete=models.CASCADE)
-    is_left = models.BooleanField(u'is left', default=False)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    date = models.DateTimeField(u'дата', blank=True, null=True)
-
-    class Meta:
-        verbose_name = u'ChatMember'
-        verbose_name_plural = u'ChatMembers'
-
-    def __str__(self):
-        return u'{}. {} - {}'.format(self.id, self.chat, self.member)
-
-
-class ChatMedia(AbstractUUID):
-    chat = models.ForeignKey(Chat, verbose_name=u'chat', blank=True, null=True, on_delete=models.CASCADE)
-    path = models.CharField(max_length=3000, blank=True, null=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
-    internal_id = models.BigIntegerField(u'internal id', blank=True, null=True)
-    date = models.DateTimeField(u'дата', blank=True, null=True)
-    file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
-
-    class Meta:
-        verbose_name = u'ChatMedia'
-        verbose_name_plural = u'ChatMedias'
-
-    def __str__(self):
-        return u'{}. {}'.format(self.id, self.chat)
-
     # def delete(self, *args, **kwargs):
     #     file_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
     #     if os.path.exists(file_path):
@@ -310,11 +288,10 @@ class ChatMedia(AbstractUUID):
 #         return u'{}. {}'.format(self.id, self.phone)
 
 
-class Bot(models.Model):
+class Bot(BaseModel):
     name = models.CharField(u'название', max_length=255, blank=True)
     token = models.CharField(u'token', max_length=46, blank=True)
     phone = models.ForeignKey(Phone, verbose_name=u'телефон', on_delete=models.CASCADE)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
     wait = models.PositiveIntegerField('ожидание', default=0)
 
     class Meta:
@@ -363,17 +340,35 @@ class ChatLog(models.Model):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.chat)
 
+# @receiver(pre_save, sender=Chat)
+# def create_chat(sender, instance, *args, **kwargs):
+#     # get_chat_info(chat_id=instance.id)
+#     try:
+#         phone = Phone.objects.first() #filter(is_banned=False, is_verified=True)
+#     except Phone.DoesNotExist:
+#         return False
+#     loop = asyncio.new_event_loop()
+#     asyncio.set_event_loop(loop)
+#     client = TelegramClient(
+#         connection_retries=-1,
+#         retry_delay=5,
+#         session=sessions.StringSession(phone.session),
+#         api_id=settings.API_ID,
+#         api_hash=settings.API_HASH
+#     )
+#     client.connect()
+#     print(client.get_me())
 
-class Role(AbstractUUID):
-    member = models.ForeignKey(Member, verbose_name=u'member', blank=True, null=True, on_delete=models.CASCADE)
-    title = models.CharField(u'title', max_length=100, blank=True, null=True)
-    code = models.CharField(u'code', max_length=10, blank=True)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
 
-    class Meta:
-        verbose_name = u'Role'
-        verbose_name_plural = u'Roles'
-
-    def __str__(self):
-        return u'{}. {}'.format(self.id, self.title)
-
+TypeHost = Host
+TypeParser = Parser
+TypePhone = Phone
+TypeMember = Member
+TypeMemberMedia = MemberMedia
+TypeMessage = Message
+TypeMessageMedia = MessageMedia
+TypeChat = Chat
+TypeChatPhone = ChatPhone
+TypeChatMember = ChatMember
+TypeChatMemberRole = ChatMemberRole
+TypeChatMedia = ChatMedia
