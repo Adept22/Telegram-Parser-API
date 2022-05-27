@@ -1,7 +1,7 @@
 import datetime, telethon, asyncio
 
 import celery
-from asgiref.sync import async_to_sync
+from asgiref.sync import sync_to_async
 
 from tg_parser.celeryapp import app
 from django.conf import settings
@@ -117,7 +117,7 @@ class PhoneAuthorizationTask(celery.Task):
             try:
                 await client.connect()
             except OSError as ex:
-                # logging.critical(f"Unable to connect client. Exception: {ex}")
+                # print(f"Unable to connect client. Exception: {ex}")
 
                 return
 
@@ -134,21 +134,23 @@ class PhoneAuthorizationTask(celery.Task):
 
                             if phone.first_name is None:
                                 phone.first_name = names.get_first_name()
-                                
+
                             if phone.last_name is None:
                                 phone.last_name = names.get_last_name()
 
-                            await client.sign_up(phone.code, phone.first_name, phone.last_name, phone.number, code_hash)
+                            await client.sign_up(phone.code, phone.first_name, phone.last_name, phone_code_hash=code_hash)
                         except (
                             telethon.errors.PhoneCodeEmptyError, 
                             telethon.errors.PhoneCodeExpiredError, 
                             telethon.errors.PhoneCodeHashEmptyError, 
                             telethon.errors.PhoneCodeInvalidError
                         ) as ex:
-                            # logging.warning(f"Code invalid. Exception {ex}")
+                            print(f"Code invalid. Exception {ex}")
 
                             phone.code = None
-                            phone.save()
+
+                            # phone.save()
+                            await sync_to_async(phone.save)()
 
                             continue
 
@@ -161,7 +163,8 @@ class PhoneAuthorizationTask(celery.Task):
                         if internal_id is not None and phone.internal_id != internal_id:
                             phone.internal_id = internal_id
 
-                        phone.save()
+                        # phone.save()
+                        await sync_to_async(phone.save)()
 
                         break
                     elif code_hash is None:
@@ -170,9 +173,9 @@ class PhoneAuthorizationTask(celery.Task):
                             
                             code_hash = sent.phone_code_hash
 
-                            # logging.info(f"Code sended.")
+                            print(f"Code sended.")
                         except telethon.errors.rpcerrorlist.FloodWaitError as ex:
-                            # logging.warning(f"Flood exception. Sleep {ex.seconds}.")
+                            print(f"Flood exception. Sleep {ex.seconds}.")
                             
                             await asyncio.sleep(ex.seconds)
 
@@ -180,21 +183,23 @@ class PhoneAuthorizationTask(celery.Task):
                     else:
                         await asyncio.sleep(10)
 
-                        phone.refresh_from_db()
+                        # phone.refresh_from_db()
+                        await sync_to_async(phone.refresh_from_db)()
+
                 except telethon.errors.RPCError as ex:
-                    # logging.error(f"Cannot authentificate. Exception: {ex}")
+                    print(f"Cannot authentificate. Exception: {ex}")
                     
                     phone.session = None
                     phone.is_banned = True
                     phone.is_verified = False
                     phone.code = None
-                    phone.save()
+                    await sync_to_async(phone.save)()
 
                     return
             else:
                 break
 
-        # logging.info(f"Authorized.")
+        print(f"Authorized.")
 
     def run(self, phone_id):
         from base.models import Phone
@@ -223,12 +228,12 @@ class ChatResolveTask(celery.Task):
             async with TelegramClient(chat_phone.phone) as client:
                 try:
                     tg_chat = await client.get_entity(chat.link)
-                except telethon.errors.ChannelPrivateError:
-                    # logging.warning(f"Chat is private. Exception: {ex}.")
+                except telethon.errors.ChannelPrivateError as ex:
+                    print(f"Chat is private. Exception: {ex}.")
 
                     continue
-                except telethon.errors.FloodWaitError:
-                    # logging.warning(f"Chat resolve must wait {ex.seconds}.")
+                except telethon.errors.FloodWaitError as ex:
+                    print(f"Chat resolve must wait {ex.seconds}.")
 
                     continue
                 except (TypeError, KeyError, ValueError, telethon.errors.RPCError):
@@ -290,7 +295,7 @@ class JoinChatTask(celery.Task):
                         except telethon.errors.UserAlreadyParticipantError as ex:
                             await client(telethon.functions.messages.CheckChatInviteRequest(chat.hash))
                 except telethon.errors.FloodWaitError as ex:
-                    # logging.warning(f"Chat wiring for phone {chat_phone.phone.id} must wait {ex.seconds}.")
+                    print(f"Chat wiring for phone {chat_phone.phone.id} must wait {ex.seconds}.")
 
                     await asyncio.sleep(ex.seconds)
 
@@ -300,11 +305,11 @@ class JoinChatTask(celery.Task):
                     telethon.errors.SessionPasswordNeededError,
                     telethon.errors.UserDeactivatedBanError
                 ) as ex:
-                    # logging.error(f"Chat not available for phone {chat_phone.phone.id}. Exception {ex}")
+                    print(f"Chat not available for phone {chat_phone.phone.id}. Exception {ex}")
 
                     return False
                 except (TypeError, KeyError, ValueError, telethon.errors.RPCError) as ex:
-                    # logging.critical(f"Chat not available. Exception {ex}.")
+                    print(f"Chat not available. Exception {ex}.")
                     
                     raise ChatNotAvailableError(str(ex))
                 else:
@@ -496,11 +501,11 @@ class ParseChatTask(celery.Task):
                     # ) as ex:
                     #     logging.critical(f"Can't download participants. Exception: {ex}")
                     except telethon.errors.FloodWaitError as ex:
-                        # logging.warning(f"Members request must wait {ex.seconds} seconds.")
+                        print(f"Members request must wait {ex.seconds} seconds.")
 
                         continue
                     except (KeyError, ValueError, telethon.errors.RPCError) as ex:
-                        # logging.critical(f"Chat not available. Exception: {ex}")
+                        print(f"Chat not available. Exception: {ex}")
                         
                         chat.is_available = False
                         chat.save()
@@ -509,9 +514,9 @@ class ParseChatTask(celery.Task):
                         
                     return
             # except ClientNotAvailableError as ex:
-                # logging.error(f"Client not available.")
+                print(f"Client not available.")
             except telethon.errors.UserDeactivatedBanError as ex:
-                # logging.error(f"Phone is banned.")
+                print(f"Phone is banned.")
                 
                 chat_phone.phone.is_banned = True
                 chat_phone.phone.save()
@@ -543,11 +548,11 @@ class ParseChatTask(celery.Task):
                     except telethon.errors.common.MultiError as ex:
                         continue
                     except telethon.errors.FloodWaitError as ex:
-                        # logging.warning(f"Messages request must wait {ex.seconds} seconds.")
+                        print(f"Messages request must wait {ex.seconds} seconds.")
 
                         continue
                     except (KeyError, ValueError, telethon.errors.RPCError) as ex:
-                        # logging.critical(f"Chat not available. Exception {ex}")
+                        print(f"Chat not available. Exception {ex}")
 
                         chat.is_available = False
                         chat.save()
@@ -556,7 +561,7 @@ class ParseChatTask(celery.Task):
             # except ClientNotAvailableError as ex:
             #     logging.error(f"Client not available.")
             except telethon.errors.UserDeactivatedBanError as ex:
-                # logging.error(f"Phone is banned. Exception {ex}")
+                print(f"Phone is banned. Exception {ex}")
                 
                 chat_phone.phone.is_banned = True
                 chat_phone.phone.save()
@@ -616,7 +621,7 @@ class MonitoringChatTask(ParseChatTask):
             # except ClientNotAvailableError as ex:
             #     logging.error(f"Client not available.")
             except telethon.errors.UserDeactivatedBanError as ex:
-                # logging.error(f"Phone is banned.")
+                print(f"Phone is banned.")
                 
                 chat_phone.phone.is_banned = True
                 chat_phone.phone.save()

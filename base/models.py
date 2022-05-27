@@ -68,12 +68,12 @@ class Parser(BaseModel):
 
 class Phone(BaseModel):
     number = models.CharField(u'номер', max_length=20, blank=False)
-    first_name = models.CharField(u'first name', max_length=255, blank=True)
-    last_name = models.CharField(u'last name', max_length=255, blank=True)
+    first_name = models.CharField(u'first name', max_length=255, blank=True, null=True)
+    last_name = models.CharField(u'last name', max_length=255, blank=True, null=True)
     is_verified = models.BooleanField(u'is verified', default=False)
     is_banned = models.BooleanField(u'is banned', default=False)
     parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=False)
-    code = models.CharField(u'code', max_length=10, blank=True)
+    code = models.CharField(u'code', max_length=10, blank=True, null=True)
     session = models.CharField(u'session', max_length=512, null=True, blank=True)
     internal_id = models.BigIntegerField(blank=True, null=True)
     wait = models.DateTimeField(blank=True, null=True)
