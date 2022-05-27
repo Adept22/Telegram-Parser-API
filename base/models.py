@@ -72,10 +72,10 @@ class Phone(BaseModel):
     last_name = models.CharField(u'last name', max_length=255, blank=True)
     is_verified = models.BooleanField(u'is verified', default=False)
     is_banned = models.BooleanField(u'is banned', default=False)
-    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE)
+    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=False)
     code = models.CharField(u'code', max_length=10, blank=True)
     session = models.CharField(u'session', max_length=512, null=True, blank=True)
-    internal_id = models.BigIntegerField(blank=True, null=True, blank=True)
+    internal_id = models.BigIntegerField(blank=True, null=True)
     wait = models.DateTimeField(blank=True, null=True)
 
     class Meta:
@@ -159,7 +159,7 @@ class Chat(BaseModel):
         (FAILED_STATUS, u'Ошибка'),
     )
 
-    internal_id = models.BigIntegerField('internal id')
+    internal_id = models.BigIntegerField('internal id', null=True, blank=False)
     title = models.CharField(u'title', max_length=255, blank=True)
     link = models.CharField(u'link', max_length=255, blank=False, unique=True)
     is_available = models.BooleanField(u'is available', default=False)
@@ -168,7 +168,7 @@ class Chat(BaseModel):
     system_description = models.TextField(u'system description', blank=True, null=True)
     lat = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
     lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
-    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE)
+    parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=False)
     date = models.DateField(u'date', blank=True, null=True)
 
     class Meta:
@@ -215,8 +215,9 @@ class ChatMemberRole(BaseModel):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.title)
 
+
 class ChatMedia(BaseModel):
-    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE, null=True, blank=False)
     path = models.CharField(max_length=3000, blank=True, null=True)
     internal_id = models.BigIntegerField(u'internal id')
     date = models.DateTimeField(u'дата', blank=True, null=True)
@@ -229,6 +230,7 @@ class ChatMedia(BaseModel):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.chat)
 
+
 class Message(BaseModel):
     member = models.ForeignKey(ChatMember, verbose_name=u'member', on_delete=models.CASCADE)
     reply_to = models.ForeignKey("self", verbose_name=u'reply_to', blank=True, null=True, on_delete=models.CASCADE)
@@ -237,7 +239,7 @@ class Message(BaseModel):
     is_pinned = models.BooleanField(u'is pinned', default=False)
     forwarded_from_id = models.BigIntegerField(u'forwarded from id', blank=True, null=True)
     forwarded_from_name = models.CharField(max_length=255, blank=True, null=True)
-    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE, null=True, blank=False)
     grouped_id = models.BigIntegerField(u'grouped id', blank=True, null=True)
     date = models.DateTimeField(u'date', blank=True, null=True)
 
@@ -328,10 +330,9 @@ class Bot(BaseModel):
     token_is_valid = property(_token_is_valid)
 
 
-class ChatLog(models.Model):
+class ChatLog(BaseModel):
     body = models.TextField(u'ошибка', blank=True)
     chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
-    created = models.DateTimeField(u'дата создания', auto_now_add=True)
 
     class Meta:
         verbose_name = u'ChatLog'

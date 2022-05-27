@@ -16,10 +16,10 @@ class VersionBotInline(admin.TabularInline):
 
 
 class PhoneAdmin(admin.ModelAdmin):
-    list_display = ('id', 'number', 'first_name', 'is_verified', 'is_banned', 'created', 'status')
-    date_hierarchy = 'created'
+    list_display = ('id', 'number', 'first_name', 'is_verified', 'is_banned', 'created_at', 'status')
+    date_hierarchy = 'created_at'
     search_fields = ['number']
-    readonly_fields = ("internal_id", "created", "token_verify", "wait")
+    readonly_fields = ("internal_id", "created_at", "token_verify", "wait")
     inlines = (VersionBotInline,)
 
     def status(self, instance):
@@ -32,7 +32,7 @@ class PhoneAdmin(admin.ModelAdmin):
 
 
 class VersionChatInline(admin.TabularInline):
-    readonly_fields = ('id', 'created', 'body')
+    readonly_fields = ('id', 'created_at', 'body')
     model = base_models.ChatLog
     extra = 0
 
@@ -61,11 +61,11 @@ class ChatPhoneAdmin(admin.ModelAdmin):
 
 
 class ChatMemberRoleAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'created')
+    list_display = ('id', 'title', 'created_at')
 
 
 class ChatLogAdmin(admin.ModelAdmin):
-    list_display = ('id', 'chat', 'body', 'created')
+    list_display = ('id', 'chat', 'body', 'created_at')
 
 
 class MemberAdmin(admin.ModelAdmin):
@@ -79,7 +79,7 @@ class MemberMediaAdmin(admin.ModelAdmin):
 
 
 class HostAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'local_ip', 'created')
+    list_display = ('id', 'name', 'local_ip', 'created_at')
     search_fields = ['name']
 
 
@@ -88,7 +88,7 @@ class ChatMemberAdmin(admin.ModelAdmin):
 
 
 class ParserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created', 'status', 'api_id', 'host')
+    list_display = ('id', 'created_at', 'status', 'api_id', 'host')
     search_fields = ['api_id']
 
 
@@ -97,7 +97,7 @@ class ChatMediaAdmin(admin.ModelAdmin):
 
 
 class BotAdmin(admin.ModelAdmin):
-    list_display = ('id', 'phone', 'name', 'created', 'get_token_status', 'status')
+    list_display = ('id', 'phone', 'name', 'created_at', 'get_token_status', 'status')
 
     def status(self, instance):
         return instance.get_status_text

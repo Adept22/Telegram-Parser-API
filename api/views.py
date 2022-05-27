@@ -8,7 +8,7 @@ import api.serializers as serializers
 from api.paginators import MyPagination
 from api.filters import ChatFilter, PhoneFilter
 import base.models as base_models
-from base.tasks import resolve_chat, test_task, unban_phone_task
+from base.tasks import resolve_chat, test_task, unban_phone_task, PhoneAuthorizationTask
 
 
 class Bots(viewsets.ModelViewSet):
@@ -49,6 +49,12 @@ class Phones(viewsets.ModelViewSet):
     def bots(self, request, pk=None):
         phone = self.get_object()
         phone.make_telegram_bot
+        return Response(status=status.HTTP_201_CREATED)
+
+    @action(methods=['post'], detail=True)
+    def authorization(self, request, pk=None):
+        phone = self.get_object()
+        PhoneAuthorizationTask().delay(phone.id)
         return Response(status=status.HTTP_201_CREATED)
 
 
