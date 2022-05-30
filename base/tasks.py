@@ -1,4 +1,5 @@
 import datetime, telethon, asyncio
+from math import fabs
 
 import celery
 from asgiref.sync import sync_to_async
@@ -102,22 +103,21 @@ class PhoneAuthorizationTask(celery.Task):
 
     async def _run(self, phone, parser):
         import random, names, telethon, telethon.sessions
+        from base.models import Phone
 
         client = telethon.TelegramClient(
             connection_retries=-1,
             retry_delay=5, 
             session=telethon.sessions.StringSession(phone.session), 
-            # api_id=phone.parser.api_id,
             api_id=parser.api_id,
             api_hash=parser.api_hash,
-            # api_hash=phone.parser.api_hash
         )
 
         if not client.is_connected():
             try:
                 await client.connect()
             except OSError as ex:
-                # print(f"Unable to connect client. Exception: {ex}")
+                print(f"Unable to connect client. Exception: {ex}")
 
                 return
 
@@ -149,13 +149,12 @@ class PhoneAuthorizationTask(celery.Task):
 
                             phone.code = None
 
-                            # phone.save()
                             await sync_to_async(phone.save)()
 
                             continue
 
                         phone.session = client.session.save()
-                        phone.is_verified = True
+                        phone.status = Phone.READY
                         phone.code = None
                         
                         internal_id = getattr(await client.get_me(), "id")
@@ -163,7 +162,6 @@ class PhoneAuthorizationTask(celery.Task):
                         if internal_id is not None and phone.internal_id != internal_id:
                             phone.internal_id = internal_id
 
-                        # phone.save()
                         await sync_to_async(phone.save)()
 
                         break
@@ -177,29 +175,40 @@ class PhoneAuthorizationTask(celery.Task):
                         except telethon.errors.rpcerrorlist.FloodWaitError as ex:
                             print(f"Flood exception. Sleep {ex.seconds}.")
                             
+                            phone.status = Phone.FLOOD
+
+                            await sync_to_async(phone.save)()
+
                             await asyncio.sleep(ex.seconds)
 
                             continue
                     else:
                         await asyncio.sleep(10)
 
-                        # phone.refresh_from_db()
                         await sync_to_async(phone.refresh_from_db)()
-
                 except telethon.errors.RPCError as ex:
                     print(f"Cannot authentificate. Exception: {ex}")
                     
                     phone.session = None
-                    phone.is_banned = True
-                    phone.is_verified = False
+                    phone.status = Phone.BAN
                     phone.code = None
+
                     await sync_to_async(phone.save)()
 
-                    return
+                    return False
             else:
                 break
 
+        dialogs = await client.get_dialogs(limit=0)
+
+        if dialogs.total >= 500:
+            phone.status = Phone.FULL
+
+            await sync_to_async(phone.save)()
+
         print(f"Authorized.")
+
+        return True
 
     def run(self, phone_id):
         from base.models import Phone
@@ -208,6 +217,7 @@ class PhoneAuthorizationTask(celery.Task):
             phone = Phone.objects.get(id=phone_id)
         except Phone.DoesNotExist:
             return False
+
         return asyncio.run(self._run(phone, phone.parser))
 
 
@@ -217,52 +227,65 @@ app.register_task(PhoneAuthorizationTask())
 class ChatResolveTask(celery.Task):
     name = "ChatResolveTask"
 
-    async def _run(self, chat):
-        from base.models import ChatPhone
+    async def _run(self, chat, phones):
+        from base.models import Chat
+        from base.exceptions import ClientNotAvailableError
         from tg_parser.utils import TelegramClient
 
-        chat_phones = ChatPhone.objects.filter(chat_id=chat.id)
-        
-        for chat_phone in chat_phones:
+        for phone in phones:
+            try:
+                async with TelegramClient(phone) as client:
+                    try:
+                        tg_chat = await client.get_entity(chat.link)
+                    except telethon.errors.ChannelPrivateError as ex:
+                        print(f"Chat is available, but private. Exception: {ex}.")
 
-            async with TelegramClient(chat_phone.phone) as client:
-                try:
-                    tg_chat = await client.get_entity(chat.link)
-                except telethon.errors.ChannelPrivateError as ex:
-                    print(f"Chat is private. Exception: {ex}.")
+                        chat.status = Chat.AVAILABLE
 
-                    continue
-                except telethon.errors.FloodWaitError as ex:
-                    print(f"Chat resolve must wait {ex.seconds}.")
+                        break
+                    except telethon.errors.FloodWaitError as ex:
+                        print(f"Chat resolve must wait {ex.seconds}.")
 
-                    continue
-                except (TypeError, KeyError, ValueError, telethon.errors.RPCError):
-                    chat.is_available = False
-                    chat.save()
-                        
-                    return
-                else:
-                    internal_id = telethon.utils.get_peer_id(tg_chat)
+                        continue
+                    except (TypeError, KeyError, ValueError, telethon.errors.RPCError) as ex:
+                        print(f"Chat resolve exception. Exception: {ex}.")
 
-                    if chat.internal_id != internal_id:
-                        chat.internal_id = internal_id
+                        chat.status = Chat.FAILED
+                        chat.status_text = str(ex)
+                            
+                        break
+                    else:
+                        print(f"Chat resolve exception. Exception: {ex}.")
 
-                    if chat.title != tg_chat.title:
-                        chat.title = tg_chat.title
-                        
-                    chat.save()
+                        internal_id = telethon.utils.get_peer_id(tg_chat)
 
-                    break
+                        if chat.internal_id != internal_id:
+                            chat.internal_id = internal_id
+
+                        if chat.title != tg_chat.title:
+                            chat.title = tg_chat.title
+                            
+                        chat.status = Chat.AVAILABLE
+
+                        break
+            except ClientNotAvailableError as ex:
+                print(f"Client not available.")
+
+                continue
+
+        await sync_to_async(chat.save)()
 
     def run(self, chat_id):
-        from base.models import Chat
+        from base.models import Chat, Phone
 
         try:
             chat = Chat.objects.get(id=chat_id)
         except Chat.DoesNotExist:
             return False
 
-        return asyncio.run(self._run(chat))
+        phones = Phone.objects.filter(parser_id=chat.parser.id)
+
+        return asyncio.run(self._run(chat, phones))
 
 
 app.register_task(ChatResolveTask())
@@ -271,59 +294,91 @@ app.register_task(ChatResolveTask())
 class JoinChatTask(celery.Task):
     name = "JoinChatTask"
 
-    async def _run(self, chat):
-        from base.models import ChatPhone
-        from base.exceptions import ChatNotAvailableError
+    async def _run(self, chat, phone):
+        from base.exceptions import ClientNotAvailableError, ChatNotAvailableError
         from tg_parser.utils import TelegramClient
+        from base.models import Chat, Phone, ChatPhone
 
-        chat_phones = ChatPhone.objects.filter(chat_id=chat.id)
-        
-        for chat_phone in chat_phones:
+        while True:
+            try:
+                async with TelegramClient(phone) as client:
+                    try:
+                        dialogs = await client.get_dialogs(limit=0)
 
-            async with TelegramClient(chat_phone.phone) as client:
-                try:
-                    dialogs = await client.get_dialogs(limit=0)
+                        if dialogs.total >= 500:
+                            phone.status = Phone.FULL
 
-                    if dialogs.total >= 500:
-                        return False
+                            await sync_to_async(phone.save)()
 
-                    if chat.hash is None:
-                        await client(telethon.functions.channels.JoinChannelRequest(chat.username))
-                    else:
-                        try:
-                            await client(telethon.functions.messages.ImportChatInviteRequest(chat.hash))
-                        except telethon.errors.UserAlreadyParticipantError as ex:
-                            await client(telethon.functions.messages.CheckChatInviteRequest(chat.hash))
-                except telethon.errors.FloodWaitError as ex:
-                    print(f"Chat wiring for phone {chat_phone.phone.id} must wait {ex.seconds}.")
+                            break
 
-                    await asyncio.sleep(ex.seconds)
+                        
 
-                    continue
-                except(
-                    telethon.errors.ChannelsTooMuchError, 
-                    telethon.errors.SessionPasswordNeededError,
-                    telethon.errors.UserDeactivatedBanError
-                ) as ex:
-                    print(f"Chat not available for phone {chat_phone.phone.id}. Exception {ex}")
+                        if chat.hash is None:
+                            await client(telethon.functions.channels.JoinChannelRequest(chat.username))
+                        else:
+                            try:
+                                await client(telethon.functions.messages.ImportChatInviteRequest(chat.hash))
+                            except telethon.errors.UserAlreadyParticipantError as ex:
+                                await client(telethon.functions.messages.CheckChatInviteRequest(chat.hash))
+                    except telethon.errors.FloodWaitError as ex:
+                        print(f"Chat wiring for phone {phone.id} must wait {ex.seconds}.")
+                                
+                        phone.status = Phone.FLOOD
+                        phone.status_text = str(ex)
 
-                    return False
-                except (TypeError, KeyError, ValueError, telethon.errors.RPCError) as ex:
-                    print(f"Chat not available. Exception {ex}.")
+                        await sync_to_async(phone.save)()
+
+                        await asyncio.sleep(ex.seconds)
+
+                        continue
+                    except(
+                        telethon.errors.ChannelsTooMuchError, 
+                        telethon.errors.SessionPasswordNeededError,
+                        telethon.errors.UserDeactivatedBanError
+                    ) as ex:
+                        print(f"Chat not available for phone {phone.id}. Exception {ex}")
                     
-                    raise ChatNotAvailableError(str(ex))
-                else:
-                    return True
+                        phone.status = Phone.BAN
+                        phone.status_text = str(ex)
 
-    def run(self, chat_id):
-        from base.models import Chat
+                        await sync_to_async(phone.save)()
+
+                        break
+                    except (TypeError, KeyError, ValueError, telethon.errors.RPCError) as ex:
+                        print(f"Chat not available. Exception {ex}.")
+
+                        chat.status = Chat.FAILED
+                        chat.status_text = str(ex)
+                        
+                        await sync_to_async(chat.save)()
+
+                        break
+                    else:
+                        await sync_to_async(ChatPhone.objects.create)(chat=chat, phone=phone)
+                        
+                        return True
+            except ClientNotAvailableError as ex:
+                print(f"Client not available.")
+
+                break
+
+        return False
+
+    def run(self, chat_id, phone_id):
+        from base.models import Chat, Phone
 
         try:
             chat = Chat.objects.get(id=chat_id)
         except Chat.DoesNotExist:
             return False
 
-        return asyncio.run(self._run(chat))
+        try:
+            phone = Phone.objects.get(id=phone_id)
+        except Phone.DoesNotExist:
+            return False
+
+        return asyncio.run(self._run(chat, phone))
 
 
 app.register_task(JoinChatTask())

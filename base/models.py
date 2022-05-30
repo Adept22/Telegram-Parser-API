@@ -67,11 +67,25 @@ class Parser(BaseModel):
         return u'{}. {}'.format(self.id, self.api_id)
 
 class Phone(BaseModel):
+    CREATED = 0
+    READY = 1
+    FLOOD = 2
+    FULL = 3
+    BAN = 4
+
+    STATUS_CHOICES = (
+        (CREATED, u'Создан'),
+        (READY, u'Готов'),
+        (FLOOD, u'В ожидании'),
+        (FULL, u'Полон'),
+        (BAN, u'Забанен'),
+    )
+
     number = models.CharField(u'номер', max_length=20, blank=False)
     first_name = models.CharField(u'first name', max_length=255, blank=True, null=True)
     last_name = models.CharField(u'last name', max_length=255, blank=True, null=True)
-    is_verified = models.BooleanField(u'is verified', default=False)
-    is_banned = models.BooleanField(u'is banned', default=False)
+    status = models.IntegerField(u'status', default=CREATED, choices=STATUS_CHOICES)
+    status_text = models.TextField(u'status text', blank=True, null=True)
     parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=False)
     code = models.CharField(u'code', max_length=10, blank=True, null=True)
     session = models.CharField(u'session', max_length=512, null=True, blank=True)
@@ -147,22 +161,23 @@ class MemberMedia(BaseModel):
         return u'{}. {}'.format(self.id, self.member)
 
 class Chat(BaseModel):
-    NEW_STATUS = 1
-    IN_PROGRESS_STATUS = 2
-    DONE_STATUS = 3
-    FAILED_STATUS = 4
+    CREATED = 0
+    AVAILABLE = 1
+    MONITORING = 2
+    FAILED = 3
 
     STATUS_CHOICES = (
-        (NEW_STATUS, u'Новый'),
-        (IN_PROGRESS_STATUS, u'В работе'),
-        (DONE_STATUS, u'Готово'),
-        (FAILED_STATUS, u'Ошибка'),
+        (CREATED, u'Создан'),
+        (AVAILABLE, u'Доступен'),
+        (MONITORING, u'Мониторинг'),
+        (FAILED, u'Ошибка'),
     )
 
     internal_id = models.BigIntegerField('internal id', null=True, blank=False)
-    title = models.CharField(u'title', max_length=255, blank=True)
     link = models.CharField(u'link', max_length=255, blank=False, unique=True)
-    is_available = models.BooleanField(u'is available', default=False)
+    title = models.CharField(u'title', max_length=255, blank=True)
+    status = models.IntegerField(u'status', default=CREATED, choices=STATUS_CHOICES)
+    status_text = models.TextField(u'status text', blank=True, null=True)
     description = models.TextField(u'description', blank=True, null=True)
     system_title = models.CharField(u'system title', max_length=255, blank=False, null=True)
     system_description = models.TextField(u'system description', blank=True, null=True)

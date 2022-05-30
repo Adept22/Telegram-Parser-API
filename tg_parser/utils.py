@@ -1,4 +1,4 @@
-import telethon, telethon.sessions
+import telethon, telethon.sessions, re
 
 class TelegramClient(telethon.TelegramClient):
     from base.models import TypePhone
@@ -29,4 +29,27 @@ class TelegramClient(telethon.TelegramClient):
             
     async def __aenter__(self):
         return await self.start()
+
+
+HTTP_RE = re.compile(r'^(?:@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me))/(\+|joinchat/)?')
+TG_RE = re.compile(r'^tg://(?:(join)|resolve)\?(?:invite|domain)=')
+
+def get_hash(link: 'str') -> 'tuple[str | None, str | None]':
+    link = link.strip()
+
+    m = re.match(HTTP_RE, link) or re.match(TG_RE, link)
+
+    if m:
+        link = link[m.end():]
+        is_invite = bool(m.group(1))
+
+        if is_invite:
+            return link, True
+        else:
+            link = link.rstrip('/')
+
+    if telethon.utils.VALID_USERNAME_RE.match(link):
+        return link.lower(), False
+    else:
+        return None, False
     
