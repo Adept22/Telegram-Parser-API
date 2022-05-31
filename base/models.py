@@ -206,6 +206,7 @@ class Chat(BaseModel):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.link)
 
+
 class ChatPhone(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
     phone = models.ForeignKey(Phone, verbose_name=u'phone', on_delete=models.CASCADE)
@@ -217,6 +218,7 @@ class ChatPhone(BaseModel):
 
     def __str__(self):
         return u'{}. {} - {}'.format(self.id, self.chat, self.phone)
+
 
 class ChatMember(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)

@@ -16,7 +16,7 @@ class VersionBotInline(admin.TabularInline):
 
 
 class PhoneAdmin(admin.ModelAdmin):
-    list_display = ('id', 'number', 'first_name', 'status', 'status_text', 'created_at')
+    list_display = ('id', 'number', 'first_name', 'status', 'status_text', 'created_at', 'chats')
     date_hierarchy = 'created_at'
     search_fields = ['number']
     readonly_fields = ("internal_id", "created_at", "token_verify", "wait")
@@ -29,6 +29,10 @@ class PhoneAdmin(admin.ModelAdmin):
     def token_verify(self, instance):
         return instance.token_is_valid
     token_verify.short_description = u"Верификая сессии"
+
+    def chats(self, instance):
+        return instance.chatphone_set.count()
+    status.short_description = u"чаты"
 
 
 class VersionChatInline(admin.TabularInline):
@@ -44,14 +48,22 @@ class VersionChatInline(admin.TabularInline):
 
 
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('id', 'link', 'title', 'internal_id', 'status', 'status_text', 'description')
+    list_display = ('id', 'link', 'title', 'internal_id', 'status', 'status_text', 'description', 'phones', 'members')
     search_fields = ['link', 'title', 'description']
     readonly_fields = ("id",)
     list_filter = (
         ("internal_id", admin.EmptyFieldListFilter),
-        'status',
+        "status",
     )
     inlines = (VersionChatInline,)
+
+    def phones(self, instance):
+        return instance.chatphone_set.count()
+    phones.short_description = u"телефоны"
+
+    def members(self, instance):
+        return instance.chatmember_set.count()
+    members.short_description = u"участники"
 
 
 class ChatPhoneAdmin(admin.ModelAdmin):
@@ -87,8 +99,12 @@ class ChatMemberAdmin(admin.ModelAdmin):
 
 
 class ParserAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created_at', 'status', 'api_id', 'host')
+    list_display = ('id', 'created_at', 'status', 'api_id', 'host', 'phones')
     search_fields = ['api_id']
+
+    def phones(self, instance):
+        return instance.phone_set.count()
+    phones.short_description = u"телефоны"
 
 
 class ChatMediaAdmin(admin.ModelAdmin):
