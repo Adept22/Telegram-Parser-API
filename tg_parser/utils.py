@@ -30,11 +30,17 @@ class TelegramClient(telethon.TelegramClient):
     async def __aenter__(self):
         return await self.start()
 
-
+LINK_RE = re.compile(
+    r'(?:@|(?:https?:\/\/)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)\/(?:@|joinchat\/|\+)?|'
+    r'tg:\/\/(?:join|resolve)\?(?:invite=|domain=))'
+    r'(?:[a-zA-Z0-9_.-](?:(?!__)\w){3,30}[a-zA-Z0-9_.-]|'
+    r'gif|vid|pic|bing|wiki|imdb|bold|vote|like|coub)',
+    re.IGNORECASE
+)
 HTTP_RE = re.compile(r'^(?:@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me))/(\+|joinchat/)?')
 TG_RE = re.compile(r'^tg://(?:(join)|resolve)\?(?:invite|domain)=')
 
-def get_hash(link: 'str') -> 'tuple[str | None, str | None]':
+def parse_username(link: 'str') -> 'tuple[str | None, str | None]':
     link = link.strip()
 
     m = re.match(HTTP_RE, link) or re.match(TG_RE, link)
@@ -52,4 +58,3 @@ def get_hash(link: 'str') -> 'tuple[str | None, str | None]':
         return link.lower(), False
     else:
         return None, False
-    

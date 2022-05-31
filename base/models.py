@@ -196,7 +196,7 @@ class Chat(BaseModel):
 class ChatPhone(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE)
     phone = models.ForeignKey(Phone, verbose_name=u'phone', on_delete=models.CASCADE)
-    is_using = models.BooleanField(u'is using', default=False)
+    is_using = models.BooleanField(u'is using', default=True)
 
     class Meta:
         verbose_name = u'ChatPhone'
