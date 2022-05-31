@@ -9,8 +9,16 @@ from django.utils import timezone
 from telethon.sessions import StringSession
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from telethon import TelegramClient, sessions, sync
+from telethon import TelegramClient, sessions
+from post_office.models import EmailTemplate
 from base.tasks import make_telegram_bot
+from django_celery_results.models import TaskResult
+try:
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+except ImportError:
+    from django.contrib.auth.models import User
+
 
 def attachment_path(instance, filename):
     os.umask(0)
@@ -19,6 +27,7 @@ def attachment_path(instance, filename):
         if not os.path.exists(att_path):
             os.makedirs(att_path, 755)
     return os.path.join("attachments", filename)
+
 
 class BaseModel(models.Model):
     """ Абстрактная модель для использования UUID в качестве PK."""
@@ -31,6 +40,7 @@ class BaseModel(models.Model):
     class Meta:
         abstract = True
 
+
 class Host(BaseModel):
     public_ip = models.CharField(max_length=15, blank=True, null=True)
     local_ip = models.CharField(max_length=15, blank=True, null=True)
@@ -42,6 +52,7 @@ class Host(BaseModel):
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.name)
+
 
 class Parser(BaseModel):
     NEW_STATUS = 1
@@ -65,6 +76,7 @@ class Parser(BaseModel):
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.api_id)
+
 
 class Phone(BaseModel):
     CREATED = 0
@@ -125,6 +137,7 @@ class Phone(BaseModel):
         return False
     token_is_valid = property(_token_is_valid)
 
+
 class Member(BaseModel):
     internal_id = models.IntegerField(blank=True)
     username = models.CharField(u'username', max_length=255, blank=True, null=True)
@@ -173,13 +186,13 @@ class Chat(BaseModel):
         (FAILED, u'Ошибка'),
     )
 
-    internal_id = models.BigIntegerField('internal id', null=True, blank=False)
+    internal_id = models.BigIntegerField('internal id', null=True, blank=True)
     link = models.CharField(u'link', max_length=255, blank=False, unique=True)
     title = models.CharField(u'title', max_length=255, blank=True)
     status = models.IntegerField(u'status', default=CREATED, choices=STATUS_CHOICES)
     status_text = models.TextField(u'status text', blank=True, null=True)
     description = models.TextField(u'description', blank=True, null=True)
-    system_title = models.CharField(u'system title', max_length=255, blank=False, null=True)
+    system_title = models.CharField(u'system title', max_length=255, blank=True, null=True)
     system_description = models.TextField(u'system description', blank=True, null=True)
     lat = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
     lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
@@ -217,6 +230,7 @@ class ChatMember(BaseModel):
 
     def __str__(self):
         return u'{}. {} - {}'.format(self.id, self.chat, self.member)
+
 
 class ChatMemberRole(BaseModel):
     member = models.ForeignKey(ChatMember, verbose_name=u'member', on_delete=models.CASCADE)
@@ -264,6 +278,7 @@ class Message(BaseModel):
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.text)
+
 
 class MessageMedia(BaseModel):
     message = models.ForeignKey(Message, verbose_name=u'message media', on_delete=models.CASCADE)
@@ -376,6 +391,17 @@ class ChatLog(BaseModel):
 #     print(client.get_me())
 
 
+class Subscription(BaseModel):
+    title = models.CharField(u'название', max_length=255, blank=False, null=False)
+    user = models.ForeignKey(User, verbose_name=u'подписчик', on_delete=models.CASCADE)
+    template = models.ForeignKey(EmailTemplate, verbose_name=u'шаблон', on_delete=models.CASCADE)
+
+    class Meta:
+        verbose_name = u'Subscription'
+        verbose_name_plural = u'Subscriptions'
+
+
+
 TypeHost = Host
 TypeParser = Parser
 TypePhone = Phone
@@ -388,3 +414,5 @@ TypeChatPhone = ChatPhone
 TypeChatMember = ChatMember
 TypeChatMemberRole = ChatMemberRole
 TypeChatMedia = ChatMedia
+
+

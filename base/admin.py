@@ -16,7 +16,7 @@ class VersionBotInline(admin.TabularInline):
 
 
 class PhoneAdmin(admin.ModelAdmin):
-    list_display = ('id', 'number', 'first_name', 'is_verified', 'is_banned', 'created_at', 'status')
+    list_display = ('id', 'number', 'first_name', 'status', 'status_text', 'created_at')
     date_hierarchy = 'created_at'
     search_fields = ['number']
     readonly_fields = ("internal_id", "created_at", "token_verify", "wait")
@@ -44,13 +44,12 @@ class VersionChatInline(admin.TabularInline):
 
 
 class ChatAdmin(admin.ModelAdmin):
-    list_display = ('id', 'link', 'title', 'internal_id', 'is_available', 'description')
+    list_display = ('id', 'link', 'title', 'internal_id', 'status', 'status_text', 'description')
     search_fields = ['link', 'title', 'description']
     readonly_fields = ("id",)
     list_filter = (
         ("internal_id", admin.EmptyFieldListFilter),
-        ("title", admin.EmptyFieldListFilter),
-        'is_available',
+        'status',
     )
     inlines = (VersionChatInline,)
 
@@ -108,6 +107,10 @@ class BotAdmin(admin.ModelAdmin):
     get_token_status.short_description = u"проверка токена"
 
 
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title')
+
+
 admin.site.register(base_models.Phone, PhoneAdmin)
 admin.site.register(base_models.Chat, ChatAdmin)
 admin.site.register(base_models.ChatLog, ChatLogAdmin)
@@ -120,3 +123,5 @@ admin.site.register(base_models.ChatMember, ChatMemberAdmin)
 admin.site.register(base_models.ChatMemberRole, ChatMemberRoleAdmin)
 admin.site.register(base_models.ChatMedia, ChatMediaAdmin)
 admin.site.register(base_models.Bot, BotAdmin)
+admin.site.register(base_models.Subscription, SubscriptionAdmin)
+

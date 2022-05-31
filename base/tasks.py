@@ -1,17 +1,40 @@
 import datetime, telethon, asyncio
-from tkinter.messagebox import NO
-from math import fabs
-
 import celery
 from asgiref.sync import sync_to_async
-
+from django_celery_results.models import TaskResult
 from tg_parser.celeryapp import app
 from django.conf import settings
+try:
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+except ImportError:
+    from django.contrib.auth.models import User
+from base.lib import send_templated_mail
 
 
 @app.task
 def test_task():
     print("RUN task at {}".format(datetime.datetime.now()))
+    return True
+
+
+@app.task
+def system_report_task():
+    from base.models import Phone
+    users = User.objects.values_list('email', flat=True).filter(is_active=True).exclude(email__exact='')
+    if users:
+        phones = Phone.objects.filter(is_verified=True, is_banned=False).count()
+        tasks = TaskResult.objects.filter(date_created__gte=datetime.datetime.now() - datetime.timedelta(days=1))
+        send_templated_mail(
+            recipients=list(users),
+            template_name='available_phones',
+            context={
+                "phones": phones,
+                "task_success_count": tasks.filter(status="SUCCESS").count(),
+                "task_failure_count": tasks.filter(status__in=["RETRY", "FAILURE", "REVOKED"]).count(),
+                "chats": 0,
+            },
+        )
     return True
 
 
@@ -109,7 +132,7 @@ class PhoneAuthorizationTask(celery.Task):
         client = telethon.TelegramClient(
             connection_retries=-1,
             retry_delay=5, 
-            session=telethon.sessions.StringSession(phone.session), 
+            session=telethon.sessions.StringSession(phone.session),
             api_id=parser.api_id,
             api_hash=parser.api_hash,
         )
@@ -228,7 +251,7 @@ app.register_task(PhoneAuthorizationTask())
 class ChatResolveTask(celery.Task):
     name = "ChatResolveTask"
 
-    async def __resolve(client, string):
+    async def __resolve(self, client, string):
         from telethon import functions, types
         from tg_parser.utils import parse_username
 
@@ -248,7 +271,7 @@ class ChatResolveTask(celery.Task):
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
-    async def _run(self, chat, phones):
+    async def _run(self, chat, phones, parser):
         from telethon import types
         from tg_parser.utils import TelegramClient, parse_username
         from base.models import Chat, Phone
@@ -256,7 +279,7 @@ class ChatResolveTask(celery.Task):
 
         for phone in phones:
             try:
-                async with TelegramClient(phone) as client:
+                async with TelegramClient(phone, parser) as client:
                     try:
                         tg_chat = await self.__resolve(client, chat.link)
                     except telethon.errors.FloodWaitError as ex:
@@ -273,11 +296,9 @@ class ChatResolveTask(celery.Task):
 
                         chat.status = Chat.FAILED
                         chat.status_text = str(ex)
-                            
+
                         break
                     else:
-                        print(f"Chat resolve exception. Exception: {ex}.")
-                        
                         if isinstance(tg_chat, types.ChatInvite):
                             print(f"Chat is available, but need to join.")
 
@@ -292,12 +313,12 @@ class ChatResolveTask(celery.Task):
 
                         if chat.title != tg_chat.title:
                             chat.title = tg_chat.title
-                            
+
                         chat.status = Chat.AVAILABLE
 
                         break
             except (
-                ClientNotAvailableError, 
+                ClientNotAvailableError,
                 telethon.errors.UserDeactivatedBanError
             ) as ex:
                 phone.status = Phone.CREATED if isinstance(ex, ClientNotAvailableError) else Phone.BAN
@@ -315,9 +336,9 @@ class ChatResolveTask(celery.Task):
         except Chat.DoesNotExist:
             return False
 
-        phones = Phone.objects.filter(parser_id=chat.parser.id)
+        phones = list(Phone.objects.filter(parser_id=chat.parser.id, status=Phone.READY))
 
-        return asyncio.run(self._run(chat, phones))
+        return asyncio.run(self._run(chat, phones, chat.parser))
 
 
 app.register_task(ChatResolveTask())
@@ -345,19 +366,19 @@ class JoinChatTask(celery.Task):
             updates = await client(telethon.functions.channels.JoinChannelRequest(username))
 
             return updates.chats[-1]
-        
+
         raise ValueError(
             'Cannot find any entity corresponding to "{}"'.format(string)
         )
 
-    async def _run(self, chat, phone):
+    async def _run(self, chat, phone, parser):
         from base.exceptions import ClientNotAvailableError
         from tg_parser.utils import TelegramClient
         from base.models import Chat, Phone, ChatPhone
 
         while True:
             try:
-                async with TelegramClient(phone) as client:
+                async with TelegramClient(phone, parser) as client:
                     try:
                         dialogs = await client.get_dialogs(limit=0)
 
@@ -368,10 +389,10 @@ class JoinChatTask(celery.Task):
 
                             break
 
-                        tg_chat = self.__join(client, chat.link)
+                        tg_chat = await self.__join(client, chat.link)
                     except telethon.errors.FloodWaitError as ex:
                         print(f"Chat wiring for phone {phone.id} must wait {ex.seconds}.")
-                                
+
                         phone.status = Phone.FLOOD
                         phone.status_text = str(ex)
 
@@ -389,7 +410,7 @@ class JoinChatTask(celery.Task):
                         break
                     except telethon.errors.UserDeactivatedBanError as ex:
                         print(f"Chat not available for phone {phone.id}. Exception {ex}")
-                    
+
                         phone.status = Phone.BAN
                         phone.status_text = str(ex)
 
@@ -403,7 +424,7 @@ class JoinChatTask(celery.Task):
 
                         chat.status = Chat.FAILED
                         chat.status_text = str(ex)
-                        
+
                         await sync_to_async(chat.save)()
 
                         break
@@ -418,10 +439,10 @@ class JoinChatTask(celery.Task):
                                 chat.title = tg_chat.title
 
                         await sync_to_async(ChatPhone.objects.create)(chat=chat, phone=phone)
-                        
+
                         return True
             except (
-                ClientNotAvailableError, 
+                ClientNotAvailableError,
                 telethon.errors.UserDeactivatedBanError
             ) as ex:
                 phone.status = Phone.CREATED if isinstance(ex, ClientNotAvailableError) else Phone.BAN
@@ -446,7 +467,7 @@ class JoinChatTask(celery.Task):
         except Phone.DoesNotExist:
             return False
 
-        return asyncio.run(self._run(chat, phone))
+        return asyncio.run(self._run(chat, phone, chat.parser))
 
 
 app.register_task(JoinChatTask())
@@ -576,7 +597,7 @@ class ParseChatTask(celery.Task):
 
             # TODO: Как запускать?
             # multiprocessing.Process(target=processes.member_media_process, args=(chat_phone, member, user)).start()
-        
+
         reply_to = await sync_to_async(Message.objects.update_or_create)(internal_id=tg_message.reply_to.reply_to_msg_id, chat=chat) if tg_message.reply_to is not None else None
 
         if tg_message.replies is not None:
@@ -595,7 +616,7 @@ class ParseChatTask(celery.Task):
         message = await sync_to_async(Message.objects.update_or_create)(
             internal_id=tg_message.id, 
             text=tg_message.message, 
-            chat=chat, 
+            chat=chat,
             member=chat_member,
             reply_to=reply_to, 
             is_pinned=tg_message.pinned,     
@@ -651,7 +672,7 @@ class ParseChatTask(celery.Task):
                         # TODO: Ретрай?
                     except telethon.errors.FloodWaitError as ex:
                         print(f"Messages request must wait {ex.seconds} seconds.")
-                                
+
                         phone.status = Phone.FLOOD
                         phone.status_text = str(ex)
 
@@ -662,13 +683,13 @@ class ParseChatTask(celery.Task):
                         continue
                     except (KeyError, ValueError, telethon.errors.RPCError) as ex:
                         print(f"Chat not available. Exception: {ex}")
-                        
+
                         chat.status = Chat.FAILED
                         chat.status_text = str(ex)
 
                         await sync_to_async(chat.save)()
             except (
-                ClientNotAvailableError, 
+                ClientNotAvailableError,
                 telethon.errors.UserDeactivatedBanError
             ) as ex:
                 phone.status = Phone.CREATED if isinstance(ex, ClientNotAvailableError) else Phone.BAN
@@ -685,7 +706,7 @@ class ParseChatTask(celery.Task):
             return False
 
         chat_phones = ChatPhone.objects.filter(chat_id=chat.id)
-        
+
         last_message = Message.objects.filter(chat_id=chat.id).order_by("-internal_id")[0]
         max_id = last_message.internal_id if last_message is not None else 0
 
@@ -728,11 +749,11 @@ class MonitoringChatTask(ParseChatTask):
                         await asyncio.sleep(10)
 
                         await sync_to_async(chat.refresh_from_db)()
-                        
+
                         if chat.status is not Chat.MONITORING:
                             return True
             except (
-                ClientNotAvailableError, 
+                ClientNotAvailableError,
                 telethon.errors.UserDeactivatedBanError
             ) as ex:
                 phone.status = Phone.CREATED if isinstance(ex, ClientNotAvailableError) else Phone.BAN

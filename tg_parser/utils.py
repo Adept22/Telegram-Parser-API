@@ -3,7 +3,7 @@ import telethon, telethon.sessions, re
 class TelegramClient(telethon.TelegramClient):
     from base.models import TypePhone
 
-    def __init__(self, phone: 'TypePhone', *args, **kwargs):
+    def __init__(self, phone: 'TypePhone', parser, *args, **kwargs):
         self.phone = phone
 
         super(TelegramClient, self).__init__(
@@ -12,8 +12,8 @@ class TelegramClient(telethon.TelegramClient):
             connection_retries=-1,
             retry_delay=5, 
             session=telethon.sessions.StringSession(phone.session), 
-            api_id=phone.parser.api_id, 
-            api_hash=phone.parser.api_hash
+            api_id=parser.api_id,
+            api_hash=parser.api_hash
         )
 
     async def start(self):

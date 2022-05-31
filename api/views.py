@@ -8,7 +8,10 @@ import api.serializers as serializers
 from api.paginators import MyPagination
 from api.filters import ChatFilter, PhoneFilter
 import base.models as base_models
-from base.tasks import resolve_chat, test_task, unban_phone_task, PhoneAuthorizationTask
+from base.tasks import resolve_chat, test_task, unban_phone_task
+import base.tasks as base_tasks
+# from celery import Celery
+from tg_parser.celeryapp import app as celery_app
 
 
 class Bots(viewsets.ModelViewSet):
@@ -54,7 +57,7 @@ class Phones(viewsets.ModelViewSet):
     @action(methods=['post'], detail=True)
     def authorization(self, request, pk=None):
         phone = self.get_object()
-        PhoneAuthorizationTask().delay(phone.id)
+        base_tasks.PhoneAuthorizationTask().delay(phone.id)
         return Response(status=status.HTTP_201_CREATED)
 
 
@@ -84,8 +87,10 @@ class Chats(viewsets.ModelViewSet):
 
     @action(methods=['post'], detail=False)
     def test(self, request):
-
-        test_task.apply_async((), countdown=3)
+        # test_task.apply_async((), countdown=3)
+        # [celery_app.send_task('base.tasks.test', ('test param3333',)) for i in range(100)]
+        # base_tasks.ChatResolveTask().delay('f652949e-e0cd-11ec-9669-7972643f4571')
+        # base_tasks.JoinChatTask().delay('f652949e-e0cd-11ec-9669-7972643f4571', '1d1efa20-ddce-11ec-95c5-cf63300076c1')
         return Response(status=status.HTTP_201_CREATED)
 
 
@@ -184,5 +189,3 @@ class Hosts(viewsets.ModelViewSet):
     serializer_class = serializers.HostListSerializer
     queryset = base_models.Host.objects.all()
     pagination_class = MyPagination
-
-

@@ -9,89 +9,12 @@ class WaitSerializer(serializers.Serializer):
 class BotListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Bot
-        fields = ('id', 'created', 'name', 'session')
-        read_only_fields = ('id', 'created', 'session')
-
-
-class PhoneListSerializer(serializers.ModelSerializer):
-    internalId = serializers.IntegerField(source='internal_id')
-    isBanned = serializers.BooleanField(source='is_banned')
-    isVerified = serializers.BooleanField(source='is_verified')
-    id = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = base_models.Phone
-        fields = ('id', 'number', 'internalId', 'session', 'first_name', 'isVerified', 'isBanned', 'code', 'created')
-        read_only_fields = ('id', 'created')
-
-
-class PhoneUpdateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = base_models.Phone
-        fields = ('id', 'internal_id', 'session', 'first_name', 'is_verified', 'is_banned', 'code', 'wait', 'created')
-        read_only_fields = ('id', 'created')
-
-
-class PhoneViewSerializer(serializers.ModelSerializer):
-    isVerified = serializers.BooleanField(source='is_verified')
-    createdAt = serializers.DateTimeField(source='created')
-    isBanned = serializers.BooleanField(source='is_banned')
-    id = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = base_models.Phone
-        fields = ('id', 'number', 'internal_id', 'session', 'first_name', 'isVerified', 'isBanned', 'createdAt', 'code')
-        read_only_fields = ('id',)
-
-
-class ChatListSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
-    createdAt = serializers.DateTimeField(source='created', read_only=True)
-    internalId = serializers.IntegerField(source='internal_id', required=False)
-    isAvailable = serializers.BooleanField(source='is_available', required=False)
-
-    class Meta:
-        model = base_models.Chat
-        fields = ('id', 'createdAt', 'link', 'internalId', 'title', 'isAvailable')
-        read_only_fields = ('id',)
-
-
-class ChatMiniSerializer(serializers.ModelSerializer):
-    id = serializers.ModelField(model_field=base_models.Chat()._meta.get_field('id'))
-
-    class Meta:
-        model = base_models.Chat
-        fields = ('id',)
-        read_only_fields = ('id',)
-
-
-class ChatViewSerializer(serializers.ModelSerializer):
-    isAvailable = serializers.BooleanField(source='is_available')
-    createdAt = serializers.DateTimeField(source='created')
-    internalId = serializers.CharField(source='internal_id')
-    id = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = base_models.Chat
-        fields = ('id', 'link', 'internalId', 'isAvailable', 'title', 'createdAt', 'date', 'description')
-        read_only_fields = ('id',)
-
-
-class ChatPhoneListSerializer(serializers.ModelSerializer):
-    isUsing = serializers.BooleanField(source='is_using')
-    createdAt = serializers.DateTimeField(source='created', read_only=True)
-    chat = ChatViewSerializer(read_only=True)
-    phone = PhoneViewSerializer(read_only=True)
-    id = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = base_models.ChatPhone
-        fields = ('id', 'chat', 'phone', 'isUsing', 'createdAt')
-        read_only_fields = ('id',)
+        fields = ('id', 'created_at', 'name', 'session')
+        read_only_fields = ('id', 'created_at', 'session')
 
 
 class HostViewSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created')
+    createdAt = serializers.DateTimeField(source='created_at')
     localIp = serializers.DateTimeField(source='local_ip')
 
     class Meta:
@@ -101,7 +24,7 @@ class HostViewSerializer(serializers.ModelSerializer):
 
 
 class ParserListSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created', read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
     host = HostViewSerializer(read_only=True)
     chatsCount = serializers.SerializerMethodField(read_only=True)
     phonesCount = serializers.SerializerMethodField(read_only=True)
@@ -115,6 +38,78 @@ class ParserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Parser
         fields = ('id', 'createdAt', 'chatsCount', 'phonesCount', 'status', 'api_id', 'api_hash', 'host')
+        read_only_fields = ('id',)
+
+
+class PhoneListSerializer(serializers.ModelSerializer):
+    internalId = serializers.IntegerField(source='internal_id')
+    id = serializers.CharField(read_only=True)
+    parser = ParserListSerializer()
+
+    class Meta:
+        model = base_models.Phone
+        fields = ('id', 'number', 'internalId', 'session', 'first_name', 'status', 'code', 'created_at', 'parser')
+        read_only_fields = ('id', 'created_at')
+
+
+class PhoneUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = base_models.Phone
+        fields = ('id', 'internal_id', 'session', 'first_name', 'code', 'wait', 'created_at')
+        read_only_fields = ('id', 'created_at')
+
+
+class PhoneViewSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at')
+    id = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = base_models.Phone
+        fields = ('id', 'number', 'internal_id', 'session', 'first_name', 'status', 'createdAt', 'code')
+        read_only_fields = ('id',)
+
+
+class ChatListSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    internalId = serializers.IntegerField(source='internal_id', required=False)
+
+    class Meta:
+        model = base_models.Chat
+        fields = ('id', 'createdAt', 'link', 'internalId', 'title', 'status')
+        read_only_fields = ('id',)
+
+
+class ChatMiniSerializer(serializers.ModelSerializer):
+    id = serializers.ModelField(model_field=base_models.Chat()._meta.get_field('id'))
+
+    class Meta:
+        model = base_models.Chat
+        fields = ('id',)
+        read_only_fields = ('id',)
+
+
+class ChatViewSerializer(serializers.ModelSerializer):
+    createdAt = serializers.DateTimeField(source='created_at')
+    internalId = serializers.CharField(source='internal_id')
+    id = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = base_models.Chat
+        fields = ('id', 'link', 'internalId', 'status', 'title', 'createdAt', 'date', 'description')
+        read_only_fields = ('id',)
+
+
+class ChatPhoneListSerializer(serializers.ModelSerializer):
+    isUsing = serializers.BooleanField(source='is_using')
+    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
+    chat = ChatViewSerializer(read_only=True)
+    phone = PhoneViewSerializer(read_only=True)
+    id = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = base_models.ChatPhone
+        fields = ('id', 'chat', 'phone', 'isUsing', 'createdAt')
         read_only_fields = ('id',)
 
 
@@ -188,21 +183,21 @@ class ChatMediaListSerializer(serializers.ModelSerializer):
 class HostListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Host
-        fields = ('id', 'created', 'public_ip', 'local_ip', 'name')
-        read_only_fields = ('id', 'created')
+        fields = ('id', 'created_at', 'public_ip', 'local_ip', 'name')
+        read_only_fields = ('id', 'created_at')
 
 
 class MessageListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Message
         fields = ('id', 'member', 'reply_to_id', 'internal_id', 'text', 'is_pinned', 'forwarded_from_id',
-                  'forwarded_from_name', 'created', 'chat_id', 'grouped_id', 'date')
-        read_only_fields = ('id', 'created')
+                  'forwarded_from_name', 'created_at', 'chat_id', 'grouped_id', 'date')
+        read_only_fields = ('id', 'created_at')
 
 
 class MessageMediaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.MessageMedia
-        fields = ('id', 'message', 'path', 'created', 'internal_id', 'date')
-        read_only_fields = ('id', 'created')
+        fields = ('id', 'message', 'path', 'created_at', 'internal_id', 'date')
+        read_only_fields = ('id', 'created_at')
 
