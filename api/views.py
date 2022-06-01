@@ -3,14 +3,13 @@ from datetime import timedelta, datetime
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters import rest_framework as filters
+from rest_framework.filters import OrderingFilter
 from rest_framework import permissions, viewsets, status
 import api.serializers as serializers
 from api.paginators import MyPagination
-from api.filters import ChatFilter, PhoneFilter
+from api.filters import ChatFilter, PhoneFilter, MessageFilter
 import base.models as base_models
-from base.tasks import resolve_chat, test_task, unban_phone_task
 import base.tasks as base_tasks
-# from celery import Celery
 from tg_parser.celeryapp import app as celery_app
 
 
@@ -44,7 +43,7 @@ class Phones(viewsets.ModelViewSet):
             phone = self.get_object()
             phone.wait = datetime.now() + timedelta(seconds=serializer.validated_data['wait'])
             phone.save()
-            unban_phone_task.apply_async((phone.id,), countdown=serializer.validated_data['wait'])
+            base_tasks.unban_phone_task.apply_async((phone.id,), countdown=serializer.validated_data['wait'])
             return Response(status=status.HTTP_201_CREATED)
         return Response("wait field is required", status=status.HTTP_400_BAD_REQUEST)
 
@@ -78,7 +77,7 @@ class Chats(viewsets.ModelViewSet):
             base_models.ChatLog.objects.create(chat=chat, body=ex)
         else:
             session = bot.get_session
-            resolve_chat.delay({"chat_id": chat.id, "session": session})
+            base_tasks.resolve_chat.delay({"chat_id": chat.id, "session": session})
 
     @action(methods=['post'], detail=False)
     def find(self, request):
@@ -87,8 +86,8 @@ class Chats(viewsets.ModelViewSet):
 
     @action(methods=['post'], detail=False)
     def test(self, request):
-        # test_task.apply_async((), countdown=3)
-        # [celery_app.send_task('base.tasks.test', ('test param3333',)) for i in range(100)]
+        # base_tasks.test_task.apply_async((), countdown=3)
+        [celery_app.send_task('base.tasks.test', ('test param3333',)) for i in range(2)]
         # base_tasks.ChatResolveTask().delay('f652949e-e0cd-11ec-9669-7972643f4571')
         # base_tasks.JoinChatTask().delay('f652949e-e0cd-11ec-9669-7972643f4571', '1d1efa20-ddce-11ec-95c5-cf63300076c1')
         return Response(status=status.HTTP_201_CREATED)
@@ -121,7 +120,10 @@ class Messages(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = serializers.MessageListSerializer
     queryset = base_models.Message.objects.all()
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     pagination_class = MyPagination
+    ordering_fields = ['internal_id', 'created_at']
+    filter_class = MessageFilter
 
 
 class MessageMedias(viewsets.ModelViewSet):
@@ -189,3 +191,6 @@ class Hosts(viewsets.ModelViewSet):
     serializer_class = serializers.HostListSerializer
     queryset = base_models.Host.objects.all()
     pagination_class = MyPagination
+
+
+

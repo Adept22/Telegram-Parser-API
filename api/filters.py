@@ -13,3 +13,10 @@ class PhoneFilter(django_filters.FilterSet):
         model = base_models.Phone
         fields = ('number', 'status')
 
+
+class MessageFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Message
+        fields = ('internal_id',)
+
+

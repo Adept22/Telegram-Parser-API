@@ -263,7 +263,7 @@ class ChatMedia(BaseModel):
 
 
 class Message(BaseModel):
-    member = models.ForeignKey(ChatMember, verbose_name=u'member', on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, verbose_name=u'member', on_delete=models.CASCADE)
     reply_to = models.ForeignKey("self", verbose_name=u'reply_to', blank=True, null=True, on_delete=models.CASCADE)
     internal_id = models.BigIntegerField(u'internal id')
     text = models.TextField()

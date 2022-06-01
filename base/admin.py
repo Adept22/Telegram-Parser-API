@@ -107,6 +107,10 @@ class ParserAdmin(admin.ModelAdmin):
     phones.short_description = u"телефоны"
 
 
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('id', 'internal_id', 'member', 'created_at')
+
+
 class ChatMediaAdmin(admin.ModelAdmin):
     list_display = ('id', 'chat', 'date')
 
@@ -140,4 +144,5 @@ admin.site.register(base_models.ChatMemberRole, ChatMemberRoleAdmin)
 admin.site.register(base_models.ChatMedia, ChatMediaAdmin)
 admin.site.register(base_models.Bot, BotAdmin)
 admin.site.register(base_models.Subscription, SubscriptionAdmin)
+admin.site.register(base_models.Message, MessageAdmin)
 
