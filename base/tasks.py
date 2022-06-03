@@ -131,7 +131,7 @@ class PhoneAuthorizationTask(celery.Task):
 
         client = telethon.TelegramClient(
             connection_retries=-1,
-            retry_delay=5, 
+            retry_delay=5,
             session=telethon.sessions.StringSession(phone.session),
             api_id=parser.api_id,
             api_hash=parser.api_hash,
@@ -502,10 +502,10 @@ class ParseChatTask(celery.Task):
 
         return await sync_to_async(Member.objects.update_or_create)(**new_member)
         
-    async def _set_chat_member(self, chat, member, participant = None):
+    async def _set_chat_member(self, chat, member, participant=None):
         from base.models import ChatMember
 
-        new_chat_member = { "chat": chat, "member": member }
+        new_chat_member = {"chat": chat, "member": member}
 
         if isinstance(participant, (telethon.types.ChannelParticipant, telethon.types.ChatParticipant)):
             new_chat_member["date"] = participant.date.isoformat()
@@ -514,7 +514,7 @@ class ParseChatTask(celery.Task):
 
         return await sync_to_async(ChatMember.objects.update_or_create)(**new_chat_member)
     
-    async def _set_chat_member_role(self, chat_member, participant = None):
+    async def _set_chat_member_role(self, chat_member, participant=None):
         from base.models import ChatMemberRole
 
         new_chat_member_role = { "member": chat_member }

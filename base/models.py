@@ -1,18 +1,20 @@
 import os
 import uuid
+import pickle
 import asyncio
 import requests
 from datetime import datetime
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from redis import StrictRedis
 from telethon.sessions import StringSession
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from telethon import TelegramClient, sessions
 from post_office.models import EmailTemplate
 from base.tasks import make_telegram_bot
-from django_celery_results.models import TaskResult
+from django_celery_results.models import TaskResult as TR
 try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -22,11 +24,11 @@ except ImportError:
 
 def attachment_path(instance, filename):
     os.umask(0)
-    att_path = os.path.join(settings.MEDIA_ROOT, "attachments")
+    path = os.path.join(settings.MEDIA_ROOT, "attachments/{:%Y-%m-%d}".format(datetime.today()))
     if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
-        if not os.path.exists(att_path):
-            os.makedirs(att_path, 755)
-    return os.path.join("attachments", filename)
+        if not os.path.exists(path):
+            os.makedirs(path, 755)
+    return os.path.join(path, filename)
 
 
 class BaseModel(models.Model):
@@ -43,7 +45,7 @@ class BaseModel(models.Model):
 
 class Host(BaseModel):
     public_ip = models.CharField(max_length=15, blank=True, null=True)
-    local_ip = models.CharField(max_length=15, blank=True, null=True)
+    local_ip = models.CharField(max_length=15, blank=True, null=True, unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -93,15 +95,15 @@ class Phone(BaseModel):
         (BAN, u'Забанен'),
     )
 
-    number = models.CharField(u'номер', max_length=20, blank=False)
+    number = models.CharField(u'номер', max_length=20, blank=False, unique=True)
     first_name = models.CharField(u'first name', max_length=255, blank=True, null=True)
     last_name = models.CharField(u'last name', max_length=255, blank=True, null=True)
     status = models.IntegerField(u'status', default=CREATED, choices=STATUS_CHOICES)
     status_text = models.TextField(u'status text', blank=True, null=True)
     parser = models.ForeignKey(Parser, verbose_name=u'parser', on_delete=models.CASCADE, null=True, blank=False)
     code = models.CharField(u'code', max_length=10, blank=True, null=True)
-    session = models.CharField(u'session', max_length=512, null=True, blank=True)
-    internal_id = models.BigIntegerField(blank=True, null=True)
+    session = models.CharField(u'session', max_length=512, null=True, blank=True, unique=True)
+    internal_id = models.BigIntegerField(blank=True, null=True, unique=True)
     wait = models.DateTimeField(blank=True, null=True)
 
     class Meta:
@@ -139,7 +141,7 @@ class Phone(BaseModel):
 
 
 class Member(BaseModel):
-    internal_id = models.IntegerField(blank=True)
+    internal_id = models.BigIntegerField(blank=True, unique=True)
     username = models.CharField(u'username', max_length=255, blank=True, null=True)
     first_name = models.CharField(u'first name', max_length=255, blank=True, null=True)
     last_name = models.CharField(u'last name', max_length=255, blank=True, null=True)
@@ -153,10 +155,11 @@ class Member(BaseModel):
     def __str__(self):
         return u'{}. {}'.format(self.id, self.username)
 
+
 class MemberMedia(BaseModel):
     member = models.ForeignKey(Member, verbose_name=u'member media', on_delete=models.CASCADE)
     path = models.CharField(u'path', max_length=255, blank=True, null=True)
-    internal_id = models.BigIntegerField(u'internal id')
+    internal_id = models.BigIntegerField(u'internal id', unique=True)
     date = models.DateTimeField(u'date', blank=True, null=True)
     file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
@@ -186,7 +189,7 @@ class Chat(BaseModel):
         (FAILED, u'Ошибка'),
     )
 
-    internal_id = models.BigIntegerField('internal id', null=True, blank=True)
+    internal_id = models.BigIntegerField('internal id', null=True, blank=True, unique=True)
     link = models.CharField(u'link', max_length=255, blank=False, unique=True)
     title = models.CharField(u'title', max_length=255, blank=True)
     status = models.IntegerField(u'status', default=CREATED, choices=STATUS_CHOICES)
@@ -215,6 +218,9 @@ class ChatPhone(BaseModel):
     class Meta:
         verbose_name = u'ChatPhone'
         verbose_name_plural = u'ChatPhones'
+        constraints = [
+            models.UniqueConstraint(fields=['chat', 'phone'], name='chat_phone_unique'),
+        ]
 
     def __str__(self):
         return u'{}. {} - {}'.format(self.id, self.chat, self.phone)
@@ -229,6 +235,9 @@ class ChatMember(BaseModel):
     class Meta:
         verbose_name = u'ChatMember'
         verbose_name_plural = u'ChatMembers'
+        constraints = [
+            models.UniqueConstraint(fields=['chat', 'member'], name='chat_member_unique'),
+        ]
 
     def __str__(self):
         return u'{}. {} - {}'.format(self.id, self.chat, self.member)
@@ -242,6 +251,9 @@ class ChatMemberRole(BaseModel):
     class Meta:
         verbose_name = u'ChatMemberRole'
         verbose_name_plural = u'ChatMemberRoles'
+        constraints = [
+            models.UniqueConstraint(fields=['member', 'title', 'code'], name='chat_member_role_unique'),
+        ]
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.title)
@@ -250,7 +262,7 @@ class ChatMemberRole(BaseModel):
 class ChatMedia(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u'chat', on_delete=models.CASCADE, null=True, blank=False)
     path = models.CharField(max_length=3000, blank=True, null=True)
-    internal_id = models.BigIntegerField(u'internal id')
+    internal_id = models.BigIntegerField(u'internal id', unique=True)
     date = models.DateTimeField(u'дата', blank=True, null=True)
     file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
@@ -277,6 +289,9 @@ class Message(BaseModel):
     class Meta:
         verbose_name = u'Message'
         verbose_name_plural = u'Messages'
+        constraints = [
+            models.UniqueConstraint(fields=['internal_id', 'chat'], name='message_unique'),
+        ]
 
     def __str__(self):
         return u'{}. {}'.format(self.id, self.text)
@@ -285,7 +300,7 @@ class Message(BaseModel):
 class MessageMedia(BaseModel):
     message = models.ForeignKey(Message, verbose_name=u'message media', on_delete=models.CASCADE)
     path = models.CharField(u'path', max_length=255, blank=True, null=True)
-    internal_id = models.BigIntegerField(u'internal id')
+    internal_id = models.BigIntegerField(u'internal id', unique=True)
     date = models.DateTimeField(u'date', blank=True, null=True)
     # file = models.FileField(u'файл', upload_to=attachment_path, max_length=1000, blank=True, null=True)
 

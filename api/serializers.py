@@ -14,17 +14,14 @@ class BotListSerializer(serializers.ModelSerializer):
 
 
 class HostViewSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created_at')
-    localIp = serializers.DateTimeField(source='local_ip')
 
     class Meta:
         model = base_models.Host
-        fields = ('id', 'createdAt', 'localIp', 'name')
+        fields = ('id', 'created_at', 'local_ip', 'public_ip', 'name')
         read_only_fields = ('id',)
 
 
 class ParserListSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
     host = HostViewSerializer(read_only=True)
     chatsCount = serializers.SerializerMethodField(read_only=True)
     phonesCount = serializers.SerializerMethodField(read_only=True)
@@ -37,46 +34,83 @@ class ParserListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = base_models.Parser
-        fields = ('id', 'createdAt', 'chatsCount', 'phonesCount', 'status', 'api_id', 'api_hash', 'host')
+        fields = ('id', 'created_at', 'chatsCount', 'phonesCount', 'status', 'api_id', 'api_hash', 'host')
         read_only_fields = ('id',)
 
 
+class ParserSerializer(serializers.ModelSerializer):
+    id = serializers.ModelField(model_field=base_models.Parser()._meta.get_field('id'))
+    api_id = serializers.IntegerField(required=False)
+    api_hash = serializers.CharField(required=False)
+
+    class Meta:
+        model = base_models.Parser
+        fields = ('id', 'created_at', 'status', 'api_id', 'api_hash')
+        read_only_fields = ('id', 'created_at')
+
+
 class PhoneListSerializer(serializers.ModelSerializer):
-    internalId = serializers.IntegerField(source='internal_id')
-    id = serializers.CharField(read_only=True)
-    parser = ParserListSerializer()
+    # id = serializers.CharField(read_only=True)
+    parser = ParserSerializer()
 
     class Meta:
         model = base_models.Phone
-        fields = ('id', 'number', 'internalId', 'session', 'first_name', 'status', 'code', 'created_at', 'parser')
+        fields = ('id', 'number', 'internal_id', 'session', 'first_name', 'last_name', 'status', 'code', 'created_at',
+                  'parser')
         read_only_fields = ('id', 'created_at')
+
+    def create(self, validated_data):
+        parser_id = validated_data.get('parser', None)
+        if parser_id is not None:
+            parser = base_models.Parser.objects.get(id=parser_id.get('id'))
+            validated_data['parser'] = parser
+        return base_models.Phone.objects.create(**validated_data)
 
 
 class PhoneUpdateSerializer(serializers.ModelSerializer):
+    parser = ParserSerializer()
+
     class Meta:
         model = base_models.Phone
-        fields = ('id', 'internal_id', 'session', 'first_name', 'code', 'wait', 'created_at')
+        fields = (
+            'id', 'number', 'internal_id', 'session', 'first_name', 'last_name', 'code', 'wait', 'created_at',
+            'status_text', 'status', 'parser'
+        )
         read_only_fields = ('id', 'created_at')
+
+    def update(self, instance, validated_data):
+        instance.number = validated_data.get('number', instance.number)
+        instance.internal_id = validated_data.get('internal_id', instance.internal_id)
+        instance.session = validated_data.get('session', instance.session)
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.last_name = validated_data.get('last_name', instance.last_name)
+        instance.code = validated_data.get('code', instance.code)
+        instance.wait = validated_data.get('wait', instance.wait)
+        instance.status_text = validated_data.get('status_text', instance.wait)
+        instance.status = validated_data.get('status', instance.status)
+        parser = validated_data.get('parser')
+        if parser is not None:
+            instance.parser_id = parser.get('id')
+        instance.save()
+        return instance
 
 
 class PhoneViewSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created_at')
     id = serializers.CharField(read_only=True)
 
     class Meta:
         model = base_models.Phone
-        fields = ('id', 'number', 'internal_id', 'session', 'first_name', 'status', 'createdAt', 'code')
+        fields = ('id', 'number', 'internal_id', 'session', 'first_name', 'status', 'created_at', 'code')
         read_only_fields = ('id',)
 
 
 class ChatListSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
-    internalId = serializers.IntegerField(source='internal_id', required=False)
+    parser = ParserSerializer(read_only=True)
 
     class Meta:
         model = base_models.Chat
-        fields = ('id', 'createdAt', 'link', 'internalId', 'title', 'status')
+        fields = ('id', 'created_at', 'link', 'internal_id', 'title', 'status', 'parser')
         read_only_fields = ('id',)
 
 
@@ -90,49 +124,55 @@ class ChatMiniSerializer(serializers.ModelSerializer):
 
 
 class ChatViewSerializer(serializers.ModelSerializer):
-    createdAt = serializers.DateTimeField(source='created_at')
-    internalId = serializers.CharField(source='internal_id')
     id = serializers.CharField(read_only=True)
 
     class Meta:
         model = base_models.Chat
-        fields = ('id', 'link', 'internalId', 'status', 'title', 'createdAt', 'date', 'description')
+        fields = ('id', 'link', 'internal_id', 'status', 'title', 'created_at', 'date', 'description')
+        read_only_fields = ('id',)
+
+
+class PhoneMiniSerializer(serializers.ModelSerializer):
+    id = serializers.ModelField(model_field=base_models.Phone()._meta.get_field('id'))
+
+    class Meta:
+        model = base_models.Phone
+        fields = ('id',)
         read_only_fields = ('id',)
 
 
 class ChatPhoneListSerializer(serializers.ModelSerializer):
-    isUsing = serializers.BooleanField(source='is_using')
-    createdAt = serializers.DateTimeField(source='created_at', read_only=True)
-    chat = ChatViewSerializer(read_only=True)
-    phone = PhoneViewSerializer(read_only=True)
+    chat = ChatMiniSerializer()
+    phone = PhoneMiniSerializer()
     id = serializers.CharField(read_only=True)
 
     class Meta:
         model = base_models.ChatPhone
-        fields = ('id', 'chat', 'phone', 'isUsing', 'createdAt')
+        fields = ('id', 'chat', 'phone', 'is_using', 'created_at')
         read_only_fields = ('id',)
+
+    def create(self, validated_data):
+        chat = validated_data.pop('chat')
+        phone = validated_data.pop('phone')
+        print("chat: {} phone: {}".format(chat['id'], phone['id']))
+        chat_phone = self.__class__.Meta.model.objects.create(chat_id=chat['id'], phone_id=phone['id'], **validated_data)
+        return chat_phone
 
 
 class MemberViewSerializer(serializers.ModelSerializer):
     id = serializers.ModelField(model_field=base_models.Member()._meta.get_field('id'))
-    internalId = serializers.IntegerField(source='internal_id', read_only=True)
-    firstName = serializers.CharField(source='first_name', required=False)
-    lastName = serializers.CharField(source='last_name', required=False)
 
     class Meta:
         model = base_models.Member
-        fields = ('id', 'internalId', 'username', 'firstName', 'lastName', 'phone', 'about')
+        fields = ('id', 'internal_id', 'username', 'first_name', 'last_name', 'phone', 'about')
         read_only_fields = ('id',)
 
 
 class MemberListSerializer(serializers.ModelSerializer):
-    internalId = serializers.IntegerField(source='internal_id', read_only=True)
-    firstName = serializers.CharField(source='first_name', required=False)
-    lastName = serializers.CharField(source='last_name', required=False)
 
     class Meta:
         model = base_models.Member
-        fields = ('id', 'internalId', 'username', 'firstName', 'lastName', 'phone', 'about')
+        fields = ('id', 'internal_id', 'username', 'first_name', 'last_name', 'phone', 'about')
         read_only_fields = ('id',)
 
 
@@ -152,13 +192,35 @@ class ChatMemberListSerializer(serializers.ModelSerializer):
         return chat_member
 
 
+class ChatMemberSerializer(serializers.ModelSerializer):
+    id = serializers.ModelField(model_field=base_models.ChatMember()._meta.get_field('id'))
+
+    class Meta:
+        model = base_models.ChatMember
+        fields = ('id',)
+        read_only_fields = ('id',)
+
+
+class ChatMemberRoleListSerializer(serializers.ModelSerializer):
+    member = ChatMemberSerializer()
+
+    class Meta:
+        model = base_models.ChatMemberRole
+        fields = ('id', 'member', 'title', 'code')
+        read_only_fields = ('id',)
+
+    def create(self, validated_data):
+        member = validated_data.pop('member')
+        chat_member_role = self.__class__.Meta.model.objects.create(member_id=member['id'], **validated_data)
+        return chat_member_role
+
+
 class MemberMediaListSerializer(serializers.ModelSerializer):
-    internalId = serializers.IntegerField(source='internal_id')
     member = MemberViewSerializer()
 
     class Meta:
         model = base_models.MemberMedia
-        fields = ('id', 'member', 'internalId', 'path', 'date')
+        fields = ('id', 'member', 'internal_id', 'path', 'date')
         read_only_fields = ('id',)
 
     def update(self, instance, validated_data):
@@ -172,11 +234,10 @@ class MemberMediaListSerializer(serializers.ModelSerializer):
 
 
 class ChatMediaListSerializer(serializers.ModelSerializer):
-    internalId = serializers.IntegerField(source='internal_id')
 
     class Meta:
         model = base_models.ChatMedia
-        fields = ('id', 'chat', 'internalId', 'path', 'date', 'file')
+        fields = ('id', 'chat', 'internal_id', 'path', 'date', 'file')
         read_only_fields = ('id',)
 
 
@@ -200,4 +261,12 @@ class MessageMediaListSerializer(serializers.ModelSerializer):
         model = base_models.MessageMedia
         fields = ('id', 'message', 'path', 'created_at', 'internal_id', 'date')
         read_only_fields = ('id', 'created_at')
+
+
+class ChunkViewSerializer(serializers.Serializer):
+    chunk_number = serializers.IntegerField(required=True)
+    chunk_size = serializers.IntegerField(required=True)
+    filename = serializers.CharField(required=True)
+    total_size = serializers.IntegerField(required=False)
+    chunk = serializers.FileField(required=False)
 
