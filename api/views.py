@@ -45,7 +45,6 @@ class Phones(viewsets.ModelViewSet):
 
     @action(methods=['post'], detail=True)
     def join_chat(self, request, pk=None):
-        print(request.data)
         task = celery_app.send_task('JoinChatTask', (request.data['chat']['id'], pk))
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
@@ -68,7 +67,6 @@ class Phones(viewsets.ModelViewSet):
 
     @action(methods=['post'], detail=True)
     def authorization(self, request, pk=None):
-        phone = self.get_object()
         # task = base_tasks.PhoneAuthorizationTask().delay(phone.id)
         task = celery_app.send_task('PhoneAuthorizationTask', (pk,))
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
