@@ -85,7 +85,6 @@ class Chats(viewsets.ModelViewSet):
         try:
             bot = base_models.Bot.objects.all().first()
         except Exception as ex:
-            print("Exception: {}".format(ex))
             base_models.ChatLog.objects.create(chat=chat, body=ex)
         else:
             session = bot.get_session

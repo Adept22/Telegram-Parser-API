@@ -1,4 +1,6 @@
-from rest_framework import serializers
+from rest_framework import serializers, status
+from rest_framework.exceptions import APIException
+
 import base.models as base_models
 
 
@@ -111,7 +113,7 @@ class ChatListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Chat
         fields = ('id', 'created_at', 'link', 'internal_id', 'title', 'status', 'parser')
-        read_only_fields = ('id',)
+        read_only_fields = ('id', 'created_at')
 
 
 class ChatMiniSerializer(serializers.ModelSerializer):
@@ -176,6 +178,10 @@ class MemberListSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
 
+class Custom409(APIException):
+    status_code = status.HTTP_409_CONFLICT
+
+
 class ChatMemberListSerializer(serializers.ModelSerializer):
     member = MemberViewSerializer()
     chat = ChatMiniSerializer()
@@ -188,8 +194,13 @@ class ChatMemberListSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         member = validated_data.pop('member')
         chat = validated_data.pop('chat')
-        chat_member = base_models.ChatMember.objects.create(member_id=member['id'], chat_id=chat['id'], **validated_data)
-        return chat_member
+        try:
+            chat_member = base_models.ChatMember.objects.create(
+                member_id=member['id'], chat_id=chat['id'], **validated_data
+            )
+            return chat_member
+        except Exception as exception:
+            raise Custom409(exception)
 
 
 class ChatMemberSerializer(serializers.ModelSerializer):
