@@ -168,6 +168,13 @@ class ChatMembers(viewsets.ModelViewSet):
     queryset = base_models.ChatMember.objects.all()
     pagination_class = CustomPagination
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_409_CONFLICT)
+
 
 class ChatMemberRoles(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
