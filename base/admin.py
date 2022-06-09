@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin import display
 import base.models as base_models
 
 
@@ -7,9 +8,7 @@ class VersionBotInline(admin.TabularInline):
     template = "admin/view_inline/tabular.html"
     model = base_models.Bot
     extra = 0
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    can_delete = False
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -20,9 +19,7 @@ class ChatsInline(admin.TabularInline):
     template = "admin/view_inline/chat_phone.html"
     model = base_models.ChatPhone
     extra = 0
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    can_delete = False
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -53,47 +50,68 @@ class VersionChatInline(admin.TabularInline):
     readonly_fields = ("id", "created_at", "body")
     model = base_models.ChatLog
     extra = 0
-
-    def has_delete_permission(self, request, obj=None):
-        return False
+    can_delete = False
 
     def has_add_permission(self, request, obj=None):
         return False
 
 
 class ChatAdmin(admin.ModelAdmin):
-    list_display = (
-        "id", "link", "title", "internal_id", "status", "status_text", "description", "phones", "members", "messages"
-    )
-    search_fields = ["link", "title", "description"]
-    readonly_fields = ("id", "internal_id")
+    list_display = [
+        "link", "get_type", "title", "internal_id", "status", "status_text", "description", "get_phones", "get_members",
+        "get_messages", "id"
+    ]
+    search_fields = ["id", "link", "title", "description"]
+    readonly_fields = ["id", "internal_id"]
     list_filter = (
         "status",
         ("internal_id", admin.EmptyFieldListFilter),
     )
     inlines = (VersionChatInline,)
 
-    def phones(self, instance):
+    def get_phones(self, instance):
         return instance.chatphone_set.count()
-    phones.short_description = u"телефоны"
+    get_phones.short_description = u"phones"
 
-    def members(self, instance):
+    def get_members(self, instance):
         return instance.chatmember_set.count()
-    members.short_description = u"участники"
+    get_members.short_description = u"members"
 
-    def messages(self, instance):
+    def get_messages(self, instance):
         return instance.message_set.count()
-    messages.short_description = u"сообщений"
+    get_messages.short_description = u"messages"
+
+    def get_type(self, instance):
+        return instance.get_type
+    get_type.short_description = u"type"
 
 
 class ChatPhoneAdmin(admin.ModelAdmin):
-    list_display = ("id", "chat", "phone", "is_using")
-    search_fields = ["chat", "phone"]
+    list_display = ["id", "get_chat", "get_phone", "is_using"]
+    search_fields = ["id", "chat__title", "phone__number"]
+    readonly_fields = ["chat"]
+
+    @display(ordering='phone', description='Phone')
+    def get_phone(self, obj):
+        return obj.phone.number
+
+    @display(ordering='chat', description='Chat')
+    def get_chat(self, obj):
+        return obj.chat.title
 
 
 class ChatMemberRoleAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "created_at")
+    list_display = ["id", "get_member", "get_chat", "title", "created_at"]
     search_fields = ["title"]
+    readonly_fields = ["member"]
+
+    @display(description='Member')
+    def get_member(self, obj):
+        return obj.member.member.username
+
+    @display(description='Chat')
+    def get_chat(self, obj):
+        return obj.member.chat.title
 
 
 class ChatLogAdmin(admin.ModelAdmin):
@@ -101,9 +119,9 @@ class ChatLogAdmin(admin.ModelAdmin):
 
 
 class MemberAdmin(admin.ModelAdmin):
-    list_display = ("id", "internal_id", "username", "first_name", "last_name", "phone", "about", "created_at")
+    list_display = ["internal_id", "username", "first_name", "last_name", "phone", "about", "created_at"]
     search_fields = ["username", "phone", "internal_id", "first_name", "last_name"]
-    list_filter = ["username", "created_at", ]
+    list_filter = ["created_at"]
 
 
 class MemberMediaAdmin(admin.ModelAdmin):
@@ -117,8 +135,17 @@ class HostAdmin(admin.ModelAdmin):
 
 
 class ChatMemberAdmin(admin.ModelAdmin):
-    list_display = ("id", "chat", "member", "date")
-    search_fields = ["chat__id", "member__id", "chat__link", "chat__title", "member__username"]
+    list_display = ["id", "get_chat", "get_member", "date"]
+    search_fields = ["id", "chat__id", "member__id", "chat__link", "chat__title", "member__username"]
+    readonly_fields = ["member", "chat"]
+
+    @display(ordering='chat__title', description='Chat')
+    def get_chat(self, obj):
+        return obj.chat.title
+
+    @display(description='Member')
+    def get_member(self, obj):
+        return obj.member.username
 
 
 class ParserAdmin(admin.ModelAdmin):
@@ -131,12 +158,20 @@ class ParserAdmin(admin.ModelAdmin):
 
 
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ("id", "internal_id", "member", "created_at")
-    readonly_fields = ("member", "reply_to", "chat", "date", "internal_id")
+    list_display = ["id", "member_id", "get_member", "text", "created_at"]
+    readonly_fields = ["member", "reply_to", "chat", "date", "internal_id"]
+    search_fields = ["id"]
+
+    @display(description='Member username')
+    def get_member(self, obj):
+        if obj.member:
+            return obj.member.member.username
+        return None
 
 
 class ChatMediaAdmin(admin.ModelAdmin):
-    list_display = ("id", "chat", "date")
+    list_display = ["id", "chat", "date"]
+    readonly_fields = ["chat"]
 
 
 class BotAdmin(admin.ModelAdmin):

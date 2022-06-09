@@ -1,7 +1,7 @@
 import datetime, telethon, asyncio
 import celery
 from asgiref.sync import sync_to_async
-from django_celery_results.models import TaskResult
+# from django_celery_results.models import TaskResult
 from tg_parser.celeryapp import app
 from django.conf import settings
 try:
@@ -18,24 +18,24 @@ def test_task():
     return True
 
 
-@app.task
-def system_report_task():
-    from base.models import Phone
-    users = User.objects.values_list('email', flat=True).filter(is_active=True).exclude(email__exact='')
-    if users:
-        phones = Phone.objects.filter(is_verified=True, is_banned=False).count()
-        tasks = TaskResult.objects.filter(date_created__gte=datetime.datetime.now() - datetime.timedelta(days=1))
-        send_templated_mail(
-            recipients=list(users),
-            template_name='available_phones',
-            context={
-                "phones": phones,
-                "task_success_count": tasks.filter(status="SUCCESS").count(),
-                "task_failure_count": tasks.filter(status__in=["RETRY", "FAILURE", "REVOKED"]).count(),
-                "chats": 0,
-            },
-        )
-    return True
+# @app.task
+# def system_report_task():
+#     from base.models import Phone
+#     users = User.objects.values_list('email', flat=True).filter(is_active=True).exclude(email__exact='')
+#     if users:
+#         phones = Phone.objects.filter(is_verified=True, is_banned=False).count()
+#         tasks = TaskResult.objects.filter(date_created__gte=datetime.datetime.now() - datetime.timedelta(days=1))
+#         send_templated_mail(
+#             recipients=list(users),
+#             template_name='available_phones',
+#             context={
+#                 "phones": phones,
+#                 "task_success_count": tasks.filter(status="SUCCESS").count(),
+#                 "task_failure_count": tasks.filter(status__in=["RETRY", "FAILURE", "REVOKED"]).count(),
+#                 "chats": 0,
+#             },
+#         )
+#     return True
 
 
 @app.task

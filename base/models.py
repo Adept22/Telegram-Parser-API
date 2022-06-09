@@ -1,6 +1,5 @@
 import os
 import uuid
-import pickle
 import asyncio
 import requests
 from datetime import datetime
@@ -10,8 +9,9 @@ from django.utils import timezone
 from telethon.sessions import StringSession
 from telethon import TelegramClient, sessions
 from post_office.models import EmailTemplate
+from telethon.utils import resolve_id
 from base.tasks import make_telegram_bot
-from django_celery_results.models import TaskResult as TR
+# from django_celery_results.models import TaskResult as TR
 try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -191,7 +191,7 @@ class Chat(BaseModel):
     internal_id = models.BigIntegerField("internal id", null=True, blank=True, unique=True)
     link = models.CharField(u"link", max_length=255, blank=False, unique=True)
     title = models.CharField(u"title", max_length=255, blank=True)
-    status = models.IntegerField(u"status", default=CREATED, choices=STATUS_CHOICES)
+    status = models.IntegerField(u"status", default=CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     description = models.TextField(u"description", blank=True, null=True)
     system_title = models.CharField(u"system title", max_length=255, blank=True, null=True)
@@ -207,6 +207,13 @@ class Chat(BaseModel):
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.link)
+
+    def _get_type(self):
+        type = None
+        if self.internal_id:
+            type = resolve_id(self.internal_id)[1].__name__
+        return type
+    get_type = property(_get_type)
 
 
 class ChatPhone(BaseModel):
@@ -398,20 +405,20 @@ class Subscription(BaseModel):
         verbose_name_plural = u"Subscriptions"
 
 
-class TaskResult(TR):
-    # status = models.CharField(u"status", max_length=255, blank=True, null=True)
-
-    class Meta:
-        managed = False
-
-    def get(self, name):
-        pickled_value = super(TaskResult, self).get(name)
-        if pickled_value is None:
-            return None
-        return pickle.loads(pickled_value)
-
-    def set(self, name, value, ex=None, px=None, nx=False, xx=False):
-        return super(TaskResult, self).set(name, pickle.dumps(value), ex, px, nx, xx)
+# class TaskResult(TR):
+#     # status = models.CharField(u"status", max_length=255, blank=True, null=True)
+#
+#     class Meta:
+#         managed = False
+#
+#     def get(self, name):
+#         pickled_value = super(TaskResult, self).get(name)
+#         if pickled_value is None:
+#             return None
+#         return pickle.loads(pickled_value)
+#
+#     def set(self, name, value, ex=None, px=None, nx=False, xx=False):
+#         return super(TaskResult, self).set(name, pickle.dumps(value), ex, px, nx, xx)
 
 
 TypeHost = Host

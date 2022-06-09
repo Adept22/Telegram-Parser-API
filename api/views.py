@@ -67,7 +67,7 @@ class Phones(viewsets.ModelViewSet):
 
     @action(methods=["post"], detail=True)
     def authorization(self, request, pk=None):
-        task = celery_app.send_task("PhoneAuthorizationTask", (pk,), time_limit=60)
+        task = celery_app.send_task("PhoneAuthorizationTask", (pk,), time_limit=1200)
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
 
@@ -100,7 +100,8 @@ class Chats(viewsets.ModelViewSet):
     @action(methods=["post"], detail=True)
     def parse(self, request, pk=None):
         # task = celery_app.send_task("ParseMembersTask", (pk,))
-        task = celery_app.send_task("ParseMessagesTask", (pk,))
+        # task = celery_app.send_task("ParseMessagesTask", (pk,))
+        task = celery_app.send_task("MonitoringChatTask", (pk,))
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
     @action(methods=["post"], detail=False)
@@ -109,7 +110,7 @@ class Chats(viewsets.ModelViewSet):
         # [celery_app.send_task("base.tasks.test", ("test param3333",)) for i in range(2)]
         # base_tasks.ChatResolveTask().delay("f652949e-e0cd-11ec-9669-7972643f4571")
         # base_tasks.JoinChatTask().delay("f652949e-e0cd-11ec-9669-7972643f4571", "1d1efa20-ddce-11ec-95c5-cf63300076c1")
-        celery_app.send_task("test", ("123",), time_limit=60)
+        # celery_app.send_task("test", ("123",), time_limit=60)
         return Response(status=status.HTTP_201_CREATED)
 
 

@@ -2,11 +2,14 @@
 import os
 import json
 import asyncio
-from enum import Enum, auto
+
+import celery
+from celery import chain
 import psycopg2.extensions
+from enum import Enum, auto
 from django.db import connection
 import django
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tg_parser.settings'
+os.environ["DJANGO_SETTINGS_MODULE"] = "tg_parser.settings"
 os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 django.setup()
 from tg_parser.celeryapp import app as celery_app
@@ -16,7 +19,7 @@ import base.models as base_models
 crs = connection.cursor()
 pg_con = connection.connection
 pg_con.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
-crs.execute('LISTEN entity_event;')
+crs.execute("LISTEN entity_event;")
 
 
 class Action(Enum):
@@ -62,19 +65,37 @@ def handle_notify():
             if notice.action == Action.insert:
                 chat = get_chat(notice.id)
                 if chat is not None:
-                    celery_app.send_task('ChatResolveTask', (chat.id,), time_limit=60)
+                    # chat_phones = base_models.ChatPhone.objects.filter(chat=chat.id)[:3]
+                    # phones = [cp.phone.id for cp in chat_phones]
+                    #
+                    # # phones = Список телефонов, которых нет в `phones` чата
+                    #
+                    # def done_callback(result):
+                    #     print(result)
+                    #
+                    # sigs = [celery.signature("JoinChatTask", (chat.id, phone.id)) for phone in phones]
+                    # for sig in sigs:
+                    #     sig.link(done_callback())
+                    # celery.group()
+                    celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60)
 
             elif notice.action == Action.update:
-                pass
+                chat = get_chat(notice.id)
+                if chat is not None:
+                    celery_app.send_task("", (chat.id,), time_limit=60)
+
             elif notice.action == Action.delete:
                 pass
+
         elif notice.table == Table.base_phone:
             if notice.action == Action.insert:
                 phone = get_phone(notice.id)
                 if phone is not None:
-                    celery_app.send_task('PhoneAuthorizationTask', (phone.id,), time_limit=120)
+                    celery_app.send_task("PhoneAuthorizationTask", (phone.id,), time_limit=1200)
+
             elif notice.action == Action.update:
                 pass
+
             elif notice.action == Action.delete:
                 pass
     pg_con.notifies.clear()
