@@ -1,5 +1,6 @@
 import telethon, telethon.sessions, re
 
+
 class TelegramClient(telethon.TelegramClient):
     from base.models import TypePhone
 
@@ -22,13 +23,14 @@ class TelegramClient(telethon.TelegramClient):
         if not self.is_connected():
             await self.connect()
 
-        if await self.is_user_authorized() and await self.get_me() != None:
+        if await self.is_user_authorized() and await self.get_me() is not None:
             return self
         else:
             raise ClientNotAvailableError(f'Phone {self.phone.id} not authorized')
             
     async def __aenter__(self):
         return await self.start()
+
 
 LINK_RE = re.compile(
     r'(?:@|(?:https?:\/\/)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me)\/(?:@|joinchat\/|\+)?|'
@@ -39,6 +41,7 @@ LINK_RE = re.compile(
 )
 HTTP_RE = re.compile(r'^(?:@|(?:https?://)?(?:www\.)?(?:telegram\.(?:me|dog)|t\.me))/(\+|joinchat/)?')
 TG_RE = re.compile(r'^tg://(?:(join)|resolve)\?(?:invite|domain)=')
+
 
 def parse_username(link: 'str') -> 'tuple[str | None, str | None]':
     link = link.strip()
@@ -58,3 +61,4 @@ def parse_username(link: 'str') -> 'tuple[str | None, str | None]':
         return link.lower(), False
     else:
         return None, False
+
