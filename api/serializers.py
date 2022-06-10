@@ -23,7 +23,7 @@ class HostViewSerializer(serializers.ModelSerializer):
 
 
 class ParserListSerializer(serializers.ModelSerializer):
-    host = HostViewSerializer(read_only=True)
+    # host = HostViewSerializer(read_only=True)
 
     class Meta:
         model = base_models.Parser
@@ -43,7 +43,7 @@ class ParserSerializer(serializers.ModelSerializer):
 
 
 class PhoneListSerializer(serializers.ModelSerializer):
-    parser = ParserSerializer()
+    # parser = ParserSerializer()
 
     class Meta:
         model = base_models.Phone
@@ -60,7 +60,7 @@ class PhoneListSerializer(serializers.ModelSerializer):
 
 
 class PhoneUpdateSerializer(serializers.ModelSerializer):
-    parser = ParserSerializer()
+    # parser = ParserSerializer()
 
     class Meta:
         model = base_models.Phone
@@ -70,22 +70,22 @@ class PhoneUpdateSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("id", "created_at")
 
-    def update(self, instance, validated_data):
-        instance.number = validated_data.get("number", instance.number)
-        instance.internal_id = validated_data.get("internal_id", instance.internal_id)
-        instance.session = validated_data.get("session", instance.session)
-        instance.first_name = validated_data.get("first_name", instance.first_name)
-        instance.last_name = validated_data.get("last_name", instance.last_name)
-        instance.code = validated_data.get("code", instance.code)
-        instance.wait = validated_data.get("wait", instance.wait)
-        instance.status_text = validated_data.get("status_text", instance.wait)
-        instance.status = validated_data.get("status", instance.status)
-        instance.api = validated_data.get("api", instance.api)
-        parser = validated_data.get("parser")
-        if parser is not None:
-            instance.parser_id = parser.get("id")
-        instance.save()
-        return instance
+    # def update(self, instance, validated_data):
+    #     instance.number = validated_data.get("number", instance.number)
+    #     instance.internal_id = validated_data.get("internal_id", instance.internal_id)
+    #     instance.session = validated_data.get("session", instance.session)
+    #     instance.first_name = validated_data.get("first_name", instance.first_name)
+    #     instance.last_name = validated_data.get("last_name", instance.last_name)
+    #     instance.code = validated_data.get("code", instance.code)
+    #     instance.wait = validated_data.get("wait", instance.wait)
+    #     instance.status_text = validated_data.get("status_text", instance.wait)
+    #     instance.status = validated_data.get("status", instance.status)
+    #     instance.api = validated_data.get("api", instance.api)
+    #     parser = validated_data.get("parser")
+    #     if parser is not None:
+    #         instance.parser_id = parser.get("id")
+    #     instance.save()
+    #     return instance
 
 
 class PhoneViewSerializer(serializers.ModelSerializer):
