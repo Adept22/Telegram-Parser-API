@@ -91,7 +91,7 @@ def handle_notify():
             if notice.action == Action.insert:
                 phone = get_phone(notice.id)
                 if phone is not None:
-                    celery_app.send_task("PhoneAuthorizationTask", (phone.id,), time_limit=1200)
+                    celery_app.send_task("PhoneAuthorizationTask", (phone.id,), time_limit=180, queue="high_prio")
 
             elif notice.action == Action.update:
                 pass

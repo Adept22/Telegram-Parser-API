@@ -43,7 +43,9 @@ class Phones(viewsets.ModelViewSet):
         if "chat" in request.data:
             serializer = serializers.ChatMiniSerializer(data=request.data["chat"])
             if serializer.is_valid():
-                task = celery_app.send_task("JoinChatTask", (serializer.validated_data["id"], pk), time_limit=60)
+                task = celery_app.send_task(
+                    "JoinChatTask", (serializer.validated_data["id"], pk), time_limit=60, queue="high_prio"
+                )
                 return Response("{}".format(task), status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         return Response("chat field is required", status=status.HTTP_400_BAD_REQUEST)
@@ -67,7 +69,7 @@ class Phones(viewsets.ModelViewSet):
 
     @action(methods=["post"], detail=True)
     def authorization(self, request, pk=None):
-        task = celery_app.send_task("PhoneAuthorizationTask", (pk,), time_limit=1200)
+        task = celery_app.send_task("PhoneAuthorizationTask", (pk,), time_limit=1200, queue="high_prio")
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
 
@@ -87,21 +89,21 @@ class Chats(viewsets.ModelViewSet):
                 defaults=serializer.validated_data,
             )
             if created:
-                celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60)
+                celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60, queue="high_prio")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["post"], detail=True)
     def resolve(self, request, pk=None):
-        task = celery_app.send_task("ChatResolveTask", (pk,), time_limit=60)
+        task = celery_app.send_task("ChatResolveTask", (pk,), time_limit=60, queue="high_prio")
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
     @action(methods=["post"], detail=True)
     def parse(self, request, pk=None):
-        # task = celery_app.send_task("ParseMembersTask", (pk,))
-        # task = celery_app.send_task("ParseMessagesTask", (pk,))
-        task = celery_app.send_task("MonitoringChatTask", (pk,))
+        # task = celery_app.send_task("ParseMembersTask", (pk,), queue="high_prio")
+        # task = celery_app.send_task("ParseMessagesTask", (pk,), queue="low_prio")
+        task = celery_app.send_task("MonitoringChatTask", (pk,), queue="high_prio")
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
     @action(methods=["post"], detail=False)

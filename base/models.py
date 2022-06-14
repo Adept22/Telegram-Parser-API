@@ -2,16 +2,17 @@ import os
 import uuid
 import asyncio
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
 from telethon.sessions import StringSession
 from telethon import TelegramClient, sessions
 from post_office.models import EmailTemplate
+from tg_parser.celeryapp import app as celery_app
 from telethon.utils import resolve_id
 from base.tasks import make_telegram_bot
-# from django_celery_results.models import TaskResult as TR
+from django.db.models import Count, Q
 try:
     from django.contrib.auth import get_user_model
     User = get_user_model()
@@ -214,6 +215,24 @@ class Chat(BaseModel):
             type = resolve_id(self.internal_id)[1].__name__
         return type
     get_type = property(_get_type)
+
+    def _make_chat_phones(self):
+        chat_phones = self.chatphone_set.filter(is_using=True)
+        if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
+            return True
+        for phone in Phone.objects.filter(status=Phone.READY).annotate(
+                num_chatphone=Count('chatphone'),
+                num_today_created=Count(
+                    'chatphone__created_at',
+                    distinct=True,
+                    filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
+                ),
+        ).filter(num_chatphone__lt=480, num_today_created__lt=9)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]:
+            celery_app.send_task(
+                "JoinChatTask", (self.id, phone.id), time_limit=60, queue="high_prio",
+            )
+        return True
+    make_chat_phones = property(_make_chat_phones)
 
 
 class ChatPhone(BaseModel):

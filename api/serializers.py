@@ -136,28 +136,29 @@ class PhoneMiniSerializer(serializers.ModelSerializer):
 
 
 class ChatPhoneListSerializer(serializers.ModelSerializer):
-    chat = ChatMiniSerializer()
-    phone = PhoneMiniSerializer()
-    id = serializers.CharField(read_only=True)
+    # chat = ChatMiniSerializer()
+    # phone = PhoneMiniSerializer()
+    # id = serializers.CharField(read_only=True)
 
     class Meta:
         model = base_models.ChatPhone
         fields = ("id", "chat", "phone", "is_using", "created_at")
         read_only_fields = ("id",)
 
-    def validate_chat(self, chat: dict):
-        try:
-            data = base_models.Chat.objects.get(id=chat["id"])
-        except Exception as ex:
-            raise ValidationError(ex)
-        return data
-
-    def validate_phone(self, phone: dict):
-        try:
-            data = base_models.Phone.objects.get(id=phone["id"])
-        except Exception as ex:
-            raise ValidationError(ex)
-        return data
+    # def validate_chat(self, chat: dict):
+    #     print("{}".format(chat))
+    #     try:
+    #         data = base_models.Chat.objects.get(id=chat)
+    #     except Exception as ex:
+    #         raise ValidationError(ex)
+    #     return data
+    #
+    # def validate_phone(self, phone: dict):
+    #     try:
+    #         data = base_models.Phone.objects.get(id=phone)
+    #     except Exception as ex:
+    #         raise ValidationError(ex)
+    #     return data
 
 
 class MemberViewSerializer(serializers.ModelSerializer):
