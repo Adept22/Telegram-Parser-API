@@ -32,6 +32,7 @@ class PhoneAdmin(admin.ModelAdmin):
     readonly_fields = ("internal_id", "created_at", "wait") #  "token_verify",
     inlines = (VersionBotInline, ChatsInline)
     ordering = ["-created_at"]
+    list_filter = ("status",)
 
     def status(self, instance):
         return instance.get_status_text
@@ -87,7 +88,7 @@ class ChatAdmin(admin.ModelAdmin):
 
 
 class ChatPhoneAdmin(admin.ModelAdmin):
-    list_display = ["id", "get_chat", "get_phone", "is_using"]
+    list_display = ["id", "get_chat", "get_phone", "is_using", "created_at"]
     search_fields = ["id", "chat__title", "phone__number"]
     readonly_fields = ["chat"]
 
