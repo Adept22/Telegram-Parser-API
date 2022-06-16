@@ -103,7 +103,9 @@ class ChatListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = base_models.Chat
-        fields = ("id", "created_at", "link", "internal_id", "title", "status", "parser")
+        fields = (
+            "id", "created_at", "link", "internal_id", "title", "status", "parser", "total_members", "total_messages"
+        )
         read_only_fields = ("id", "created_at")
         extra_kwargs = {"link": {"validators": [], "required": True}}
 

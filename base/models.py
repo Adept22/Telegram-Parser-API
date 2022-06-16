@@ -3,6 +3,7 @@ import uuid
 import asyncio
 import requests
 from datetime import datetime, timedelta
+from celery.canvas import Signature
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -201,6 +202,8 @@ class Chat(BaseModel):
     lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
     parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.CASCADE, null=True, blank=False)
     date = models.DateField(u"date", blank=True, null=True)
+    total_messages = models.IntegerField(u"total messages", default=0, blank=True, null=True)
+    total_members = models.IntegerField(u"total members", default=0, blank=True, null=True)
 
     class Meta:
         verbose_name = u"Chat"
@@ -220,16 +223,25 @@ class Chat(BaseModel):
         chat_phones = self.chatphone_set.filter(is_using=True)
         if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
             return True
-        for phone in Phone.objects.filter(status=Phone.READY).annotate(
-                num_chatphone=Count('chatphone'),
-                num_today_created=Count(
-                    'chatphone__created_at',
-                    distinct=True,
-                    filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
-                ),
-        ).filter(num_chatphone__lt=480, num_today_created__lt=9)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]:
+
+        phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
+            num_chatphone=Count('chatphone'),
+            num_today_created=Count(
+                'chatphone__created_at',
+                distinct=True,
+                filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
+            ),
+        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=35)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+
+        if phone_ids:
             celery_app.send_task(
-                "JoinChatTask", (self.id, phone.id), time_limit=60, queue="high_prio",
+                "ChatResolveTask",
+                (self.id,),
+                time_limit=60,
+                queue='high_prio',
+                link=[
+                    Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
+                ],
             )
         return True
     make_chat_phones = property(_make_chat_phones)

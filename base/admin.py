@@ -15,7 +15,7 @@ class VersionBotInline(admin.TabularInline):
 
 
 class ChatsInline(admin.TabularInline):
-    readonly_fields = ("is_using", "chat")
+    readonly_fields = ("is_using", "chat", "created_at")
     template = "admin/view_inline/chat_phone.html"
     model = base_models.ChatPhone
     extra = 0
@@ -60,7 +60,7 @@ class VersionChatInline(admin.TabularInline):
 class ChatAdmin(admin.ModelAdmin):
     list_display = [
         "link", "get_type", "title", "internal_id", "status", "status_text", "description", "get_phones", "get_members",
-        "get_messages", "id"
+        "get_messages", "total_members", "total_messages", "id"
     ]
     search_fields = ["id", "link", "title", "description"]
     readonly_fields = ["id", "internal_id"]
