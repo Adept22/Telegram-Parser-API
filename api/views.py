@@ -14,9 +14,8 @@ from rest_framework.filters import OrderingFilter
 from rest_framework import permissions, viewsets, status
 import api.serializers as serializers
 from api.paginators import CustomPagination
-from api.filters import ChatFilter, PhoneFilter, MessageFilter, MemberFilter, ChatMemberFilter, ChatMemberRoleFilter, ChatPhoneFilter
 import base.models as base_models
-# import base.tasks as base_tasks
+import api.filters as base_filters
 from tg_parser.celeryapp import app as celery_app
 
 
@@ -33,7 +32,7 @@ class Phones(viewsets.ModelViewSet):
     queryset = base_models.Phone.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = PhoneFilter
+    filter_class = base_filters.PhoneFilter
 
     def get_serializer_class(self):
         if self.action == "update":
@@ -84,7 +83,7 @@ class Chats(viewsets.ModelViewSet):
     queryset = base_models.Chat.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = ChatFilter
+    filter_class = base_filters.ChatFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -127,7 +126,7 @@ class ChatPhones(viewsets.ModelViewSet):
     queryset = base_models.ChatPhone.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = ChatPhoneFilter
+    filter_class = base_filters.ChatPhoneFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -158,7 +157,7 @@ class Messages(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     pagination_class = CustomPagination
     ordering_fields = ["internal_id", "created_at"]
-    filter_class = MessageFilter
+    filter_class = base_filters.MessageFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -209,7 +208,7 @@ class Members(viewsets.ModelViewSet):
     queryset = base_models.Member.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
-    filter_class = MemberFilter
+    filter_class = base_filters.MemberFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -231,7 +230,7 @@ class ChatMembers(viewsets.ModelViewSet):
     queryset = base_models.ChatMember.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
-    filter_class = ChatMemberFilter
+    filter_class = base_filters.ChatMemberFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -254,7 +253,7 @@ class ChatMemberRoles(viewsets.ModelViewSet):
     queryset = base_models.ChatMemberRole.objects.all()
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
-    filter_class = ChatMemberRoleFilter
+    filter_class = base_filters.ChatMemberRoleFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
