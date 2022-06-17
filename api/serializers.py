@@ -256,21 +256,12 @@ class ChatMemberRoleListSerializer(serializers.ModelSerializer):
 
 
 class MemberMediaListSerializer(serializers.ModelSerializer):
-    member = MemberViewSerializer()
 
     class Meta:
         model = base_models.MemberMedia
         fields = ("id", "member", "internal_id", "path", "date")
         read_only_fields = ("id",)
-
-    def update(self, instance, validated_data):
-        member = validated_data.pop("member", None)
-        instance.member_id = member["id"]
-        instance.internal_id = validated_data.get("internal_id", instance.internal_id)
-        instance.member = validated_data.get("member", instance.member)
-        instance.date = validated_data.get("date", instance.date)
-        instance.save()
-        return instance
+        extra_kwargs = {"internal_id": {"validators": [], "required": True}}
 
 
 class ChatMediaListSerializer(serializers.ModelSerializer):
@@ -317,10 +308,21 @@ class MessageMediaListSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "created_at")
 
 
-class ChunkViewSerializer(serializers.Serializer):
+class ChunkCreateSerializer(serializers.Serializer):
     chunk_number = serializers.IntegerField(required=True)
     chunk_size = serializers.IntegerField(required=True)
     filename = serializers.CharField(required=True)
-    total_size = serializers.IntegerField(required=False)
+    total_size = serializers.IntegerField(required=True)
+    total_chunks = serializers.IntegerField(required=True)
     chunk = serializers.FileField(required=False)
+
+
+class ChunkViewSerializer(serializers.Serializer):
+    chunk_number = serializers.IntegerField(required=True)
+    chunk_size = serializers.IntegerField(required=False)
+    filename = serializers.CharField(required=True)
+    total_size = serializers.IntegerField(required=False)
+    total_chunks = serializers.IntegerField(required=False)
+    chunk = serializers.FileField(required=False)
+
 

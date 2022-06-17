@@ -231,7 +231,7 @@ class Chat(BaseModel):
                 distinct=True,
                 filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
             ),
-        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=35)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
 
         if phone_ids:
             celery_app.send_task(
@@ -436,20 +436,39 @@ class Subscription(BaseModel):
         verbose_name_plural = u"Subscriptions"
 
 
-# class TaskResult(TR):
-#     # status = models.CharField(u"status", max_length=255, blank=True, null=True)
-#
-#     class Meta:
-#         managed = False
-#
-#     def get(self, name):
-#         pickled_value = super(TaskResult, self).get(name)
-#         if pickled_value is None:
-#             return None
-#         return pickle.loads(pickled_value)
-#
-#     def set(self, name, value, ex=None, px=None, nx=False, xx=False):
-#         return super(TaskResult, self).set(name, pickle.dumps(value), ex, px, nx, xx)
+class Task(BaseModel):
+    CREATED_STATUS = 0
+    STARTED_STATUS = 1
+    SUCCESS_STATUS = 2
+    FAILURE_STATUS = 3
+
+    STATUS_CHOICES = (
+        (CREATED_STATUS, u"Создан"),
+        (STARTED_STATUS, u"В работе"),
+        (SUCCESS_STATUS, u"Выполнен"),
+        (FAILURE_STATUS, u"Ошибка"),
+    )
+
+    MEMBER_TYPE = 0
+    MESSAGE_TYPE = 1
+    MONITORING_TYPE = 2
+
+    TYPE_CHOICES = (
+        (MEMBER_TYPE, u"Участники"),
+        (MESSAGE_TYPE, u"Сообщения"),
+        (MONITORING_TYPE, u"Мониторинг"),
+    )
+
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
+    status = models.IntegerField(u"status", default=CREATED_STATUS, choices=STATUS_CHOICES)
+    status_text = models.TextField(u"status text", blank=True, null=True)
+    start_at = models.DateTimeField(u"дата запуска", auto_now_add=True)
+    end_at = models.DateTimeField(u"дата завершения", auto_now_add=True)
+    type = models.IntegerField(u"type", choices=TYPE_CHOICES, blank=True, null=True)
+
+    class Meta:
+        verbose_name = u"Task"
+        verbose_name_plural = u"Tasks"
 
 
 TypeHost = Host

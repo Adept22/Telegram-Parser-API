@@ -191,6 +191,11 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ("id", "title")
 
 
+class TaskAdmin(admin.ModelAdmin):
+    list_display = ("id", "status", "type", "created_at")
+    readonly_fields = ["id", "status", "type", "created_at", "chat", "status_text"]
+
+
 admin.site.register(base_models.Phone, PhoneAdmin)
 admin.site.register(base_models.Chat, ChatAdmin)
 admin.site.register(base_models.ChatLog, ChatLogAdmin)
@@ -205,4 +210,5 @@ admin.site.register(base_models.ChatMedia, ChatMediaAdmin)
 admin.site.register(base_models.Bot, BotAdmin)
 admin.site.register(base_models.Subscription, SubscriptionAdmin)
 admin.site.register(base_models.Message, MessageAdmin)
+admin.site.register(base_models.Task, TaskAdmin)
 

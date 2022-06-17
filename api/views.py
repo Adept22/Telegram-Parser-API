@@ -1,5 +1,10 @@
+import glob
 import os.path
+import subprocess
+from functools import reduce
 from tempfile import tempdir
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.utils import timezone
 from datetime import timedelta, datetime
 from rest_framework.response import Response
@@ -9,9 +14,9 @@ from rest_framework.filters import OrderingFilter
 from rest_framework import permissions, viewsets, status
 import api.serializers as serializers
 from api.paginators import CustomPagination
-from api.filters import ChatFilter, PhoneFilter, MessageFilter, MemberFilter, ChatMemberFilter, ChatMemberRoleFilter
+from api.filters import ChatFilter, PhoneFilter, MessageFilter, MemberFilter, ChatMemberFilter, ChatMemberRoleFilter, ChatPhoneFilter
 import base.models as base_models
-import base.tasks as base_tasks
+# import base.tasks as base_tasks
 from tg_parser.celeryapp import app as celery_app
 
 
@@ -57,7 +62,7 @@ class Phones(viewsets.ModelViewSet):
             phone = self.get_object()
             phone.wait = datetime.now() + timedelta(seconds=serializer.validated_data["wait"])
             phone.save()
-            base_tasks.unban_phone_task.apply_async((phone.id,), countdown=serializer.validated_data["wait"])
+            # base_tasks.unban_phone_task.apply_async((phone.id,), countdown=serializer.validated_data["wait"])
             return Response(status=status.HTTP_201_CREATED)
         return Response("wait field is required", status=status.HTTP_400_BAD_REQUEST)
 
@@ -106,8 +111,8 @@ class Chats(viewsets.ModelViewSet):
         task = celery_app.send_task("MonitoringChatTask", (pk,), queue="high_prio")
         return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
-    @action(methods=["post"], detail=False)
-    def test(self, request):
+    @action(methods=["post"], detail=True)
+    def test(self, request, pk=None):
         # base_tasks.test_task.apply_async((), countdown=3)
         # [celery_app.send_task("base.tasks.test", ("test param3333",)) for i in range(2)]
         # base_tasks.ChatResolveTask().delay("f652949e-e0cd-11ec-9669-7972643f4571")
@@ -121,6 +126,8 @@ class ChatPhones(viewsets.ModelViewSet):
     serializer_class = serializers.ChatPhoneListSerializer
     queryset = base_models.ChatPhone.objects.all()
     pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = ChatPhoneFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -173,6 +180,27 @@ class MessageMedias(viewsets.ModelViewSet):
     serializer_class = serializers.MessageMediaListSerializer
     queryset = base_models.MessageMedia.objects.all()
     pagination_class = CustomPagination
+
+    @action(methods=["post", "get"], detail=True)
+    def chunk(self, request, pk=None):
+        if request.method == "POST":
+            # message_media = self.get_object()
+            serializer = serializers.ChunkViewSerializer(data=request.data)
+            if serializer.is_valid():
+                serializer.save()
+                # with open(chat_media.file.path, "ab") as file1:
+                #     file1.write(file.read())
+                return Response(status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = serializers.ChunkViewSerializer(data=request.GET)
+            if serializer.is_valid():
+                req = serializer.validated_data
+                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class Members(viewsets.ModelViewSet):
@@ -248,6 +276,19 @@ class MemberMedias(viewsets.ModelViewSet):
     queryset = base_models.MemberMedia.objects.all()
     pagination_class = CustomPagination
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            obj, created = base_models.MemberMedia.objects.update_or_create(
+                internal_id=serializer.validated_data["internal_id"],
+                defaults=serializer.validated_data,
+            )
+            serializer = self.get_serializer(obj)
+            if created:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
@@ -257,6 +298,45 @@ class MemberMedias(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         return Response(serializer.data)
+
+    @action(methods=["post", "get"], detail=True)
+    def chunk(self, request, pk=None):
+        if request.method == "POST":
+            request.data['filename'] = request.query_params['filename']
+            request.data['chunk_number'] = request.query_params['chunk_number']
+            request.data['total_size'] = request.query_params['total_size']
+            request.data['total_chunks'] = request.query_params['total_chunks']
+            request.data['chunk_size'] = request.query_params['chunk_size']
+            serializer = serializers.ChunkCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                filename = serializer.validated_data['filename']
+                chunk_number = serializer.validated_data['chunk_number']
+                total_size = serializer.validated_data['total_size']
+                total_chunks = serializer.validated_data['total_chunks']
+                file = default_storage.save(
+                    'tmp/{}.part{}'.format(filename, chunk_number),
+                    ContentFile(serializer.validated_data['chunk'].read())
+                )
+                if chunk_number >= total_chunks - 1:
+                    chunks = glob.glob("tmp/{}.part[0-9]*".format(filename))
+                    if chunks:
+                        computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
+                        if computed >= total_size:
+                            start = len(f"tmp/{filename}.part")
+                            sorted(chunks, key=lambda path: int(path[start:]))
+                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+
+                return Response(status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            serializer = serializers.ChunkViewSerializer(data=request.GET)
+            if serializer.is_valid():
+                req = serializer.validated_data
+                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                    return Response(serializer.data, status=status.HTTP_200_OK)
+                return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ChatMedias(viewsets.ModelViewSet):
@@ -268,12 +348,30 @@ class ChatMedias(viewsets.ModelViewSet):
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         if request.method == "POST":
-            chat_media = self.get_object()
-            serializer = serializers.ChunkViewSerializer(data=request.data)
+            request.data['filename'] = request.query_params['filename']
+            request.data['chunk_number'] = request.query_params['chunk_number']
+            request.data['total_size'] = request.query_params['total_size']
+            request.data['total_chunks'] = request.query_params['total_chunks']
+            request.data['chunk_size'] = request.query_params['chunk_size']
+            serializer = serializers.ChunkCreateSerializer(data=request.data)
             if serializer.is_valid():
-                # serializer.save()
-                # with open(chat_media.file.path, "ab") as file1:
-                #     file1.write(file.read())
+                filename = serializer.validated_data['filename']
+                chunk_number = serializer.validated_data['chunk_number']
+                total_size = serializer.validated_data['total_size']
+                total_chunks = serializer.validated_data['total_chunks']
+                file = default_storage.save(
+                    'tmp/{}.part{}'.format(filename, chunk_number),
+                    ContentFile(serializer.validated_data['chunk'].read())
+                )
+                if chunk_number >= total_chunks - 1:
+                    chunks = glob.glob("tmp/{}.part[0-9]*".format(filename))
+                    if chunks:
+                        computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
+                        if computed >= total_size:
+                            start = len(f"tmp/{filename}.part")
+                            sorted(chunks, key=lambda path: int(path[start:]))
+                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+
                 return Response(status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
