@@ -116,7 +116,6 @@ class Chats(viewsets.ModelViewSet):
         # [celery_app.send_task("base.tasks.test", ("test param3333",)) for i in range(2)]
         # base_tasks.ChatResolveTask().delay("f652949e-e0cd-11ec-9669-7972643f4571")
         # base_tasks.JoinChatTask().delay("f652949e-e0cd-11ec-9669-7972643f4571", "1d1efa20-ddce-11ec-95c5-cf63300076c1")
-        # celery_app.send_task("test", ("123",), time_limit=60)
         return Response(status=status.HTTP_201_CREATED)
 
 
@@ -301,11 +300,12 @@ class MemberMedias(viewsets.ModelViewSet):
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         if request.method == "POST":
-            request.data['filename'] = request.query_params['filename']
-            request.data['chunk_number'] = request.query_params['chunk_number']
-            request.data['total_size'] = request.query_params['total_size']
-            request.data['total_chunks'] = request.query_params['total_chunks']
-            request.data['chunk_size'] = request.query_params['chunk_size']
+            request.data['filename'] = request.query_params.get('filename')
+            request.data['chunk_number'] = request.query_params.get('chunk_number')
+            request.data['total_size'] = request.query_params.get('total_size')
+            request.data['total_chunks'] = request.query_params.get('total_chunks')
+            request.data['chunk_size'] = request.query_params.get('chunk_size')
+
             serializer = serializers.ChunkCreateSerializer(data=request.data)
             if serializer.is_valid():
                 filename = serializer.validated_data['filename']
@@ -347,11 +347,11 @@ class ChatMedias(viewsets.ModelViewSet):
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         if request.method == "POST":
-            request.data['filename'] = request.query_params['filename']
-            request.data['chunk_number'] = request.query_params['chunk_number']
-            request.data['total_size'] = request.query_params['total_size']
-            request.data['total_chunks'] = request.query_params['total_chunks']
-            request.data['chunk_size'] = request.query_params['chunk_size']
+            request.data['filename'] = request.query_params.get('filename')
+            request.data['chunk_number'] = request.query_params.get('chunk_number')
+            request.data['total_size'] = request.query_params.get('total_size')
+            request.data['total_chunks'] = request.query_params.get('total_chunks')
+            request.data['chunk_size'] = request.query_params.get('chunk_size')
             serializer = serializers.ChunkCreateSerializer(data=request.data)
             if serializer.is_valid():
                 filename = serializer.validated_data['filename']
@@ -376,8 +376,7 @@ class ChatMedias(viewsets.ModelViewSet):
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
-                req = serializer.validated_data
-                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(serializer.validated_data["filename"], serializer.validated_data["chunk_number"]))):
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:

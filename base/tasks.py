@@ -1,6 +1,4 @@
 import datetime, telethon, asyncio
-import uuid
-from asgiref.sync import sync_to_async
 from tg_parser.celeryapp import app
 from django.conf import settings
 try:
