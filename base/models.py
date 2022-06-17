@@ -12,7 +12,6 @@ from telethon import TelegramClient, sessions
 from post_office.models import EmailTemplate
 from tg_parser.celeryapp import app as celery_app
 from telethon.utils import resolve_id
-from base.tasks import make_telegram_bot
 from django.db.models import Count, Q
 try:
     from django.contrib.auth import get_user_model
@@ -119,10 +118,10 @@ class Phone(BaseModel):
         return "Готов"
     get_status_text = property(_get_status_text)
 
-    def _make_telegram_bot(self):
-        make_telegram_bot.apply_async((self.id,))
-        return True
-    make_telegram_bot = property(_make_telegram_bot)
+    # def _make_telegram_bot(self):
+    #     make_telegram_bot.apply_async((self.id,))
+    #     return True
+    # make_telegram_bot = property(_make_telegram_bot)
 
     def _token_is_valid(self):
         if self.session:
@@ -358,20 +357,6 @@ class MessageMedia(BaseModel):
     #     if os.path.exists(file_path):
     #         os.remove(file_path)
     #     super(ChatMedia, self).delete()
-
-
-# class Session(models.Model):
-#     phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.CASCADE)
-#     token = models.CharField(u"token", max_length=512, blank=False)
-#     created = models.DateTimeField(u"дата создания", auto_now_add=True)
-#     wait = models.IntegerField(default=0)
-#
-#     class Meta:
-#         verbose_name = u"Session"
-#         verbose_name_plural = u"Sessions"
-#
-#     def __str__(self):
-#         return u"{}. {}".format(self.id, self.phone)
 
 
 class Bot(BaseModel):
