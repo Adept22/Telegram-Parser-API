@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from rest_framework.exceptions import APIException, ValidationError
 import base.models as base_models
 
 
@@ -23,7 +22,6 @@ class HostViewSerializer(serializers.ModelSerializer):
 
 
 class ParserListSerializer(serializers.ModelSerializer):
-    # host = HostViewSerializer(read_only=True)
 
     class Meta:
         model = base_models.Parser
@@ -43,7 +41,6 @@ class ParserSerializer(serializers.ModelSerializer):
 
 
 class PhoneListSerializer(serializers.ModelSerializer):
-    # parser = ParserSerializer()
 
     class Meta:
         model = base_models.Phone
@@ -51,16 +48,8 @@ class PhoneListSerializer(serializers.ModelSerializer):
                   "parser", "api")
         read_only_fields = ("id", "created_at")
 
-    def create(self, validated_data):
-        parser_id = validated_data.get("parser", None)
-        if parser_id is not None:
-            parser = base_models.Parser.objects.get(id=parser_id.get("id"))
-            validated_data["parser"] = parser
-        return base_models.Phone.objects.create(**validated_data)
-
 
 class PhoneUpdateSerializer(serializers.ModelSerializer):
-    # parser = ParserSerializer()
 
     class Meta:
         model = base_models.Phone
@@ -69,23 +58,6 @@ class PhoneUpdateSerializer(serializers.ModelSerializer):
             "status_text", "status", "parser", "api"
         )
         read_only_fields = ("id", "created_at")
-
-    # def update(self, instance, validated_data):
-    #     instance.number = validated_data.get("number", instance.number)
-    #     instance.internal_id = validated_data.get("internal_id", instance.internal_id)
-    #     instance.session = validated_data.get("session", instance.session)
-    #     instance.first_name = validated_data.get("first_name", instance.first_name)
-    #     instance.last_name = validated_data.get("last_name", instance.last_name)
-    #     instance.code = validated_data.get("code", instance.code)
-    #     instance.wait = validated_data.get("wait", instance.wait)
-    #     instance.status_text = validated_data.get("status_text", instance.wait)
-    #     instance.status = validated_data.get("status", instance.status)
-    #     instance.api = validated_data.get("api", instance.api)
-    #     parser = validated_data.get("parser")
-    #     if parser is not None:
-    #         instance.parser_id = parser.get("id")
-    #     instance.save()
-    #     return instance
 
 
 class PhoneViewSerializer(serializers.ModelSerializer):
@@ -138,29 +110,11 @@ class PhoneMiniSerializer(serializers.ModelSerializer):
 
 
 class ChatPhoneListSerializer(serializers.ModelSerializer):
-    # chat = ChatMiniSerializer()
-    # phone = PhoneMiniSerializer()
-    # id = serializers.CharField(read_only=True)
 
     class Meta:
         model = base_models.ChatPhone
         fields = ("id", "chat", "phone", "is_using", "created_at")
         read_only_fields = ("id",)
-
-    # def validate_chat(self, chat: dict):
-    #     print("{}".format(chat))
-    #     try:
-    #         data = base_models.Chat.objects.get(id=chat)
-    #     except Exception as ex:
-    #         raise ValidationError(ex)
-    #     return data
-    #
-    # def validate_phone(self, phone: dict):
-    #     try:
-    #         data = base_models.Phone.objects.get(id=phone)
-    #     except Exception as ex:
-    #         raise ValidationError(ex)
-    #     return data
 
 
 class MemberViewSerializer(serializers.ModelSerializer):
@@ -181,37 +135,11 @@ class MemberListSerializer(serializers.ModelSerializer):
 
 
 class ChatMemberListSerializer(serializers.ModelSerializer):
-    # member = MemberViewSerializer()
-    # chat = ChatMiniSerializer()
 
     class Meta:
         model = base_models.ChatMember
         fields = ("id", "chat", "member", "is_left", "date", "chat_id")
         read_only_fields = ("id",)
-
-    # def validate_chat(self, chat: dict):
-    #     try:
-    #         data = base_models.Chat.objects.get(id=chat)
-    #     except Exception as ex:
-    #         raise ValidationError(ex)
-    #     return data
-    #
-    # def validate_member(self, member: dict):
-    #     try:
-    #         data = base_models.Member.objects.get(id=member)
-    #     except Exception as ex:
-    #         raise ValidationError(ex)
-    #     return data
-
-    # def update(self, instance, validated_data):
-    #     member = validated_data.pop("member", None)
-    #     chat = validated_data.pop("chat", None)
-    #     instance.member_id = member["id"]
-    #     instance.chat_id = chat["id"]
-    #     instance.is_left = validated_data.get("is_left", instance.is_left)
-    #     instance.date = validated_data.get("date", instance.date)
-    #     instance.save()
-    #     return instance
 
 
 class ChatMemberSerializer(serializers.ModelSerializer):
@@ -224,35 +152,11 @@ class ChatMemberSerializer(serializers.ModelSerializer):
 
 
 class ChatMemberRoleListSerializer(serializers.ModelSerializer):
-    # member = ChatMemberSerializer()
 
     class Meta:
         model = base_models.ChatMemberRole
         fields = ("id", "member", "title", "code")
         read_only_fields = ("id",)
-
-    # def validate_member(self, member: dict):
-    #     try:
-    #         data = base_models.ChatMember.objects.get(id=member["id"])
-    #     except Exception as ex:
-    #         raise ValidationError(ex)
-    #     return data
-
-    # def create(self, validated_data):
-    #     member = validated_data.pop("member")
-    #     try:
-    #         chat_member_role = self.__class__.Meta.model.objects.create(member_id=member["id"], **validated_data)
-    #     except Exception as exception:
-    #         raise Custom409(exception)
-    #     return chat_member_role
-
-    def update(self, instance, validated_data):
-        member = validated_data.pop("member", None)
-        instance.member_id = member["id"]
-        instance.title = validated_data.get("title", instance.title)
-        instance.code = validated_data.get("code", instance.code)
-        instance.save()
-        return instance
 
 
 class MemberMediaListSerializer(serializers.ModelSerializer):
@@ -280,8 +184,6 @@ class HostListSerializer(serializers.ModelSerializer):
 
 
 class MessageListSerializer(serializers.ModelSerializer):
-    # member = ChatMemberSerializer(required=False)
-    # chat = ChatMiniSerializer()
 
     class Meta:
         model = base_models.Message
@@ -289,16 +191,6 @@ class MessageListSerializer(serializers.ModelSerializer):
                   "forwarded_from_name", "created_at", "chat", "grouped_id", "date")
         read_only_fields = ("id", "created_at")
         write_only_fields = ("internal_id",)
-
-    # def create(self, validated_data):
-    #     member = validated_data.get("member", None)
-    #     if member is not None:
-    #         validated_data["member"] = base_models.ChatMember.objects.get(id=member.get("id"))
-    #
-    #     chat = validated_data.get("chat", None)
-    #     if chat is not None:
-    #         validated_data["chat"] = base_models.Chat.objects.get(id=chat.get("id"))
-    #     return base_models.Message.objects.create(**validated_data)
 
 
 class MessageMediaListSerializer(serializers.ModelSerializer):
@@ -324,5 +216,4 @@ class ChunkViewSerializer(serializers.Serializer):
     total_size = serializers.IntegerField(required=False)
     total_chunks = serializers.IntegerField(required=False)
     chunk = serializers.FileField(required=False)
-
 

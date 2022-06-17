@@ -1,7 +1,6 @@
 import datetime, telethon, asyncio
 import uuid
 from asgiref.sync import sync_to_async
-# from django_celery_results.models import TaskResult
 from tg_parser.celeryapp import app
 from django.conf import settings
 try:
