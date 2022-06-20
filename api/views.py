@@ -5,7 +5,7 @@ from functools import reduce
 from tempfile import tempdir
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from datetime import timedelta, datetime
+# from datetime import timedelta, datetime
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django_filters import rest_framework as filters
@@ -89,6 +89,8 @@ class Parsers(viewsets.ModelViewSet):
     serializer_class = serializers.ParserListSerializer
     queryset = base_models.Parser.objects.all()
     pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
+    filter_class = base_filters.ParserFilter
 
 
 class Messages(viewsets.ModelViewSet):

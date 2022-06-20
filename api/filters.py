@@ -44,3 +44,9 @@ class ChatPhoneFilter(django_filters.FilterSet):
         model = base_models.ChatPhone
         fields = "__all__"
 
+
+class ParserFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Parser
+        fields = "__all__"
+

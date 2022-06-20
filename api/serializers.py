@@ -62,15 +62,15 @@ class PhoneViewSerializer(serializers.ModelSerializer):
 
 
 class ChatListSerializer(serializers.ModelSerializer):
-    id = serializers.UUIDField(read_only=True)
-    parser = ParserSerializer(read_only=True)
+    # id = serializers.UUIDField(read_only=True)
+    # parser = ParserSerializer(read_only=True)
 
     class Meta:
         model = base_models.Chat
         fields = (
             "id", "created_at", "link", "internal_id", "title", "status", "parser", "total_members", "total_messages"
         )
-        read_only_fields = ("id", "created_at")
+        read_only_fields = ("id", "created_at", "total_members", "total_messages")
         extra_kwargs = {"link": {"validators": [], "required": True}}
 
 
