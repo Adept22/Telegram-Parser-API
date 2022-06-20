@@ -38,7 +38,7 @@ class Host(BaseModel):
     class Meta:
         verbose_name = u"Host"
         verbose_name_plural = u"Hosts"
-        db_table = "hosts"
+        db_table = 'telegram\".\"hosts'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.name)
@@ -63,7 +63,7 @@ class Parser(BaseModel):
     class Meta:
         verbose_name = u"Parser"
         verbose_name_plural = u"Parsers"
-        db_table = "parsers"
+        db_table = 'telegram\".\"parsers'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.api_id)
@@ -99,7 +99,7 @@ class Phone(BaseModel):
     class Meta:
         verbose_name = u"Phone"
         verbose_name_plural = u"Phones"
-        db_table = "phones"
+        db_table = 'telegram\".\"phones'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.number)
@@ -137,7 +137,7 @@ class Member(BaseModel):
     class Meta:
         verbose_name = u"Member"
         verbose_name_plural = u"Members"
-        db_table = "members"
+        db_table = 'telegram\".\"members'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.username)
@@ -159,7 +159,7 @@ class MemberMedia(BaseModel):
     class Meta:
         verbose_name = u"MemberMedia"
         verbose_name_plural = u"MemberMedias"
-        db_table = "members_medias"
+        db_table = 'telegram\".\"members_medias'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.member)
@@ -196,7 +196,7 @@ class Chat(BaseModel):
     class Meta:
         verbose_name = u"Chat"
         verbose_name_plural = u"Chats"
-        db_table = "chats"
+        db_table = 'telegram\".\"chats'
 
     def __str__(self):
         return u"{}".format(self.link)
@@ -244,7 +244,7 @@ class ChatPhone(BaseModel):
     class Meta:
         verbose_name = u"ChatPhone"
         verbose_name_plural = u"ChatPhones"
-        db_table = "chats_phones"
+        db_table = 'telegram\".\"chats_phones'
         constraints = [
             models.UniqueConstraint(fields=["chat", "phone"], name="chat_phone_unique"),
         ]
@@ -262,7 +262,7 @@ class ChatMember(BaseModel):
     class Meta:
         verbose_name = u"ChatMember"
         verbose_name_plural = u"ChatMembers"
-        db_table = "chats_members"
+        db_table = 'telegram\".\"chats_members'
         constraints = [
             models.UniqueConstraint(fields=["chat", "member"], name="chat_member_unique"),
         ]
@@ -279,7 +279,7 @@ class ChatMemberRole(BaseModel):
     class Meta:
         verbose_name = u"ChatMemberRole"
         verbose_name_plural = u"ChatMemberRoles"
-        db_table = "chats_member_roles"
+        db_table = 'telegram\".\"chats_member_roles'
         constraints = [
             models.UniqueConstraint(fields=["member", "title", "code"], name="chat_member_role_unique"),
         ]
@@ -298,7 +298,7 @@ class ChatMedia(BaseModel):
     class Meta:
         verbose_name = u"ChatMedia"
         verbose_name_plural = u"ChatMedias"
-        db_table = "chats_medias"
+        db_table = 'telegram\".\"chats_medias'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.chat)
@@ -319,7 +319,7 @@ class Message(BaseModel):
     class Meta:
         verbose_name = u"Message"
         verbose_name_plural = u"Messages"
-        db_table = "messages"
+        db_table = 'telegram\".\"messages'
         constraints = [
             models.UniqueConstraint(fields=["internal_id", "chat"], name="message_unique"),
         ]
@@ -344,7 +344,7 @@ class MessageMedia(BaseModel):
     class Meta:
         verbose_name = u"MessageMedia"
         verbose_name_plural = u"MessageMedias"
-        db_table = "messages_medias"
+        db_table = 'telegram\".\"messages_medias'
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.message)
@@ -434,7 +434,7 @@ class Task(BaseModel):
     class Meta:
         verbose_name = u"Task"
         verbose_name_plural = u"Tasks"
-        db_table = "tasks"
+        db_table = 'telegram\".\"tasks'
 
 
 TypeHost = Host
