@@ -29,6 +29,7 @@ Markdown==3.3.7
 names==0.3.0
 opentele==1.15.1
 packaging==21.3
+Pillow==9.1.1
 prompt-toolkit==3.0.29
 psycopg2-binary==2.9.3
 pyaes==1.6.1

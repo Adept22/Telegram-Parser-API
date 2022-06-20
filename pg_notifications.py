@@ -26,9 +26,9 @@ class Action(Enum):
 
 
 class Table(Enum):
-    base_chat = auto()
-    base_phone = auto()
-    base_task = auto()
+    chats = auto()
+    phones = auto()
+    tasks = auto()
 
 
 class TaskType(Enum):
@@ -58,7 +58,7 @@ def handle_notify():
     pg_con.poll()
     for notify in pg_con.notifies:
         notice = Notify(**json.loads(notify.payload))
-        if notice.table == Table.base_chat:
+        if notice.table == Table.chats:
             match notice.action:
                 case Action.insert:
                     celery_app.send_task("ChatResolveTask", (notice.record['id'],), time_limit=60, queue='high_prio')
@@ -69,7 +69,7 @@ def handle_notify():
                         if chat.status != notice.data['status'] and chat.status is base_models.Chat.MONITORING:
                             celery_app.send_task("ParseMembersTask", (chat.id,), queue="high_prio")
 
-        elif notice.table == Table.base_phone:
+        elif notice.table == Table.phones:
             match notice.action:
                 case Action.insert:
                     celery_app.send_task(
@@ -79,7 +79,7 @@ def handle_notify():
                         queue="high_prio"
                     )
 
-        elif notice.table == Table.base_task:
+        elif notice.table == Table.tasks:
             if notice.action == Action.insert:
                 match TaskType(notice.record['type']):
                     case TaskType.task_member:
