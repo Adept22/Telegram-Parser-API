@@ -5,7 +5,6 @@ from functools import reduce
 from tempfile import tempdir
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.utils import timezone
 from datetime import timedelta, datetime
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -19,11 +18,11 @@ import api.filters as base_filters
 from tg_parser.celeryapp import app as celery_app
 
 
-class Bots(viewsets.ModelViewSet):
-    permission_classes = [permissions.AllowAny]
-    serializer_class = serializers.BotListSerializer
-    queryset = base_models.Bot.objects.all()
-    pagination_class = CustomPagination
+# class Bots(viewsets.ModelViewSet):
+#     permission_classes = [permissions.AllowAny]
+#     serializer_class = serializers.BotListSerializer
+#     queryset = base_models.Bot.objects.all()
+#     pagination_class = CustomPagination
 
 
 class Phones(viewsets.ModelViewSet):
@@ -38,43 +37,6 @@ class Phones(viewsets.ModelViewSet):
         if self.action == "update":
             return serializers.PhoneUpdateSerializer
         return self.serializer_class
-
-    def get_queryset(self):
-        return self.queryset
-
-    @action(methods=["post"], detail=True)
-    def join_chat(self, request, pk=None):
-        if "chat" in request.data:
-            serializer = serializers.ChatMiniSerializer(data=request.data["chat"])
-            if serializer.is_valid():
-                task = celery_app.send_task(
-                    "JoinChatTask", (serializer.validated_data["id"], pk), time_limit=60, queue="high_prio"
-                )
-                return Response("{}".format(task), status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        return Response("chat field is required", status=status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=["post"], detail=True)
-    def ban(self, request, pk=None):
-        serializer = serializers.WaitSerializer(data=request.data)
-        if serializer.is_valid():
-            phone = self.get_object()
-            phone.wait = datetime.now() + timedelta(seconds=serializer.validated_data["wait"])
-            phone.save()
-            # base_tasks.unban_phone_task.apply_async((phone.id,), countdown=serializer.validated_data["wait"])
-            return Response(status=status.HTTP_201_CREATED)
-        return Response("wait field is required", status=status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=["post"], detail=True)
-    def bots(self, request, pk=None):
-        phone = self.get_object()
-        phone.make_telegram_bot
-        return Response(status=status.HTTP_201_CREATED)
-
-    @action(methods=["post"], detail=True)
-    def authorization(self, request, pk=None):
-        task = celery_app.send_task("PhoneAuthorizationTask", (pk,), time_limit=1200, queue="high_prio")
-        return Response("{}".format(task), status=status.HTTP_201_CREATED)
 
 
 class Chats(viewsets.ModelViewSet):
@@ -97,26 +59,6 @@ class Chats(viewsets.ModelViewSet):
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    @action(methods=["post"], detail=True)
-    def resolve(self, request, pk=None):
-        task = celery_app.send_task("ChatResolveTask", (pk,), time_limit=60, queue="high_prio")
-        return Response("{}".format(task), status=status.HTTP_201_CREATED)
-
-    @action(methods=["post"], detail=True)
-    def parse(self, request, pk=None):
-        # task = celery_app.send_task("ParseMembersTask", (pk,), queue="high_prio")
-        # task = celery_app.send_task("ParseMessagesTask", (pk,), queue="low_prio")
-        task = celery_app.send_task("MonitoringChatTask", (pk,), queue="high_prio")
-        return Response("{}".format(task), status=status.HTTP_201_CREATED)
-
-    @action(methods=["post"], detail=True)
-    def test(self, request, pk=None):
-        # base_tasks.test_task.apply_async((), countdown=3)
-        # [celery_app.send_task("base.tasks.test", ("test param3333",)) for i in range(2)]
-        # base_tasks.ChatResolveTask().delay("f652949e-e0cd-11ec-9669-7972643f4571")
-        # base_tasks.JoinChatTask().delay("f652949e-e0cd-11ec-9669-7972643f4571", "1d1efa20-ddce-11ec-95c5-cf63300076c1")
-        return Response(status=status.HTTP_201_CREATED)
 
 
 class ChatPhones(viewsets.ModelViewSet):
@@ -182,20 +124,40 @@ class MessageMedias(viewsets.ModelViewSet):
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         if request.method == "POST":
-            # message_media = self.get_object()
-            serializer = serializers.ChunkViewSerializer(data=request.data)
+            request.data['filename'] = request.query_params.get('filename')
+            request.data['chunk_number'] = request.query_params.get('chunk_number')
+            request.data['total_size'] = request.query_params.get('total_size')
+            request.data['total_chunks'] = request.query_params.get('total_chunks')
+            request.data['chunk_size'] = request.query_params.get('chunk_size')
+
+            serializer = serializers.ChunkCreateSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
-                # with open(chat_media.file.path, "ab") as file1:
-                #     file1.write(file.read())
-                return Response(status=status.HTTP_201_CREATED)
+                filename = serializer.validated_data['filename']
+                chunk_number = serializer.validated_data['chunk_number']
+                total_size = serializer.validated_data['total_size']
+                total_chunks = serializer.validated_data['total_chunks']
+                file = default_storage.save(
+                    'tmp/{}.part{}'.format(filename, chunk_number),
+                    ContentFile(serializer.validated_data['chunk'].read())
+                )
+
+                if chunk_number >= total_chunks - 1:
+                    chunks = glob.glob("tmp/{}.part[0-9]*".format(filename))
+                    if chunks:
+                        computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
+                        if computed >= total_size:
+                            start = len(f"tmp/{filename}.part")
+                            sorted(chunks, key=lambda path: int(path[start:]))
+                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+
+                return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
                 req = serializer.validated_data
                 if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                    return Response(status=status.HTTP_204_NO_CONTENT)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -316,6 +278,7 @@ class MemberMedias(viewsets.ModelViewSet):
                     'tmp/{}.part{}'.format(filename, chunk_number),
                     ContentFile(serializer.validated_data['chunk'].read())
                 )
+
                 if chunk_number >= total_chunks - 1:
                     chunks = glob.glob("tmp/{}.part[0-9]*".format(filename))
                     if chunks:
@@ -325,14 +288,14 @@ class MemberMedias(viewsets.ModelViewSet):
                             sorted(chunks, key=lambda path: int(path[start:]))
                             subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
 
-                return Response(status=status.HTTP_201_CREATED)
+                return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
                 req = serializer.validated_data
                 if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                    return Response(status=status.HTTP_204_NO_CONTENT)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -362,6 +325,7 @@ class ChatMedias(viewsets.ModelViewSet):
                     'tmp/{}.part{}'.format(filename, chunk_number),
                     ContentFile(serializer.validated_data['chunk'].read())
                 )
+
                 if chunk_number >= total_chunks - 1:
                     chunks = glob.glob("tmp/{}.part[0-9]*".format(filename))
                     if chunks:
@@ -376,7 +340,13 @@ class ChatMedias(viewsets.ModelViewSet):
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
-                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(serializer.validated_data["filename"], serializer.validated_data["chunk_number"]))):
+                if os.path.exists(
+                    os.path.join(
+                        tempdir,
+                        u"{}.part{}".format(serializer.validated_data["filename"],
+                                            serializer.validated_data["chunk_number"])
+                    )
+                ):
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
@@ -387,5 +357,12 @@ class Hosts(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     serializer_class = serializers.HostListSerializer
     queryset = base_models.Host.objects.all()
+    pagination_class = CustomPagination
+
+
+class Tasks(viewsets.ModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = serializers.TaskListSerializer
+    queryset = base_models.Task.objects.all()
     pagination_class = CustomPagination
 

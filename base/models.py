@@ -1,23 +1,13 @@
 import os
 import uuid
 import asyncio
-import requests
-from datetime import datetime, timedelta
-from celery.canvas import Signature
+from datetime import datetime
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from telethon.sessions import StringSession
 from telethon import TelegramClient, sessions
-from post_office.models import EmailTemplate
-from tg_parser.celeryapp import app as celery_app
+# from post_office.models import EmailTemplate
 from telethon.utils import resolve_id
-from django.db.models import Count, Q
-try:
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-except ImportError:
-    from django.contrib.auth.models import User
 
 
 def attachment_path(instance, filename):
@@ -49,6 +39,7 @@ class Host(BaseModel):
     class Meta:
         verbose_name = u"Host"
         verbose_name_plural = u"Hosts"
+        db_table = "hosts"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.name)
@@ -73,6 +64,7 @@ class Parser(BaseModel):
     class Meta:
         verbose_name = u"Parser"
         verbose_name_plural = u"Parsers"
+        db_table = "parsers"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.api_id)
@@ -108,6 +100,7 @@ class Phone(BaseModel):
     class Meta:
         verbose_name = u"Phone"
         verbose_name_plural = u"Phones"
+        db_table = "phones"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.number)
@@ -118,25 +111,20 @@ class Phone(BaseModel):
         return "Готов"
     get_status_text = property(_get_status_text)
 
-    # def _make_telegram_bot(self):
-    #     make_telegram_bot.apply_async((self.id,))
-    #     return True
-    # make_telegram_bot = property(_make_telegram_bot)
-
-    def _token_is_valid(self):
-        if self.session:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            client = TelegramClient(
-                session=sessions.StringSession("{}".format(self.session)),
-                api_id=settings.API_ID,
-                api_hash=settings.API_HASH,
-                loop=loop
-            )
-            client.connect()
-            return client.is_user_authorized()
-        return False
-    token_is_valid = property(_token_is_valid)
+    # def _token_is_valid(self):
+    #     if self.session:
+    #         loop = asyncio.new_event_loop()
+    #         asyncio.set_event_loop(loop)
+    #         client = TelegramClient(
+    #             session=sessions.StringSession("{}".format(self.session)),
+    #             api_id=settings.API_ID,
+    #             api_hash=settings.API_HASH,
+    #             loop=loop
+    #         )
+    #         client.connect()
+    #         return client.is_user_authorized()
+    #     return False
+    # token_is_valid = property(_token_is_valid)
 
 
 class Member(BaseModel):
@@ -150,6 +138,7 @@ class Member(BaseModel):
     class Meta:
         verbose_name = u"Member"
         verbose_name_plural = u"Members"
+        db_table = "members"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.username)
@@ -171,6 +160,7 @@ class MemberMedia(BaseModel):
     class Meta:
         verbose_name = u"MemberMedia"
         verbose_name_plural = u"MemberMedias"
+        db_table = "members_medias"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.member)
@@ -207,9 +197,10 @@ class Chat(BaseModel):
     class Meta:
         verbose_name = u"Chat"
         verbose_name_plural = u"Chats"
+        db_table = "chats"
 
     def __str__(self):
-        return u"{}. {}".format(self.id, self.link)
+        return u"{}".format(self.link)
 
     def _get_type(self):
         type = None
@@ -218,32 +209,32 @@ class Chat(BaseModel):
         return type
     get_type = property(_get_type)
 
-    def _make_chat_phones(self):
-        chat_phones = self.chatphone_set.filter(is_using=True)
-        if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
-            return True
-
-        phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
-            num_chatphone=Count('chatphone'),
-            num_today_created=Count(
-                'chatphone__created_at',
-                distinct=True,
-                filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
-            ),
-        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
-
-        if phone_ids:
-            celery_app.send_task(
-                "ChatResolveTask",
-                (self.id,),
-                time_limit=60,
-                queue='high_prio',
-                link=[
-                    Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
-                ],
-            )
-        return True
-    make_chat_phones = property(_make_chat_phones)
+    # def make_chat_phones(self):
+    #     chat_phones = self.chatphone_set.filter(is_using=True)
+    #     if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
+    #         return True
+    #
+    #     phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
+    #         num_chatphone=Count('chatphone'),
+    #         num_today_created=Count(
+    #             'chatphone__created_at',
+    #             distinct=True,
+    #             filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
+    #         ),
+    #     ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+    #
+    #     if phone_ids:
+    #         celery_app.send_task(
+    #             "ChatResolveTask",
+    #             (self.id,),
+    #             time_limit=60,
+    #             queue='high_prio',
+    #             # link=[
+    #             #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
+    #             # ],
+    #         )
+    #         # Signature('ChatMediaTask', args=[self.id], immutable=True, queue="low_prio"),
+    #     return True
 
 
 class ChatPhone(BaseModel):
@@ -254,6 +245,7 @@ class ChatPhone(BaseModel):
     class Meta:
         verbose_name = u"ChatPhone"
         verbose_name_plural = u"ChatPhones"
+        db_table = "chats_phones"
         constraints = [
             models.UniqueConstraint(fields=["chat", "phone"], name="chat_phone_unique"),
         ]
@@ -271,6 +263,7 @@ class ChatMember(BaseModel):
     class Meta:
         verbose_name = u"ChatMember"
         verbose_name_plural = u"ChatMembers"
+        db_table = "chats_members"
         constraints = [
             models.UniqueConstraint(fields=["chat", "member"], name="chat_member_unique"),
         ]
@@ -287,6 +280,7 @@ class ChatMemberRole(BaseModel):
     class Meta:
         verbose_name = u"ChatMemberRole"
         verbose_name_plural = u"ChatMemberRoles"
+        db_table = "chats_member_roles"
         constraints = [
             models.UniqueConstraint(fields=["member", "title", "code"], name="chat_member_role_unique"),
         ]
@@ -305,6 +299,7 @@ class ChatMedia(BaseModel):
     class Meta:
         verbose_name = u"ChatMedia"
         verbose_name_plural = u"ChatMedias"
+        db_table = "chats_medias"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.chat)
@@ -325,6 +320,7 @@ class Message(BaseModel):
     class Meta:
         verbose_name = u"Message"
         verbose_name_plural = u"Messages"
+        db_table = "messages"
         constraints = [
             models.UniqueConstraint(fields=["internal_id", "chat"], name="message_unique"),
         ]
@@ -344,81 +340,66 @@ class MessageMedia(BaseModel):
     #     file_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
     #     if os.path.exists(file_path):
     #         os.remove(file_path)
-    #     super(MemberMedia, self).delete()
+    #     super(MessageMedia, self).delete()
 
     class Meta:
         verbose_name = u"MessageMedia"
         verbose_name_plural = u"MessageMedias"
+        db_table = "messages_medias"
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.message)
-    # def delete(self, *args, **kwargs):
-    #     file_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-    #     if os.path.exists(file_path):
-    #         os.remove(file_path)
-    #     super(ChatMedia, self).delete()
 
 
-class Bot(BaseModel):
-    name = models.CharField(u"название", max_length=255, blank=True)
-    token = models.CharField(u"token", max_length=46, blank=True)
-    phone = models.ForeignKey(Phone, verbose_name=u"телефон", on_delete=models.CASCADE)
-    wait = models.PositiveIntegerField("ожидание", default=0)
-
-    class Meta:
-        verbose_name = u"Bot"
-        verbose_name_plural = u"Bots"
-
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.name)
-
-    def _get_status_text(self):
-        if self.wait > 0:
-            return "Пауза {} сек.".format(self.wait)
-        return "Готов"
-    get_status_text = property(_get_status_text)
-
-    def _get_session(self):
-        if self.token is None:
-            return None
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        bot = TelegramClient(StringSession(), settings.API_ID, settings.API_HASH, loop=loop).start(
-            bot_token=u"{}".format(self.token), max_attempts=10
-        )
-        return bot.session.save()
-    get_session = property(_get_session)
-
-    def _token_is_valid(self):
-        if len(self.token) == 0:
-            return False
-        r = requests.post(url="https://api.telegram.org/bot{}/getMe".format(self.token), data={})
-        if r.status_code == 200:
-            return True
-        return False
-    token_is_valid = property(_token_is_valid)
+# class Bot(BaseModel):
+#     name = models.CharField(u"название", max_length=255, blank=True)
+#     token = models.CharField(u"token", max_length=46, blank=True)
+#     phone = models.ForeignKey(Phone, verbose_name=u"телефон", on_delete=models.CASCADE)
+#     wait = models.PositiveIntegerField("ожидание", default=0)
+#
+#     class Meta:
+#         verbose_name = u"Bot"
+#         verbose_name_plural = u"Bots"
+#
+#     def __str__(self):
+#         return u"{}. {}".format(self.id, self.name)
+#
+#     def _get_status_text(self):
+#         if self.wait > 0:
+#             return "Пауза {} сек.".format(self.wait)
+#         return "Готов"
+#     get_status_text = property(_get_status_text)
+#
+#     def _token_is_valid(self):
+#         if len(self.token) == 0:
+#             return False
+#         r = requests.post(url="https://api.telegram.org/bot{}/getMe".format(self.token), data={})
+#         if r.status_code == 200:
+#             return True
+#         return False
+#     token_is_valid = property(_token_is_valid)
 
 
-class ChatLog(BaseModel):
-    body = models.TextField(u"ошибка", blank=True)
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
+# class ChatLog(BaseModel):
+#     body = models.TextField(u"ошибка", blank=True)
+#     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
+#
+#     class Meta:
+#         verbose_name = u"ChatLog"
+#         verbose_name_plural = u"ChatLogs"
+#
+#     def __str__(self):
+#         return u"{}. {}".format(self.id, self.chat)
 
-    class Meta:
-        verbose_name = u"ChatLog"
-        verbose_name_plural = u"ChatLogs"
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.chat)
-
-
-class Subscription(BaseModel):
-    title = models.CharField(u"название", max_length=255, blank=False, null=False)
-    user = models.ForeignKey(User, verbose_name=u"подписчик", on_delete=models.CASCADE)
-    template = models.ForeignKey(EmailTemplate, verbose_name=u"шаблон", on_delete=models.CASCADE)
-
-    class Meta:
-        verbose_name = u"Subscription"
-        verbose_name_plural = u"Subscriptions"
+# class Subscription(BaseModel):
+#     title = models.CharField(u"название", max_length=255, blank=False, null=False)
+#     user = models.ForeignKey(User, verbose_name=u"подписчик", on_delete=models.CASCADE)
+#     template = models.ForeignKey(EmailTemplate, verbose_name=u"шаблон", on_delete=models.CASCADE)
+#
+#     class Meta:
+#         verbose_name = u"Subscription"
+#         verbose_name_plural = u"Subscriptions"
 
 
 class Task(BaseModel):
@@ -447,13 +428,14 @@ class Task(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
     status = models.IntegerField(u"status", default=CREATED_STATUS, choices=STATUS_CHOICES)
     status_text = models.TextField(u"status text", blank=True, null=True)
-    start_at = models.DateTimeField(u"дата запуска", auto_now_add=True)
-    end_at = models.DateTimeField(u"дата завершения", auto_now_add=True)
-    type = models.IntegerField(u"type", choices=TYPE_CHOICES, blank=True, null=True)
+    started_at = models.DateTimeField(u"дата запуска", blank=True, null=True)
+    ended_at = models.DateTimeField(u"дата завершения", blank=True, null=True)
+    type = models.IntegerField(u"type", choices=TYPE_CHOICES)
 
     class Meta:
         verbose_name = u"Task"
         verbose_name_plural = u"Tasks"
+        db_table = "tasks"
 
 
 TypeHost = Host

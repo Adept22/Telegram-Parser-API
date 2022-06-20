@@ -3,15 +3,15 @@ from django.contrib.admin import display
 import base.models as base_models
 
 
-class VersionBotInline(admin.TabularInline):
-    readonly_fields = ("name", "wait", "token")
-    template = "admin/view_inline/tabular.html"
-    model = base_models.Bot
-    extra = 0
-    can_delete = False
-
-    def has_add_permission(self, request, obj=None):
-        return False
+# class VersionBotInline(admin.TabularInline):
+#     readonly_fields = ("name", "wait", "token")
+#     template = "admin/view_inline/tabular.html"
+#     model = base_models.Bot
+#     extra = 0
+#     can_delete = False
+#
+#     def has_add_permission(self, request, obj=None):
+#         return False
 
 
 class ChatsInline(admin.TabularInline):
@@ -29,8 +29,8 @@ class PhoneAdmin(admin.ModelAdmin):
     list_display = ("id", "number", "first_name", "status", "status_text", "created_at", "chats", "api")
     date_hierarchy = "created_at"
     search_fields = ["number"]
-    readonly_fields = ("internal_id", "created_at", "wait") #  "token_verify",
-    inlines = (VersionBotInline, ChatsInline)
+    readonly_fields = ("internal_id", "created_at", "wait")
+    inlines = (ChatsInline,) #VersionBotInline
     ordering = ["-created_at"]
     list_filter = ("status",)
 
@@ -38,23 +38,19 @@ class PhoneAdmin(admin.ModelAdmin):
         return instance.get_status_text
     status.short_description = u"статус"
 
-    # def token_verify(self, instance):
-    #     return instance.token_is_valid
-    # token_verify.short_description = u"Верификая сессии"
-
     def chats(self, instance):
         return instance.chatphone_set.count()
     status.short_description = u"чаты"
 
 
-class VersionChatInline(admin.TabularInline):
-    readonly_fields = ("id", "created_at", "body")
-    model = base_models.ChatLog
-    extra = 0
-    can_delete = False
-
-    def has_add_permission(self, request, obj=None):
-        return False
+# class VersionChatInline(admin.TabularInline):
+#     readonly_fields = ("id", "created_at", "body")
+#     model = base_models.ChatLog
+#     extra = 0
+#     can_delete = False
+#
+#     def has_add_permission(self, request, obj=None):
+#         return False
 
 
 class ChatAdmin(admin.ModelAdmin):
@@ -68,7 +64,7 @@ class ChatAdmin(admin.ModelAdmin):
         "status",
         ("internal_id", admin.EmptyFieldListFilter),
     )
-    inlines = (VersionChatInline,)
+    # inlines = (VersionChatInline,)
 
     def get_phones(self, instance):
         return instance.chatphone_set.count()
@@ -165,9 +161,7 @@ class MessageAdmin(admin.ModelAdmin):
 
     @display(description='Member username')
     def get_member(self, obj):
-        if obj.member:
-            return obj.member.member.username
-        return None
+        return obj.member.member.username if obj.member else None
 
 
 class ChatMediaAdmin(admin.ModelAdmin):
@@ -192,13 +186,13 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("id", "status", "type", "created_at")
-    readonly_fields = ["id", "status", "type", "created_at", "chat", "status_text"]
+    list_display = ("id", "status", "type", "created_at", "started_at", "ended_at")
+    readonly_fields = ["id", "status", "created_at", "status_text", "started_at", "ended_at"]
 
 
 admin.site.register(base_models.Phone, PhoneAdmin)
 admin.site.register(base_models.Chat, ChatAdmin)
-admin.site.register(base_models.ChatLog, ChatLogAdmin)
+# admin.site.register(base_models.ChatLog, ChatLogAdmin)
 admin.site.register(base_models.ChatPhone, ChatPhoneAdmin)
 admin.site.register(base_models.Member, MemberAdmin)
 admin.site.register(base_models.Parser, ParserAdmin)
@@ -207,8 +201,8 @@ admin.site.register(base_models.MemberMedia, MemberMediaAdmin)
 admin.site.register(base_models.ChatMember, ChatMemberAdmin)
 admin.site.register(base_models.ChatMemberRole, ChatMemberRoleAdmin)
 admin.site.register(base_models.ChatMedia, ChatMediaAdmin)
-admin.site.register(base_models.Bot, BotAdmin)
-admin.site.register(base_models.Subscription, SubscriptionAdmin)
+# admin.site.register(base_models.Bot, BotAdmin)
+# admin.site.register(base_models.Subscription, SubscriptionAdmin)
 admin.site.register(base_models.Message, MessageAdmin)
 admin.site.register(base_models.Task, TaskAdmin)
 

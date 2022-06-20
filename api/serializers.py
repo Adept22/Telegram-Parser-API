@@ -6,11 +6,11 @@ class WaitSerializer(serializers.Serializer):
     wait = serializers.IntegerField()
 
 
-class BotListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = base_models.Bot
-        fields = ("id", "created_at", "name", "session")
-        read_only_fields = ("id", "created_at", "session")
+# class BotListSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = base_models.Bot
+#         fields = ("id", "created_at", "name", "session")
+#         read_only_fields = ("id", "created_at", "session")
 
 
 class HostViewSerializer(serializers.ModelSerializer):
@@ -216,4 +216,11 @@ class ChunkViewSerializer(serializers.Serializer):
     total_size = serializers.IntegerField(required=False)
     total_chunks = serializers.IntegerField(required=False)
     chunk = serializers.FileField(required=False)
+
+
+class TaskListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = base_models.Task
+        fields = "__all__"
+        read_only_fields = ("id", "created_at")
 
