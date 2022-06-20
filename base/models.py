@@ -1,11 +1,10 @@
 import os
 import uuid
-import asyncio
 from datetime import datetime
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
-from telethon import TelegramClient, sessions
+# from telethon import TelegramClient, sessions
 # from post_office.models import EmailTemplate
 from telethon.utils import resolve_id
 

@@ -2,10 +2,6 @@ from rest_framework import serializers
 import base.models as base_models
 
 
-class WaitSerializer(serializers.Serializer):
-    wait = serializers.IntegerField()
-
-
 # class BotListSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = base_models.Bot
@@ -14,7 +10,6 @@ class WaitSerializer(serializers.Serializer):
 
 
 class HostViewSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.Host
         fields = ("id", "created_at", "local_ip", "public_ip", "name")
@@ -22,7 +17,6 @@ class HostViewSerializer(serializers.ModelSerializer):
 
 
 class ParserListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.Parser
         fields = ("id", "created_at", "status", "api_id", "api_hash", "host")
@@ -41,7 +35,6 @@ class ParserSerializer(serializers.ModelSerializer):
 
 
 class PhoneListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.Phone
         fields = ("id", "number", "internal_id", "session", "first_name", "last_name", "status", "code", "created_at",
@@ -50,7 +43,6 @@ class PhoneListSerializer(serializers.ModelSerializer):
 
 
 class PhoneUpdateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.Phone
         fields = (
@@ -110,7 +102,6 @@ class PhoneMiniSerializer(serializers.ModelSerializer):
 
 
 class ChatPhoneListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.ChatPhone
         fields = ("id", "chat", "phone", "is_using", "created_at")
@@ -135,7 +126,6 @@ class MemberListSerializer(serializers.ModelSerializer):
 
 
 class ChatMemberListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.ChatMember
         fields = ("id", "chat", "member", "is_left", "date", "chat_id")
@@ -152,7 +142,6 @@ class ChatMemberSerializer(serializers.ModelSerializer):
 
 
 class ChatMemberRoleListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.ChatMemberRole
         fields = ("id", "member", "title", "code")
@@ -160,7 +149,6 @@ class ChatMemberRoleListSerializer(serializers.ModelSerializer):
 
 
 class MemberMediaListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.MemberMedia
         fields = ("id", "member", "internal_id", "path", "date")
@@ -169,7 +157,6 @@ class MemberMediaListSerializer(serializers.ModelSerializer):
 
 
 class ChatMediaListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.ChatMedia
         fields = ("id", "chat", "internal_id", "path", "date", "file")
@@ -184,7 +171,6 @@ class HostListSerializer(serializers.ModelSerializer):
 
 
 class MessageListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = base_models.Message
         fields = ("id", "member", "reply_to", "internal_id", "text", "is_pinned", "forwarded_from_id",
