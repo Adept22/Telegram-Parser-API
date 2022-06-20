@@ -55,7 +55,7 @@ class Chats(viewsets.ModelViewSet):
                 defaults=serializer.validated_data,
             )
             if created:
-                celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60, queue="high_prio")
+                # celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60, queue="high_prio")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
