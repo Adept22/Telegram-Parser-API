@@ -1,14 +1,14 @@
 import glob
 import os.path
+import tempfile
 import subprocess
 from functools import reduce
-from tempfile import tempdir
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 # from datetime import timedelta, datetime
+from django_filters import rest_framework as filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django_filters import rest_framework as filters
 from rest_framework.filters import OrderingFilter
 from rest_framework import permissions, viewsets, status
 import api.serializers as serializers
@@ -150,7 +150,7 @@ class MessageMedias(viewsets.ModelViewSet):
                         if computed >= total_size:
                             start = len(f"tmp/{filename}.part")
                             sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(tempfile.gettempdir(), filename)}", stdout=subprocess.PIPE, shell=True)
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -158,7 +158,9 @@ class MessageMedias(viewsets.ModelViewSet):
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
                 req = serializer.validated_data
-                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                if os.path.exists(
+                        os.path.join(tempfile.gettempdir(), u"{}.part{}".format(req["filename"], req["chunk_number"]))
+                ):
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
@@ -288,7 +290,7 @@ class MemberMedias(viewsets.ModelViewSet):
                         if computed >= total_size:
                             start = len(f"tmp/{filename}.part")
                             sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(tempfile.gettempdir(), filename)}", stdout=subprocess.PIPE, shell=True)
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -296,7 +298,9 @@ class MemberMedias(viewsets.ModelViewSet):
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
                 req = serializer.validated_data
-                if os.path.exists(os.path.join(tempdir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                if os.path.exists(
+                        os.path.join(tempfile.gettempdir(), u"{}.part{}".format(req["filename"], req["chunk_number"]))
+                ):
                     return Response(status=status.HTTP_204_NO_CONTENT)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
@@ -335,7 +339,7 @@ class ChatMedias(viewsets.ModelViewSet):
                         if computed >= total_size:
                             start = len(f"tmp/{filename}.part")
                             sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > /tmp/{filename}", stdout=subprocess.PIPE, shell=True)
+                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(tempfile.gettempdir(), filename)}", stdout=subprocess.PIPE, shell=True)
 
                 return Response(status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -344,9 +348,8 @@ class ChatMedias(viewsets.ModelViewSet):
             if serializer.is_valid():
                 if os.path.exists(
                     os.path.join(
-                        tempdir,
-                        u"{}.part{}".format(serializer.validated_data["filename"],
-                                            serializer.validated_data["chunk_number"])
+                        tempfile.gettempdir(), u"{}.part{}".format(serializer.validated_data["filename"],
+                                                                   serializer.validated_data["chunk_number"])
                     )
                 ):
                     return Response(serializer.data, status=status.HTTP_200_OK)

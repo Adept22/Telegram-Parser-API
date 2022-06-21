@@ -35,6 +35,8 @@ class TaskType(Enum):
     task_member = 0
     task_message = 1
     task_monitoring = 2
+    task_chat_media = 3
+    task_authorization = 4
 
 
 class Notify:
@@ -80,7 +82,10 @@ def handle_notify():
                     )
 
         elif notice.table == Table.tasks:
+
             if notice.action == Action.insert:
+                chat = get_chat(notice.record['chat_id'])
+                chat.make_chat_phones()
                 match TaskType(notice.record['type']):
                     case TaskType.task_member:
                         celery_app.send_task(
@@ -105,6 +110,23 @@ def handle_notify():
                             queue="high_prio",
                             task_id=notice.record['id'],
                         )
+
+                    case TaskType.task_chat_media:
+                        celery_app.send_task(
+                            "ChatMediaTask",
+                            (notice.record['chat_id'],),
+                            queue="high_prio",
+                            task_id=notice.record['id'],
+                        )
+
+                    # case TaskType.task_authorization:
+                    #     celery_app.send_task(
+                    #         "PhoneAuthorizationTask",
+                    #         (notice.record['chat_id'],),
+                    #         queue="high_prio",
+                    #         task_id=notice.record['id'],
+                    #     )
+
     pg_con.notifies.clear()
 
 

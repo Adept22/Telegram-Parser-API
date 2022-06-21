@@ -1,9 +1,11 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
+from django.db.models import Count, Q
 from django.utils import timezone
+from tg_parser.celeryapp import app as celery_app
 # from telethon import TelegramClient, sessions
 # from post_office.models import EmailTemplate
 from telethon.utils import resolve_id
@@ -208,32 +210,41 @@ class Chat(BaseModel):
         return type
     get_type = property(_get_type)
 
-    # def make_chat_phones(self):
-    #     chat_phones = self.chatphone_set.filter(is_using=True)
-    #     if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
-    #         return True
-    #
-    #     phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
-    #         num_chatphone=Count('chatphone'),
-    #         num_today_created=Count(
-    #             'chatphone__created_at',
-    #             distinct=True,
-    #             filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
-    #         ),
-    #     ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
-    #
-    #     if phone_ids:
-    #         celery_app.send_task(
-    #             "ChatResolveTask",
-    #             (self.id,),
-    #             time_limit=60,
-    #             queue='high_prio',
-    #             # link=[
-    #             #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
-    #             # ],
-    #         )
-    #         # Signature('ChatMediaTask', args=[self.id], immutable=True, queue="low_prio"),
-    #     return True
+    def make_chat_phones(self):
+        chat_phones = self.chatphone_set.filter(is_using=True)
+        if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
+            return True
+
+        phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
+            num_chatphone=Count('chatphone'),
+            num_today_created=Count(
+                'chatphone__created_at',
+                distinct=True,
+                filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
+            ),
+        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+
+        for phone_id in phone_ids:
+            celery_app.send_task(
+                "JoinChatTask",
+                (self.id, phone_id),
+                time_limit=60,
+                queue='high_prio',
+                # link=[
+                #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
+                # ],
+            )
+            # celery_app.send_task(
+            #     "ChatResolveTask",
+            #     (self.id,),
+            #     time_limit=60,
+            #     queue='high_prio',
+            #     # link=[
+            #     #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
+            #     # ],
+            # )
+            # Signature('ChatMediaTask', args=[self.id], immutable=True, queue="low_prio"),
+        return True
 
 
 class ChatPhone(BaseModel):
