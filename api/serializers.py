@@ -2,13 +2,6 @@ from rest_framework import serializers
 import base.models as base_models
 
 
-# class BotListSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = base_models.Bot
-#         fields = ("id", "created_at", "name", "session")
-#         read_only_fields = ("id", "created_at", "session")
-
-
 class HostViewSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Host

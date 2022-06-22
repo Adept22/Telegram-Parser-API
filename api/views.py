@@ -15,14 +15,6 @@ import api.serializers as serializers
 from api.paginators import CustomPagination
 import base.models as base_models
 import api.filters as base_filters
-# from tg_parser.celeryapp import app as celery_app
-
-
-# class Bots(viewsets.ModelViewSet):
-#     permission_classes = [permissions.AllowAny]
-#     serializer_class = serializers.BotListSerializer
-#     queryset = base_models.Bot.objects.all()
-#     pagination_class = CustomPagination
 
 
 class Phones(viewsets.ModelViewSet):
@@ -62,7 +54,6 @@ class Chats(viewsets.ModelViewSet):
             )
             serializer = self.get_serializer(chat)
             if created:
-                # celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60, queue="high_prio")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

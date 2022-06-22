@@ -1,14 +1,9 @@
 import os
 import uuid
 from datetime import datetime, timedelta
-from celery.canvas import Signature
 from django.db import models
 from django.conf import settings
 from django.db.models import Count, Q
-from django.utils import timezone
-# from tg_parser.celeryapp import app as celery_app
-# from telethon import TelegramClient, sessions
-# from post_office.models import EmailTemplate
 from telethon.utils import resolve_id
 
 
@@ -96,7 +91,6 @@ class Phone(BaseModel):
     code = models.CharField(u"code", max_length=10, blank=True, null=True)
     session = models.CharField(u"session", max_length=512, null=True, blank=True, unique=True)
     internal_id = models.BigIntegerField(blank=True, null=True, unique=True)
-    wait = models.DateTimeField(blank=True, null=True)
     api = models.JSONField(blank=True, null=True)
 
     class Meta:
@@ -106,27 +100,6 @@ class Phone(BaseModel):
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.number)
-
-    def _get_status_text(self):
-        if self.wait and self.wait > timezone.now():
-            return "Пауза {} сек.".format((self.wait-timezone.now()).seconds)
-        return "Готов"
-    get_status_text = property(_get_status_text)
-
-    # def _token_is_valid(self):
-    #     if self.session:
-    #         loop = asyncio.new_event_loop()
-    #         asyncio.set_event_loop(loop)
-    #         client = TelegramClient(
-    #             session=sessions.StringSession("{}".format(self.session)),
-    #             api_id=settings.API_ID,
-    #             api_hash=settings.API_HASH,
-    #             loop=loop
-    #         )
-    #         client.connect()
-    #         return client.is_user_authorized()
-    #     return False
-    # token_is_valid = property(_token_is_valid)
 
 
 class Member(BaseModel):
@@ -152,12 +125,6 @@ class MemberMedia(BaseModel):
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
     file = models.FileField(u"файл", upload_to=attachment_path, max_length=1000, blank=True, null=True)
-
-    # def delete(self, *args, **kwargs):
-    #     file_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-    #     if os.path.exists(file_path):
-    #         os.remove(file_path)
-    #     super(MemberMedia, self).delete()
 
     class Meta:
         verbose_name = u"MemberMedia"
@@ -187,10 +154,6 @@ class Chat(BaseModel):
     status = models.IntegerField(u"status", default=CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     description = models.TextField(u"description", blank=True, null=True)
-    system_title = models.CharField(u"system title", max_length=255, blank=True, null=True)
-    system_description = models.TextField(u"system description", blank=True, null=True)
-    lat = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
-    lon = models.DecimalField(max_digits=22, decimal_places=16, blank=True, null=True)
     parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.CASCADE, null=True, blank=False)
     date = models.DateField(u"date", blank=True, null=True)
     total_messages = models.IntegerField(u"total messages", default=0, blank=True, null=True)
@@ -211,21 +174,22 @@ class Chat(BaseModel):
         return type
     get_type = property(_get_type)
 
-    def make_chat_phones(self):
+    def get_chat_phones(self):
         chat_phones = self.chatphone_set.filter(is_using=True)
         if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
             return []
 
-        phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
-            num_chatphone=Count('chatphone'),
-            num_today_created=Count(
-                'chatphone__created_at',
-                distinct=True,
-                filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
-            ),
-        ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
-
-        return [Signature('JoinChatTask', args=[self.id, phone_id], queue='high_prio', immutable=True, time_limit=60) for phone_id in phone_ids]
+        return list(
+            Phone.objects.filter(status=Phone.READY).annotate(
+                num_chatphone=Count('chatphone'),
+                num_today_created=Count(
+                    'chatphone__created_at',
+                    distinct=True,
+                    filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
+                )
+            ).values_list("id", flat=True)
+            .filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+        )
 
 
 class ChatPhone(BaseModel):
@@ -271,7 +235,7 @@ class ChatMemberRole(BaseModel):
     class Meta:
         verbose_name = u"ChatMemberRole"
         verbose_name_plural = u"ChatMemberRoles"
-        db_table = 'telegram\".\"chats_member_roles'
+        db_table = 'telegram\".\"chats_members_roles'
         constraints = [
             models.UniqueConstraint(fields=["member", "title", "code"], name="chat_member_role_unique"),
         ]
@@ -325,13 +289,6 @@ class MessageMedia(BaseModel):
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
-    # file = models.FileField(u"файл", upload_to=attachment_path, max_length=1000, blank=True, null=True)
-
-    # def delete(self, *args, **kwargs):
-    #     file_path = os.path.join(settings.MEDIA_ROOT, str(self.file))
-    #     if os.path.exists(file_path):
-    #         os.remove(file_path)
-    #     super(MessageMedia, self).delete()
 
     class Meta:
         verbose_name = u"MessageMedia"
@@ -340,57 +297,6 @@ class MessageMedia(BaseModel):
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.message)
-
-
-# class Bot(BaseModel):
-#     name = models.CharField(u"название", max_length=255, blank=True)
-#     token = models.CharField(u"token", max_length=46, blank=True)
-#     phone = models.ForeignKey(Phone, verbose_name=u"телефон", on_delete=models.CASCADE)
-#     wait = models.PositiveIntegerField("ожидание", default=0)
-#
-#     class Meta:
-#         verbose_name = u"Bot"
-#         verbose_name_plural = u"Bots"
-#
-#     def __str__(self):
-#         return u"{}. {}".format(self.id, self.name)
-#
-#     def _get_status_text(self):
-#         if self.wait > 0:
-#             return "Пауза {} сек.".format(self.wait)
-#         return "Готов"
-#     get_status_text = property(_get_status_text)
-#
-#     def _token_is_valid(self):
-#         if len(self.token) == 0:
-#             return False
-#         r = requests.post(url="https://api.telegram.org/bot{}/getMe".format(self.token), data={})
-#         if r.status_code == 200:
-#             return True
-#         return False
-#     token_is_valid = property(_token_is_valid)
-
-
-# class ChatLog(BaseModel):
-#     body = models.TextField(u"ошибка", blank=True)
-#     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
-#
-#     class Meta:
-#         verbose_name = u"ChatLog"
-#         verbose_name_plural = u"ChatLogs"
-#
-#     def __str__(self):
-#         return u"{}. {}".format(self.id, self.chat)
-
-
-# class Subscription(BaseModel):
-#     title = models.CharField(u"название", max_length=255, blank=False, null=False)
-#     user = models.ForeignKey(User, verbose_name=u"подписчик", on_delete=models.CASCADE)
-#     template = models.ForeignKey(EmailTemplate, verbose_name=u"шаблон", on_delete=models.CASCADE)
-#
-#     class Meta:
-#         verbose_name = u"Subscription"
-#         verbose_name_plural = u"Subscriptions"
 
 
 class Task(BaseModel):
@@ -426,7 +332,7 @@ class Task(BaseModel):
     class Meta:
         verbose_name = u"Task"
         verbose_name_plural = u"Tasks"
-        db_table = 'telegram\".\"tasks'
+        db_table = 'telegram\".\"chats_tasks'
 
 
 TypeHost = Host
@@ -441,4 +347,3 @@ TypeChatPhone = ChatPhone
 TypeChatMember = ChatMember
 TypeChatMemberRole = ChatMemberRole
 TypeChatMedia = ChatMedia
-
