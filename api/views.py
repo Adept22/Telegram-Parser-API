@@ -135,6 +135,20 @@ class MessageMedias(viewsets.ModelViewSet):
     queryset = base_models.MessageMedia.objects.all()
     pagination_class = CustomPagination
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            obj, created = base_models.MessageMedia.objects.update_or_create(
+                internal_id=serializer.validated_data["internal_id"],
+                message=serializer.validated_data["message"],
+                defaults=serializer.validated_data,
+            )
+            serializer = self.get_serializer(obj)
+            if created:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         if request.method == "POST":

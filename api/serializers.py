@@ -181,6 +181,7 @@ class MessageMediaListSerializer(serializers.ModelSerializer):
         model = base_models.MessageMedia
         fields = ("id", "message", "path", "created_at", "internal_id", "date")
         read_only_fields = ("id", "created_at")
+        extra_kwargs = {"internal_id": {"validators": [], "required": True}}
 
 
 class ChunkCreateSerializer(serializers.Serializer):
