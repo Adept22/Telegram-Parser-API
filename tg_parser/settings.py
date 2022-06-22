@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -55,10 +56,10 @@ WSGI_APPLICATION = 'tg_parser.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dev_tg_parser3',
-        'USER': 'postgres',
-        'PASSWORD': '123',
-        'HOST': '127.0.0.1',
+        'NAME': os.environ['DB_NAME'],
+        'USER': os.environ['DB_USER'],
+        'PASSWORD': os.environ['DB_PASSWORD'],
+        'HOST': os.environ['DB_HOST'],
         'PORT': '',
     },
 }
@@ -98,6 +99,7 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 # CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Europe/Moscow"
+
 MIGRATION_MODULES = {
     "admin": None,
     "auth": None,
@@ -105,7 +107,6 @@ MIGRATION_MODULES = {
     "sessions": None,
     "sites": None,
 }
-
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [],
@@ -143,7 +144,5 @@ DJANGO_ALLOW_ASYNC_UNSAFE = True
 #     }
 # }
 
-CSRF_COOKIE_SECURE = False
-
 CHAT_PHONE_LINKS = 3
-
+STORAGE_PATH = os.environ['STORAGE_PATH']
