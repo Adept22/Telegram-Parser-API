@@ -162,11 +162,13 @@ class MessageMedias(viewsets.ModelViewSet):
             request.data['chunk_size'] = request.query_params.get('chunk_size')
 
             serializer = serializers.ChunkCreateSerializer(data=request.data)
+
             if serializer.is_valid():
                 filename = serializer.validated_data['filename']
                 chunk_number = serializer.validated_data['chunk_number']
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
+
                 file = default_storage.save(
                     os.path.join(tmp_dir, '{}.part{}'.format(filename, chunk_number)),
                     ContentFile(serializer.validated_data['chunk'].read())
@@ -266,6 +268,8 @@ class MemberMedias(viewsets.ModelViewSet):
     serializer_class = serializers.MemberMediaListSerializer
     queryset = base_models.MemberMedia.objects.all()
     pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
+    filter_class = base_filters.MemberMediaFilter
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -339,10 +343,13 @@ class ChatMedias(viewsets.ModelViewSet):
     serializer_class = serializers.ChatMediaListSerializer
     queryset = base_models.ChatMedia.objects.all()
     pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
+    filter_class = base_filters.ChatMediaFilter
 
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         tmp_dir = tempfile.gettempdir()
+
         if request.method == "POST":
             request.data['filename'] = request.query_params.get('filename')
             request.data['chunk_number'] = request.query_params.get('chunk_number')
@@ -350,6 +357,7 @@ class ChatMedias(viewsets.ModelViewSet):
             request.data['total_chunks'] = request.query_params.get('total_chunks')
             request.data['chunk_size'] = request.query_params.get('chunk_size')
             serializer = serializers.ChunkCreateSerializer(data=request.data)
+
             if serializer.is_valid():
                 filename = serializer.validated_data['filename']
                 chunk_number = serializer.validated_data['chunk_number']
@@ -398,4 +406,6 @@ class Tasks(viewsets.ModelViewSet):
     serializer_class = serializers.TaskListSerializer
     queryset = base_models.Task.objects.all()
     pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
+    filter_class = base_filters.TaskFilter
 

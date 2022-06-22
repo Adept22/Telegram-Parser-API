@@ -3,7 +3,9 @@ import base.models as base_models
 
 
 class ChatFilter(django_filters.FilterSet):
-    phone = django_filters.CharFilter(field_name='chatphone', label='phone number')
+    phone = django_filters.CharFilter(
+        field_name='chatphone__phone__number', label='Phone number', lookup_expr='contains'
+    )
 
     class Meta:
         model = base_models.Chat
@@ -51,4 +53,24 @@ class ParserFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.Parser
         fields = "__all__"
+
+
+class TaskFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Task
+        fields = "__all__"
+
+
+class MemberMediaFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.MemberMedia
+        fields = "__all__"
+        exclude = ["file"]
+
+
+class ChatMediaFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.ChatMedia
+        fields = "__all__"
+        exclude = ["file"]
 
