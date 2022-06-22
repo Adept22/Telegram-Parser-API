@@ -1,13 +1,12 @@
 import os
 import uuid
 from datetime import datetime, timedelta
-
 from celery.canvas import Signature
 from django.db import models
 from django.conf import settings
 from django.db.models import Count, Q
 from django.utils import timezone
-from tg_parser.celeryapp import app as celery_app
+# from tg_parser.celeryapp import app as celery_app
 # from telethon import TelegramClient, sessions
 # from post_office.models import EmailTemplate
 from telethon.utils import resolve_id
