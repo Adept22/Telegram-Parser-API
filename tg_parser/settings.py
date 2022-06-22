@@ -13,12 +13,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_celery_results',
-    'django_celery_beat',
+    # 'django_celery_results',
+    # 'django_celery_beat',
     'rest_framework',
-    'rest_framework.authtoken',
     'django_filters',
-    'post_office',
+    # 'post_office',
     'base',
     'api',
 ]
@@ -38,8 +37,7 @@ ROOT_URLCONF = 'tg_parser.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates']
-        ,
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -86,44 +84,38 @@ USE_I18N = True
 USE_TZ = False
 SITE_ID = 1
 STATIC_URL = 'static/'
-MEDIA_ROOT = '/Users/ykozlov/PycharmProjects/tg_parser/'
+MEDIA_ROOT = './'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+MIGRATE = False
 
-CELERY_BROKER_URL = "redis://localhost:6379/1"
-CELERY_RESULT_BACKEND = "django-db"
+# CELERY_BROKER_URL = "redis://81.163.20.222:6379/1"
+CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
+# CELERY_RESULT_BACKEND = "django-db" #'db+postgresql+psycopg2://postgres:123@localhost/dev_tg_parser4'
 CELERY_SEND_TASK_ERROR_EMAILS = True
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 # CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Europe/Moscow"
-
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
+MIGRATION_MODULES = {
+    "admin": None,
+    "auth": None,
+    "contenttypes": None,
+    "sessions": None,
+    "sites": None,
 }
 
 
-API_ID = 16932633
-API_HASH = '3c8430dddcb2a09f075f2522ef93c89c'
-
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.TokenAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ),
+    'DEFAULT_PERMISSION_CLASSES': [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [],
+    'UNAUTHENTICATED_USER': None,
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'rest_framework.renderers.BrowsableAPIRenderer',
     ),
     'COERCE_DECIMAL_TO_STRING': False,
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    # 'DEFAULT_PAGINATION_CLASS': 'apps.core.pagination.StandardResultsSetPagination',
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
 }
@@ -139,20 +131,19 @@ EMAIL_USE_TLS = True
 SERVER_EMAIL = EMAIL_HOST_USER
 EMAIL_TIMEOUT = 600
 
-
-# APPEND_SLASH = False
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000000
 DJANGO_ALLOW_ASYNC_UNSAFE = True
 
-POST_OFFICE = {
-    # 'CELERY_ENABLED': True,
-    # 'DEFAULT_PRIORITY': 'now',
-    'LOG_LEVEL': 2,
-    'BACKENDS': {
-        'default': 'django.core.mail.backends.smtp.EmailBackend',
-    }
-}
+# POST_OFFICE = {
+#     # 'CELERY_ENABLED': True,
+#     # 'DEFAULT_PRIORITY': 'now',
+#     'LOG_LEVEL': 2,
+#     'BACKENDS': {
+#         'default': 'django.core.mail.backends.smtp.EmailBackend',
+#     }
+# }
 
 CSRF_COOKIE_SECURE = False
-# CSRF_COOKIE_HTTPONLY = False
-#SESSION_COOKIE_SECURE = True
+
+CHAT_PHONE_LINKS = 3
+
