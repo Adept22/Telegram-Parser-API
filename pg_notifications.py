@@ -2,8 +2,12 @@
 import os
 import json
 import asyncio
+
+import celery
 import psycopg2.extensions
 from enum import Enum, auto
+
+from celery.canvas import Signature
 from django.db import connection
 import django
 os.environ["DJANGO_SETTINGS_MODULE"] = "tg_parser.settings"
@@ -36,7 +40,6 @@ class TaskType(Enum):
     task_message = 1
     task_monitoring = 2
     task_chat_media = 3
-    task_authorization = 4
 
 
 class Notify:
@@ -82,21 +85,22 @@ def handle_notify():
                     )
 
         elif notice.table == Table.tasks:
-
             if notice.action == Action.insert:
                 chat = get_chat(notice.record['chat_id'])
-                chat.make_chat_phones()
+                signatures = chat.make_chat_phones()
+                s = None
+
                 match TaskType(notice.record['type']):
                     case TaskType.task_member:
-                        celery_app.send_task(
+                        s = Signature(
                             "ParseMembersTask",
                             (notice.record['chat_id'],),
                             queue="low_prio",
-                            task_id=notice.record['id'],
+                            task_id=notice.record['id']
                         )
 
                     case TaskType.task_message:
-                        celery_app.send_task(
+                        s = Signature(
                             "ParseMessagesTask",
                             (notice.record['chat_id'],),
                             queue="low_prio",
@@ -104,7 +108,7 @@ def handle_notify():
                         )
 
                     case TaskType.task_monitoring:
-                        celery_app.send_task(
+                        s = Signature(
                             "MonitoringChatTask",
                             (notice.record['chat_id'],),
                             queue="high_prio",
@@ -112,20 +116,17 @@ def handle_notify():
                         )
 
                     case TaskType.task_chat_media:
-                        celery_app.send_task(
+                        s = Signature(
                             "ChatMediaTask",
                             (notice.record['chat_id'],),
                             queue="high_prio",
                             task_id=notice.record['id'],
                         )
 
-                    # case TaskType.task_authorization:
-                    #     celery_app.send_task(
-                    #         "PhoneAuthorizationTask",
-                    #         (notice.record['chat_id'],),
-                    #         queue="high_prio",
-                    #         task_id=notice.record['id'],
-                    #     )
+                if signatures:
+                    celery.chord(signatures)(s)
+                else:
+                    s.delay()
 
     pg_con.notifies.clear()
 

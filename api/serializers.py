@@ -62,9 +62,6 @@ class PhoneViewSerializer(serializers.ModelSerializer):
 
 
 class ChatListSerializer(serializers.ModelSerializer):
-    # id = serializers.UUIDField(read_only=True)
-    # parser = ParserSerializer(read_only=True)
-
     class Meta:
         model = base_models.Chat
         fields = (

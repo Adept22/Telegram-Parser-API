@@ -3,9 +3,11 @@ import base.models as base_models
 
 
 class ChatFilter(django_filters.FilterSet):
+    phone = django_filters.CharFilter(field_name='chatphone', label='phone number')
+
     class Meta:
         model = base_models.Chat
-        fields = "__all__"
+        fields = ["id", "internal_id", "link", "title", "status", "phone"]
 
 
 class PhoneFilter(django_filters.FilterSet):

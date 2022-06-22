@@ -5,7 +5,6 @@ import subprocess
 from functools import reduce
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-# from datetime import timedelta, datetime
 from django_filters import rest_framework as filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -15,7 +14,7 @@ import api.serializers as serializers
 from api.paginators import CustomPagination
 import base.models as base_models
 import api.filters as base_filters
-from tg_parser.celeryapp import app as celery_app
+# from tg_parser.celeryapp import app as celery_app
 
 
 # class Bots(viewsets.ModelViewSet):
@@ -38,6 +37,12 @@ class Phones(viewsets.ModelViewSet):
             return serializers.PhoneUpdateSerializer
         return self.serializer_class
 
+    @action(methods=["get"], detail=True)
+    def chat_phones(self, request, pk=None):
+        obj = self.get_object()
+        serializer = serializers.ChatPhoneListSerializer(obj.chatphone_set.all(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class Chats(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -54,11 +59,18 @@ class Chats(viewsets.ModelViewSet):
                 link=serializer.validated_data["link"],
                 defaults=serializer.validated_data,
             )
+            serializer = self.get_serializer(chat)
             if created:
                 # celery_app.send_task("ChatResolveTask", (chat.id,), time_limit=60, queue="high_prio")
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=["get"], detail=True)
+    def chat_phones(self, request, pk=None):
+        obj = self.get_object()
+        serializer = serializers.ChatPhoneListSerializer(obj.chatphone_set.all(), many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ChatPhones(viewsets.ModelViewSet):

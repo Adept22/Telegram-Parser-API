@@ -1,6 +1,8 @@
 import os
 import uuid
 from datetime import datetime, timedelta
+
+from celery.canvas import Signature
 from django.db import models
 from django.conf import settings
 from django.db.models import Count, Q
@@ -213,7 +215,7 @@ class Chat(BaseModel):
     def make_chat_phones(self):
         chat_phones = self.chatphone_set.filter(is_using=True)
         if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
-            return True
+            return []
 
         phone_ids = Phone.objects.filter(status=Phone.READY).annotate(
             num_chatphone=Count('chatphone'),
@@ -224,27 +226,7 @@ class Chat(BaseModel):
             ),
         ).values_list("id", flat=True).filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
 
-        for phone_id in phone_ids:
-            celery_app.send_task(
-                "JoinChatTask",
-                (self.id, phone_id),
-                time_limit=60,
-                queue='high_prio',
-                # link=[
-                #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
-                # ],
-            )
-            # celery_app.send_task(
-            #     "ChatResolveTask",
-            #     (self.id,),
-            #     time_limit=60,
-            #     queue='high_prio',
-            #     # link=[
-            #     #     Signature('JoinChatTask', args=[self.id, phone_id], immutable=True, time_limit=60) for phone_id in phone_ids
-            #     # ],
-            # )
-            # Signature('ChatMediaTask', args=[self.id], immutable=True, queue="low_prio"),
-        return True
+        return [Signature('JoinChatTask', args=[self.id, phone_id], queue='high_prio', immutable=True, time_limit=60) for phone_id in phone_ids]
 
 
 class ChatPhone(BaseModel):
