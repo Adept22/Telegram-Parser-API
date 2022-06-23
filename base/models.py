@@ -304,12 +304,14 @@ class Task(BaseModel):
     STARTED_STATUS = 1
     SUCCESS_STATUS = 2
     FAILURE_STATUS = 3
+    REVOKED_STATUS = 4
 
     STATUS_CHOICES = (
         (CREATED_STATUS, u"Создан"),
         (STARTED_STATUS, u"В работе"),
         (SUCCESS_STATUS, u"Выполнен"),
         (FAILURE_STATUS, u"Ошибка"),
+        (REVOKED_STATUS, u"Отозван"),
     )
 
     MEMBER_TYPE = 0

@@ -21,6 +21,14 @@ class Table(Enum):
     tasks = auto()
 
 
+class TaskStatus(Enum):
+    created = 0
+    started = 1
+    success = 2
+    failure = 3
+    revoked = 4
+
+
 class TaskType(Enum):
     task_member = 0
     task_message = 1
@@ -129,7 +137,7 @@ class PGNotify:
                     )
 
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'])
+                    self.app.control.revoke(payload.record['id'], terminate=True)
 
             elif payload.table == Table.phones:
                 if payload.action == Action.insert:
@@ -144,7 +152,7 @@ class PGNotify:
                     )
 
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'])
+                    self.app.control.revoke(payload.record['id'], terminate=True)
 
             elif payload.table == Table.tasks:
                 if payload.action == Action.insert:
@@ -220,8 +228,12 @@ class PGNotify:
 
                         s.delay()
 
+                elif payload.action == Action.update:
+                    if TaskStatus(payload.record['type']) == TaskStatus.revoked:
+                        self.app.control.revoke(payload.record['id'], terminate=True)
+
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'])
+                    self.app.control.revoke(payload.record['id'], terminate=True)
 
         self.connection.notifies.clear()
 
