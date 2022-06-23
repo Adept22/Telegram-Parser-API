@@ -43,9 +43,9 @@ class Host(BaseModel):
 
 
 class Parser(BaseModel):
-    NEW_STATUS = 1
-    IN_PROGRESS_STATUS = 2
-    FAILED_STATUS = 3
+    NEW_STATUS = 0
+    IN_PROGRESS_STATUS = 1
+    FAILED_STATUS = 2
 
     STATUS_CHOICES = (
         (NEW_STATUS, u"Создан"),
@@ -54,7 +54,7 @@ class Parser(BaseModel):
     )
 
     host = models.ForeignKey(Host, verbose_name=u"host", on_delete=models.CASCADE)
-    status = models.CharField(max_length=20, blank=True, null=True)
+    status = models.IntegerField(u"status", default=NEW_STATUS, choices=STATUS_CHOICES)
     api_id = models.IntegerField(u"api id")
     api_hash = models.CharField(max_length=255)
 

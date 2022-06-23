@@ -30,7 +30,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'telegram-parser-api.urls'
+ROOT_URLCONF = 'project.urls'
 
 TEMPLATES = [
     {
@@ -48,16 +48,16 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'telegram-parser-api.wsgi.application'
+WSGI_APPLICATION = 'project.wsgi.application'
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ['DB_NAME'],
-        'USER': os.environ['DB_USER'],
-        'PASSWORD': os.environ['DB_PASSWORD'],
-        'HOST': os.environ['DB_HOST'],
-        'PORT': '',
+        'NAME': os.environ.get('DB_NAME', 'social'),
+        'USER': os.environ.get('DB_USER', 'social'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'CHANGE_ME'),
+        'HOST': os.environ.get('DB_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('DB_PORT', '5432')
     },
 }
 
@@ -88,8 +88,8 @@ MEDIA_ROOT = './'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MIGRATE = False
 
-CELERY_BROKER_URL = os.environ['CELERY_BROKER']
-CELERY_RESULT_BACKEND = os.environ['CELERY_BROKER']
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
 CELERY_SEND_TASK_ERROR_EMAILS = True
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -131,4 +131,4 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000000
 DJANGO_ALLOW_ASYNC_UNSAFE = True
 
 CHAT_PHONE_LINKS = 3
-STORAGE_PATH = os.environ['STORAGE_PATH']
+STORAGE_PATH = os.environ.get('STORAGE_PATH', '/tmp')

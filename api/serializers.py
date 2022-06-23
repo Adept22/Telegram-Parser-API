@@ -39,7 +39,7 @@ class PhoneUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Phone
         fields = (
-            "id", "number", "internal_id", "session", "first_name", "last_name", "code", "wait", "created_at",
+            "id", "number", "internal_id", "session", "first_name", "last_name", "code", "created_at",
             "status_text", "status", "parser", "api"
         )
         read_only_fields = ("id", "created_at")

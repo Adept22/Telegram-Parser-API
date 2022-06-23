@@ -18,7 +18,7 @@ class PhoneAdmin(admin.ModelAdmin):
     list_display = ("id", "number", "first_name", "status", "status_text", "created_at", "chats", "api")
     date_hierarchy = "created_at"
     search_fields = ["number"]
-    readonly_fields = ("internal_id", "created_at", "wait")
+    readonly_fields = ("internal_id", "created_at")
     inlines = (ChatsInline,)
     ordering = ["-created_at"]
     list_filter = ("status",)
