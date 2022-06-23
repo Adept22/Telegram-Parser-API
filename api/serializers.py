@@ -147,7 +147,7 @@ class MemberMediaListSerializer(serializers.ModelSerializer):
 class ChatMediaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.ChatMedia
-        fields = ("id", "chat", "internal_id", "path", "date", "file")
+        fields = ("id", "chat", "internal_id", "path", "date")
         read_only_fields = ("id",)
 
 

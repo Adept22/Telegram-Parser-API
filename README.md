@@ -4,7 +4,7 @@
 
 ```
 sudo su
-apt install uwsgi
+apt install uwsgi uwsgi-plugin-python3
 ```
 ```
 cd /opt

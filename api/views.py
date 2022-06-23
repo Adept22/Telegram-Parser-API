@@ -1,7 +1,6 @@
 import glob
 import os.path
 import tempfile
-import subprocess
 from functools import reduce
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -170,9 +169,12 @@ class MessageMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            start = len(os.path.join(tmp_dir, "{}.part".format(filename)))
-                            sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(settings.STORAGE_PATH, filename)}", stdout=subprocess.PIPE, shell=True)
+                            with open(os.path.join(settings.STORAGE_PATH + '/message/', filename), "wb") as dst:
+                                for chunk in sorted(chunks):
+                                    with open(chunk, "rb") as f:
+                                        dst.write(f.read())
+
+                                    os.remove(chunk)
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -312,9 +314,11 @@ class MemberMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            start = len(os.path.join(tmp_dir, "{}.part".format(filename)))
-                            sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(settings.STORAGE_PATH, filename)}", stdout=subprocess.PIPE, shell=True)
+                            with open(os.path.join(settings.STORAGE_PATH + '/member/', filename), "wb") as dst:
+                                for chunk in sorted(chunks):
+                                    with open(chunk, "rb") as f:
+                                        dst.write(f.read())
+                                    os.remove(chunk)
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -364,9 +368,11 @@ class ChatMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            start = len(os.path.join(tmp_dir, "{}.part".format(filename)))
-                            sorted(chunks, key=lambda path: int(path[start:]))
-                            subprocess.Popen(f"cat {' '.join(chunks)} > {os.path.join(settings.STORAGE_PATH, filename)}", stdout=subprocess.PIPE, shell=True)
+                            with open(os.path.join(settings.STORAGE_PATH + '/chat/', filename), "wb") as dst:
+                                for chunk in sorted(chunks):
+                                    with open(chunk, "rb") as f:
+                                        dst.write(f.read())
+                                    os.remove(chunk)
 
                 return Response(status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

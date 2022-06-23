@@ -1,19 +1,9 @@
-import os
 import uuid
 from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
 from django.db.models import Count, Q
 from telethon.utils import resolve_id
-
-
-def attachment_path(instance, filename):
-    os.umask(0)
-    path = os.path.join(settings.MEDIA_ROOT, "attachments/{:%Y-%m-%d}".format(datetime.today()))
-    if settings.DEFAULT_FILE_STORAGE == "django.core.files.storage.FileSystemStorage":
-        if not os.path.exists(path):
-            os.makedirs(path, 755)
-    return os.path.join(path, filename)
 
 
 class BaseModel(models.Model):
@@ -122,7 +112,6 @@ class MemberMedia(BaseModel):
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
-    file = models.FileField(u"файл", upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
     class Meta:
         verbose_name = u"MemberMedia"
@@ -247,7 +236,6 @@ class ChatMedia(BaseModel):
     path = models.CharField(max_length=3000, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     date = models.DateTimeField(u"дата", blank=True, null=True)
-    file = models.FileField(u"файл", upload_to=attachment_path, max_length=1000, blank=True, null=True)
 
     class Meta:
         verbose_name = u"ChatMedia"
