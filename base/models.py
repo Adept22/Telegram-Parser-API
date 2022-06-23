@@ -55,8 +55,6 @@ class Parser(BaseModel):
 
     host = models.ForeignKey(Host, verbose_name=u"host", on_delete=models.CASCADE)
     status = models.IntegerField(u"status", default=NEW_STATUS, choices=STATUS_CHOICES)
-    api_id = models.IntegerField(u"api id")
-    api_hash = models.CharField(max_length=255)
 
     class Meta:
         verbose_name = u"Parser"
@@ -64,7 +62,7 @@ class Parser(BaseModel):
         db_table = 'telegram\".\"parsers'
 
     def __str__(self):
-        return u"{}. {}".format(self.id, self.api_id)
+        return u"{}".format(self.id)
 
 
 class Phone(BaseModel):

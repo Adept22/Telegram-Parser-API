@@ -124,8 +124,7 @@ class ChatMemberAdmin(admin.ModelAdmin):
 
 
 class ParserAdmin(admin.ModelAdmin):
-    list_display = ("id", "created_at", "status", "api_id", "host", "phones")
-    search_fields = ["api_id"]
+    list_display = ("id", "created_at", "status", "host", "phones")
 
     def phones(self, instance):
         return instance.phone_set.count()

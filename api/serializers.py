@@ -12,18 +12,16 @@ class HostViewSerializer(serializers.ModelSerializer):
 class ParserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Parser
-        fields = ("id", "created_at", "status", "api_id", "api_hash", "host")
+        fields = ("id", "created_at", "status", "host")
         read_only_fields = ("id",)
 
 
 class ParserSerializer(serializers.ModelSerializer):
     id = serializers.ModelField(model_field=base_models.Parser()._meta.get_field("id"))
-    api_id = serializers.IntegerField(required=False)
-    api_hash = serializers.CharField(required=False)
 
     class Meta:
         model = base_models.Parser
-        fields = ("id", "created_at", "status", "api_id", "api_hash")
+        fields = ("id", "created_at", "status")
         read_only_fields = ("id", "created_at")
 
 
