@@ -18,7 +18,7 @@ class Action(Enum):
 class Table(Enum):
     chats = auto()
     phones = auto()
-    tasks = auto()
+    chats_tasks = auto()
 
 
 class TaskStatus(Enum):
@@ -148,7 +148,7 @@ class PGNotify:
                 elif payload.action == Action.delete:
                     self.app.control.revoke(payload.record['id'], terminate=True)
 
-            elif payload.table == Table.tasks:
+            elif payload.table == Table.chats_tasks:
                 if payload.action == Action.insert:
                     chat = self._get_chat(payload.record['chat_id'])
 
@@ -201,7 +201,7 @@ class PGNotify:
                             immutable=True
                         )
 
-                    phone_ids = chat.make_chat_phones()
+                    phone_ids = chat.get_chat_phones()
 
                     self.logger.debug(f'Phones len {len(phone_ids)}')
 
