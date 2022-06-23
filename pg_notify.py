@@ -229,7 +229,7 @@ class PGNotify:
                         s.delay()
 
                 elif payload.action == Action.update:
-                    if TaskStatus(payload.record['type']) == TaskStatus.revoked:
+                    if TaskStatus(payload.record['status']) == TaskStatus.revoked:
                         self.app.control.revoke(payload.record['id'], terminate=True)
 
                 elif payload.action == Action.delete:
