@@ -197,5 +197,5 @@ class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Task
         fields = "__all__"
-        read_only_fields = ("id", "created_at", "started_at", "ended_at", "status", "status_text")
+        read_only_fields = ("id", "created_at")
 
