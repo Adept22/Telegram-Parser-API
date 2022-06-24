@@ -83,7 +83,7 @@ USE_TZ = False
 SITE_ID = 1
 STATIC_ROOT = 'static/'
 STATIC_URL = 'static/'
-MEDIA_ROOT = './'
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', '/mnt/ftp/uploads/')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MIGRATE = False
@@ -131,4 +131,3 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 2000000
 DJANGO_ALLOW_ASYNC_UNSAFE = True
 
 CHAT_PHONE_LINKS = 3
-STORAGE_PATH = os.environ.get('STORAGE_PATH', '/tmp')
