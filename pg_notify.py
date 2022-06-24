@@ -18,7 +18,7 @@ class Action(Enum):
 class Table(Enum):
     chats = auto()
     phones = auto()
-    tasks = auto()
+    chats_tasks = auto()
 
 
 class TaskStatus(Enum):
@@ -71,18 +71,12 @@ class PGNotify:
         django.setup()
 
     def _init_logger(self):
-        from logging.handlers import RotatingFileHandler
-
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
         stdout_handler = logging.StreamHandler()
         stdout_handler.setLevel(logging.INFO)
         stdout_handler.setFormatter(logging.Formatter('%(levelname)8s | %(message)s'))
         logger.addHandler(stdout_handler)
-        file_handler = RotatingFileHandler(filename='/var/log/pg_notify.log', maxBytes=1048576, backupCount=10)
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(logging.Formatter('%(levelname)8s | %(message)s'))
-        logger.addHandler(file_handler)
 
         return logger
 
@@ -154,7 +148,7 @@ class PGNotify:
                 elif payload.action == Action.delete:
                     self.app.control.revoke(payload.record['id'], terminate=True)
 
-            elif payload.table == Table.tasks:
+            elif payload.table == Table.chats_tasks:
                 if payload.action == Action.insert:
                     chat = self._get_chat(payload.record['chat_id'])
 
@@ -207,7 +201,7 @@ class PGNotify:
                             immutable=True
                         )
 
-                    phone_ids = chat.make_chat_phones()
+                    phone_ids = chat.get_chat_phones()
 
                     self.logger.debug(f'Phones len {len(phone_ids)}')
 

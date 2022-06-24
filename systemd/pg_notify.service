@@ -3,12 +3,12 @@ Description=Postgresql Notification Service
 Requires=uwsgi.service
 
 [Service]
-Type=forking
+Type=simple
 User=www-data
 Group=www-data
 EnvironmentFile=/etc/conf.d/pg_notify
 WorkingDirectory=/opt/telegram-parser-api
-ExecStart=/bin/sh -c 'python3 -m pg_notify'
+ExecStart=/bin/sh -c '/opt/telegram-parser-api/venv/bin/python3 -m pg_notify'
 Restart=always
 RestartSec=10
 

@@ -65,12 +65,10 @@ class MemberMediaFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.MemberMedia
         fields = "__all__"
-        exclude = ["file"]
 
 
 class ChatMediaFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.ChatMedia
         fields = "__all__"
-        exclude = ["file"]
 
