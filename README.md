@@ -18,19 +18,19 @@ pip install -r requirements.txt
 python3 -m manage collectstatic
 ```
 ```
-cp uwsgi/telegram-parser-api.ini /etc/uwsgi/apps-available/
-ln -s /etc/uwsgi/apps-available/telegram-parser-api.ini /etc/uwsgi/apps-enabled/telegram-parser-api.ini
-```
-```
-cp nginx/telegram-parser-api.conf /etc/nginx/sites-available/
-ln -s /etc/nginx/sites-available/telegram-parser-api.conf /etc/nginx/sites-enabled/telegram-parser-api.conf
-```
-```
 mkdir -p /etc/conf.d
-cp conf.d/pg_notify /etc/conf.d/
-cp systemd/pg_notify.service /etc/systemd/system/
+ln -s conf.d/prod/telegram-parser-api /etc/conf.d/
 ```
 ```
+ln -s uwsgi/telegram-parser-api.ini /etc/uwsgi/apps-available/
+ln -s /etc/uwsgi/apps-available/telegram-parser-api.ini /etc/uwsgi/apps-enabled/
+```
+```
+ln -s nginx/telegram-parser-api.conf /etc/nginx/sites-available/
+ln -s /etc/nginx/sites-available/telegram-parser-api.conf /etc/nginx/sites-enabled/
+```
+```
+ln -s systemd/pg_notify.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable pg_notify.service
 ```
@@ -38,7 +38,7 @@ systemctl enable pg_notify.service
 ## Запуск
 
 ```
-systemctl nginx restart
-service uwsgi restart
-systemctl start pg_notify.service
+systemctl start uwsgi
+systemctl start nginx
+systemctl start pg_notify
 ```
