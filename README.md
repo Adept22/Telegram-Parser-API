@@ -18,15 +18,15 @@ pip install -r requirements.txt
 python3 -m manage collectstatic
 ```
 ```
-mkdir -p /etc/conf.d
-ln -s conf.d/prod/telegram-parser-api /etc/conf.d/
+cp /opt/celery/telegram-parser/conf.d/telegram-parser-api /var/www/telegram-parser-api/conf.d/telegram-parser-api.local
+mkdir -p /etc/conf.d && ln -s /var/www/telegram-parser-api/conf.d/telegram-parser-api.local /etc/conf.d/telegram-parser-api
 ```
 ```
-ln -s uwsgi/telegram-parser-api.ini /etc/uwsgi/apps-available/
+ln -s /var/www/telegram-parser-api/uwsgi/telegram-parser-api.ini /etc/uwsgi/apps-available/
 ln -s /etc/uwsgi/apps-available/telegram-parser-api.ini /etc/uwsgi/apps-enabled/
 ```
 ```
-ln -s nginx/telegram-parser-api.conf /etc/nginx/sites-available/
+ln -s /var/www/telegram-parser-api/nginx/telegram-parser-api.conf.local /etc/nginx/sites-available/telegram-parser-api.conf
 ln -s /etc/nginx/sites-available/telegram-parser-api.conf /etc/nginx/sites-enabled/
 ```
 ```

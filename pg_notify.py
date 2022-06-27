@@ -235,6 +235,7 @@ class PGNotify:
 
     def stop(self):
         self.logger.info('Cleaning up...')
+        self.loop.stop()
         self.loop.close()
 
         sys.exit(0)
