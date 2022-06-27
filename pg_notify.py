@@ -110,13 +110,12 @@ class PGNotify:
     def _handle(self):
         self.connection.poll()
 
-        self.logger.info(f'Handle new pg notifications {self.connection.notifies}')
-        self.logger.info(f"{type(self.connection.notifies[0])}")
+        while self.connection.notifies:
+            notify = self.connection.notifies.pop(0)
 
-        for index, notify in enumerate(self.connection.notifies):
             payload = PGNotify.Payload(**json.loads(notify.payload))
 
-            self.logger.info(f'Notification #{index} {notify.payload}')
+            self.logger.info(f'Handle new pg notification {notify.payload}')
 
             if payload.table == Table.chats:
                 if payload.action == Action.insert:
@@ -229,8 +228,6 @@ class PGNotify:
                 elif payload.action == Action.delete:
                     self.app.control.revoke(payload.record['id'], terminate=True)
 
-        self.connection.notifies.clear()
-
     def start(self):
         self.loop.add_reader(self.connection, self._handle)
 
@@ -238,7 +235,8 @@ class PGNotify:
 
     def stop(self):
         self.logger.info('Cleaning up...')
-        self.loop.stop()
+        self.loop.close()
+
         sys.exit(0)
 
 
