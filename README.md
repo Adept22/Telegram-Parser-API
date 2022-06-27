@@ -7,12 +7,12 @@ sudo su
 apt install uwsgi uwsgi-plugin-python3
 ```
 ```
-cd /opt
+cd /var/www
 git clone git@gitlab.com:msr-system/chats-monitoring-api.git telegram-parser-api
 cd telegram-parser-api
 ```
 ```
-python3 -m venv /opt/telegram-parser-api/venv
+python3 -m venv /var/www/telegram-parser-api/venv
 source ./venv/bin/activate
 pip install -r requirements.txt
 python3 -m manage collectstatic

@@ -160,6 +160,3 @@ cython_debug/
 #.idea/
 
 static/
-
-conf.d/*
-!conf.d/*.template
