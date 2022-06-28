@@ -3,8 +3,6 @@ import os.path
 import tempfile
 from functools import reduce
 from django.conf import settings
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django_filters import rest_framework as filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -154,27 +152,32 @@ class MessageMedias(viewsets.ModelViewSet):
             serializer = serializers.ChunkCreateSerializer(data=request.data)
 
             if serializer.is_valid():
+                chunk = serializer.validated_data['chunk']
                 filename = serializer.validated_data['filename']
                 chunk_number = serializer.validated_data['chunk_number']
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
 
-                file = default_storage.save(
-                    os.path.join(tmp_dir, '{}.part{}'.format(filename, chunk_number)),
-                    ContentFile(serializer.validated_data['chunk'].read())
-                )
+                tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
+
+                with open(tmp_path, 'wb') as tmpf:
+                    tmpf.write(chunk.read())
 
                 if chunk_number >= total_chunks - 1:
-                    chunks = glob.glob(os.path.join(tmp_dir, "{}.part[0-9]*".format(filename)))
+                    chunks = glob.glob(os.path.join(tmp_dir, f"{filename}.part[0-9]*"))
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.STORAGE_PATH + '/message/', filename), "wb") as dst:
+                            with open(os.path.join(settings.MEDIA_ROOT, 'message', filename), "wb") as dst:
                                 for chunk in sorted(chunks):
                                     with open(chunk, "rb") as f:
                                         dst.write(f.read())
 
                                     os.remove(chunk)
+
+                            obj = self.get_object()
+                            obj.path = os.path.join('uploads', 'message', filename)
+                            obj.save()
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -277,16 +280,6 @@ class MemberMedias(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-        except Exception as ex:
-            instance = base_models.MemberMedia.objects.create()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
-
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         tmp_dir = tempfile.gettempdir()
@@ -299,26 +292,34 @@ class MemberMedias(viewsets.ModelViewSet):
             request.data['chunk_size'] = request.query_params.get('chunk_size')
 
             serializer = serializers.ChunkCreateSerializer(data=request.data)
+
             if serializer.is_valid():
+                chunk = serializer.validated_data['chunk']
                 filename = serializer.validated_data['filename']
                 chunk_number = serializer.validated_data['chunk_number']
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
-                file = default_storage.save(
-                    os.path.join(tmp_dir, '{}.part{}'.format(filename, chunk_number)),
-                    ContentFile(serializer.validated_data['chunk'].read())
-                )
+
+                tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
+
+                with open(tmp_path, 'wb') as tmpf:
+                    tmpf.write(chunk.read())
 
                 if chunk_number >= total_chunks - 1:
-                    chunks = glob.glob(os.path.join(tmp_dir, "{}.part[0-9]*".format(filename)))
+                    chunks = glob.glob(os.path.join(tmp_dir, f"{filename}.part[0-9]*"))
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.STORAGE_PATH + '/member/', filename), "wb") as dst:
+                            with open(os.path.join(settings.MEDIA_ROOT, 'member', filename), "wb") as dst:
                                 for chunk in sorted(chunks):
                                     with open(chunk, "rb") as f:
                                         dst.write(f.read())
+
                                     os.remove(chunk)
+
+                            obj = self.get_object()
+                            obj.path = os.path.join('uploads', 'member', filename)
+                            obj.save()
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -341,6 +342,19 @@ class ChatMedias(viewsets.ModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ChatMediaFilter
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            obj, created = base_models.ChatMedia.objects.update_or_create(
+                internal_id=serializer.validated_data["internal_id"],
+                defaults=serializer.validated_data,
+            )
+            serializer = self.get_serializer(obj)
+            if created:
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
         tmp_dir = tempfile.gettempdir()
@@ -351,41 +365,45 @@ class ChatMedias(viewsets.ModelViewSet):
             request.data['total_size'] = request.query_params.get('total_size')
             request.data['total_chunks'] = request.query_params.get('total_chunks')
             request.data['chunk_size'] = request.query_params.get('chunk_size')
+
             serializer = serializers.ChunkCreateSerializer(data=request.data)
 
             if serializer.is_valid():
+                chunk = serializer.validated_data['chunk']
                 filename = serializer.validated_data['filename']
                 chunk_number = serializer.validated_data['chunk_number']
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
-                file = default_storage.save(
-                    os.path.join(tmp_dir, '{}.part{}'.format(filename, chunk_number)),
-                    ContentFile(serializer.validated_data['chunk'].read())
-                )
+
+                tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
+
+                with open(tmp_path, 'wb') as tmpf:
+                    tmpf.write(chunk.read())
 
                 if chunk_number >= total_chunks - 1:
-                    chunks = glob.glob(os.path.join(tmp_dir, "{}.part[0-9]*".format(filename)))
+                    chunks = glob.glob(os.path.join(tmp_dir, f"{filename}.part[0-9]*"))
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.STORAGE_PATH + '/chat/', filename), "wb") as dst:
+                            with open(os.path.join(settings.MEDIA_ROOT, 'chat', filename), "wb") as dst:
                                 for chunk in sorted(chunks):
                                     with open(chunk, "rb") as f:
                                         dst.write(f.read())
+
                                     os.remove(chunk)
 
-                return Response(status=status.HTTP_201_CREATED)
+                            obj = self.get_object()
+                            obj.path = os.path.join('uploads', 'chat', filename)
+                            obj.save()
+
+                return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
             if serializer.is_valid():
-                if os.path.exists(
-                    os.path.join(
-                        tmp_dir, u"{}.part{}".format(serializer.validated_data["filename"],
-                                                     serializer.validated_data["chunk_number"])
-                    )
-                ):
-                    return Response(serializer.data, status=status.HTTP_200_OK)
+                req = serializer.validated_data
+                if os.path.exists(os.path.join(tmp_dir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
+                    return Response(status=status.HTTP_204_NO_CONTENT)
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Django",
+            "type": "python",
+            "request": "launch",
+            "envFile": "/etc/conf.d/telegram-parser-api",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "runserver",
+                "8088"
+            ],
+            "django": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Python: pg_notify",
+            "type": "python",
+            "request": "launch",
+            "module": "pg_notify",
+            "justMyCode": true,
+            "envFile": "/etc/conf.d/telegram-parser-api",
+            "args": []
+        }
+    ]
+}

@@ -1,7 +1,0 @@
-STORAGE_PATH=/mnt/ftp/uploads
-CELERY_BROKER=redis://10.8.1.1:6379/0
-DB_HOST=172.16.197.26
-DB_PORT=5432
-DB_NAME=social
-DB_USER=private_api
-DB_PASSWORD=uyrd=Tm69H

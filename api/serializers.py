@@ -29,7 +29,7 @@ class PhoneListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.Phone
         fields = ("id", "number", "internal_id", "session", "first_name", "last_name", "status", "code", "created_at",
-                  "parser", "api")
+                  "parser", "api", "takeout")
         read_only_fields = ("id", "created_at")
 
 
@@ -38,7 +38,7 @@ class PhoneUpdateSerializer(serializers.ModelSerializer):
         model = base_models.Phone
         fields = (
             "id", "number", "internal_id", "session", "first_name", "last_name", "code", "created_at",
-            "status_text", "status", "parser", "api"
+            "status_text", "status", "parser", "api", "takeout"
         )
         read_only_fields = ("id", "created_at")
 
@@ -48,7 +48,7 @@ class PhoneViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = base_models.Phone
-        fields = ("id", "number", "internal_id", "session", "first_name", "status", "created_at", "code")
+        fields = ("id", "number", "internal_id", "session", "first_name", "status", "created_at", "code", "takeout")
         read_only_fields = ("id",)
 
 
@@ -58,7 +58,7 @@ class ChatListSerializer(serializers.ModelSerializer):
         fields = (
             "id", "created_at", "link", "internal_id", "title", "status", "parser", "total_members", "total_messages"
         )
-        read_only_fields = ("id", "created_at", "total_members", "total_messages")
+        read_only_fields = ("id", "created_at")
         extra_kwargs = {"link": {"validators": [], "required": True}}
 
 
