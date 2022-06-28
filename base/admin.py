@@ -15,7 +15,7 @@ class ChatsInline(admin.TabularInline):
 
 
 class PhoneAdmin(admin.ModelAdmin):
-    list_display = ("id", "number", "first_name", "status", "status_text", "created_at", "chats", "api")
+    list_display = ("id", "number", "first_name", "status", "status_text", "created_at", "chats", "api", "takeout")
     date_hierarchy = "created_at"
     search_fields = ["number"]
     readonly_fields = ("internal_id", "created_at")

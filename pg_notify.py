@@ -70,6 +70,10 @@ class PGNotify:
 
         django.setup()
 
+        from base import models
+
+        self.models = models
+
     def _init_logger(self):
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
@@ -97,16 +101,6 @@ class PGNotify:
 
         return pg_con
 
-    def _get_chat(self, chat_id: int):
-        import base.models as base_models
-
-        try:
-            return base_models.Chat.objects.get(id=chat_id)
-        except base_models.Chat.DoesNotExist:
-            self.logger.warning(f'Chat ({chat_id}) is not found...')
-
-        return None
-
     def _handle(self):
         self.connection.poll()
 
@@ -121,9 +115,16 @@ class PGNotify:
                 if payload.action == Action.insert:
                     self.logger.debug('Sending ChatResolveTask...')
 
+                    try:
+                        chat = self.models.Chat.objects.get(id=payload.record['id'])
+                    except self.models.Chat.DoesNotExist:
+                        self.logger.warning(f'Chat ({payload.record["id"]}) is not found...')
+
+                        continue
+
                     self.app.send_task(
                         "ChatResolveTask",
-                        (payload.record['id'],),
+                        (chat.id,),
                         time_limit=60,
                         task_id=payload.record['id'],
                         queue='high_prio'
@@ -134,11 +135,19 @@ class PGNotify:
 
             elif payload.table == Table.phones:
                 if payload.action == Action.insert:
+
+                    try:
+                        phone = self.models.Phone.objects.get(id=payload.record['id'])
+                    except self.models.Phone.DoesNotExist:
+                        self.logger.warning(f'Phone ({payload.record["id"]}) is not found...')
+
+                        continue
+
                     self.logger.debug('Sending PhoneAuthorizationTask...')
 
                     self.app.send_task(
                         "PhoneAuthorizationTask",
-                        (payload.record['id'],),
+                        (phone.id,),
                         time_limit=600,
                         task_id=payload.record['id'],
                         queue="high_prio"
@@ -149,17 +158,19 @@ class PGNotify:
 
             elif payload.table == Table.chats_tasks:
                 if payload.action == Action.insert:
-                    chat = self._get_chat(payload.record['chat_id'])
+                    try:
+                        chat = self.models.Chat.objects.get(id=payload.record['chat_id'])
+                    except self.models.Chat.DoesNotExist:
+                        self.logger.warning(f'Chat ({payload.record["chat_id"]}) is not found...')
 
-                    if chat is None:
-                        return
+                        continue
 
-                    s = None
+                    sig = None
 
                     if TaskType(payload.record['type']) == TaskType.task_member:
                         self.logger.debug('Creating ParseMembersTask signature...')
 
-                        s = celery.signature(
+                        sig = celery.signature(
                             "ParseMembersTask",
                             (chat.id,),
                             queue="low_prio",
@@ -170,7 +181,7 @@ class PGNotify:
                     elif TaskType(payload.record['type']) == TaskType.task_message:
                         self.logger.debug('Creating ParseMessagesTask signature...')
 
-                        s = celery.signature(
+                        sig = celery.signature(
                             "ParseMessagesTask",
                             (chat.id,),
                             queue="low_prio",
@@ -181,7 +192,7 @@ class PGNotify:
                     elif TaskType(payload.record['type']) == TaskType.task_monitoring:
                         self.logger.debug('Creating MonitoringChatTask signature...')
 
-                        s = celery.signature(
+                        sig = celery.signature(
                             "MonitoringChatTask",
                             (chat.id,),
                             queue="high_prio",
@@ -192,7 +203,7 @@ class PGNotify:
                     elif TaskType(payload.record['type']) == TaskType.task_chat_media:
                         self.logger.debug('Creating ChatMediaTask signature...')
 
-                        s = celery.signature(
+                        sig = celery.signature(
                             "ChatMediaTask",
                             (chat.id,),
                             queue="high_prio",
@@ -200,26 +211,26 @@ class PGNotify:
                             immutable=True
                         )
 
-                    phone_ids = chat.get_chat_phones()
+                    phones = chat.get_chat_phones()
 
-                    self.logger.debug(f'Phones len {len(phone_ids)}')
+                    self.logger.debug(f'Phones len {len(phones)}')
 
-                    if phone_ids:
+                    if phones:
                         self.logger.debug('Sending celery chord')
 
                         celery.chord([
                             celery.signature(
                                 'JoinChatTask',
-                                args=(chat.id, id),
+                                args=(chat.id, phone.id),
                                 queue='high_prio',
                                 immutable=True,
                                 time_limit=60
-                            ) for id in phone_ids
-                        ])(s)
+                            ) for phone in phones
+                        ])(sig)
                     else:
                         self.logger.debug('Sending celery standalone task')
 
-                        s.delay()
+                        sig.delay()
 
                 elif payload.action == Action.update:
                     if TaskStatus(payload.record['status']) == TaskStatus.revoked:

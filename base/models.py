@@ -1,8 +1,6 @@
 import uuid
-from datetime import datetime, timedelta
 from django.db import models
 from django.conf import settings
-from django.db.models import Count, Q
 from telethon.utils import resolve_id
 
 
@@ -80,6 +78,7 @@ class Phone(BaseModel):
     session = models.CharField(u"session", max_length=512, null=True, blank=True, unique=True)
     internal_id = models.BigIntegerField(blank=True, null=True, unique=True)
     api = models.JSONField(blank=True, null=True)
+    takeout = models.BooleanField(u"takeout", default=True)
 
     class Meta:
         verbose_name = u"Phone"
@@ -152,31 +151,29 @@ class Chat(BaseModel):
         db_table = 'telegram\".\"chats'
 
     def __str__(self):
-        return u"{}".format(self.link)
+        return f"{self.link}"
 
-    def _get_type(self):
+    @property
+    def get_type(self):
         type = None
+
         if self.internal_id:
             type = resolve_id(self.internal_id)[1].__name__
+
         return type
-    get_type = property(_get_type)
 
     def get_chat_phones(self):
-        chat_phones = self.chatphone_set.filter(is_using=True)
+        chat_phones = self.chatphone_set.filter(
+            is_using=True,
+            phone__takeout=False
+        )
+
         if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
             return []
 
-        return list(
-            Phone.objects.filter(status=Phone.READY).annotate(
-                num_chatphone=Count('chatphone'),
-                num_today_created=Count(
-                    'chatphone__created_at',
-                    distinct=True,
-                    filter=Q(chatphone__created_at__gt=datetime.today() - timedelta(days=1)),
-                )
-            ).values_list("id", flat=True)
-            .filter(num_chatphone__lt=480, num_today_created__lt=55)[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
-        )
+        phones = list(Phone.objects.filter(status=Phone.READY, takeout=False))
+
+        return phones[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
 
 
 class ChatPhone(BaseModel):
