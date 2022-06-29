@@ -1,5 +1,6 @@
 import glob
 import os.path
+import subprocess
 import tempfile
 from functools import reduce
 from django.conf import settings
@@ -168,12 +169,16 @@ class MessageMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'message', filename), "wb") as dst:
-                                for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                            chunks = ' '.join(chunks)
+                            complete = os.path.join(settings.MEDIA_ROOT, 'message', filename)
 
-                                    os.remove(chunk)
+                            subprocess.run(
+                                (f"cat {chunks} > {complete}"),
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                shell=True,
+                                check=True
+                            )
 
                             obj = self.get_object()
                             obj.path = os.path.join('uploads', 'message', filename)
@@ -310,12 +315,16 @@ class MemberMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'member', filename), "wb") as dst:
-                                for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                            chunks = ' '.join(chunks)
+                            complete = os.path.join(settings.MEDIA_ROOT, 'member', filename)
 
-                                    os.remove(chunk)
+                            subprocess.run(
+                                (f"cat {chunks} > {complete}"),
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                shell=True,
+                                check=True
+                            )
 
                             obj = self.get_object()
                             obj.path = os.path.join('uploads', 'member', filename)
@@ -385,12 +394,16 @@ class ChatMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'chat', filename), "wb") as dst:
-                                for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                            chunks = ' '.join(chunks)
+                            complete = os.path.join(settings.MEDIA_ROOT, 'chat', filename)
 
-                                    os.remove(chunk)
+                            subprocess.run(
+                                (f"cat {chunks} > {complete}"),
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                shell=True,
+                                check=True
+                            )
 
                             obj = self.get_object()
                             obj.path = os.path.join('uploads', 'chat', filename)
