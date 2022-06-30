@@ -6,6 +6,7 @@ import json
 import sys
 import celery
 from enum import Enum, auto
+import psycopg2
 import psycopg2.extensions
 
 
@@ -46,24 +47,46 @@ class PGNotify:
             self.data = data
 
     def __init__(self) -> None:
+        self.logger = self._init_logger()
+
+        self.logger.info('Initialization PGNotify service instance')
+
+        self.loop = asyncio.new_event_loop()
+        self.loop.set_exception_handler(self._ex_handler)
+
         signal.signal(signal.SIGTERM, self._handle_sig)
         signal.signal(signal.SIGINT, self._handle_sig)
 
         self._init_django()
 
-        self.loop = asyncio.new_event_loop()
-        self.logger = self._init_logger()
         self.connection = self._init_db_connection()
         self.app = self._init_celery_app()
 
         self.logger.info('PGNotify instance created')
 
+    def _init_logger(self):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.DEBUG)
+
+        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setLevel(logging.INFO)
+        stdout_handler.setFormatter(formatter)
+
+        logger.addHandler(stdout_handler)
+
+        return logger
+
     def _handle_sig(self, sig, frame):
         self.logger.warning(f'{signal.Signals(sig).name} received...')
+
         self.stop()
 
     def _init_django(self):
         import django
+
+        self.logger.info('Django setup...')
 
         os.environ["DJANGO_SETTINGS_MODULE"] = "project.settings"
         os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
@@ -74,25 +97,10 @@ class PGNotify:
 
         self.models = models
 
-    def _init_logger(self):
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.DEBUG)
-        stdout_handler = logging.StreamHandler()
-        stdout_handler.setLevel(logging.INFO)
-        stdout_handler.setFormatter(logging.Formatter('%(levelname)8s | %(message)s'))
-        logger.addHandler(stdout_handler)
-
-        return logger
-
-    def _init_celery_app(self):
-        app = celery.Celery('project')
-        app.config_from_object('django.conf:settings', namespace='CELERY')
-        app.autodiscover_tasks()
-
-        return app
-
     def _init_db_connection(self):
         from django.db import connection
+
+        self.logger.info('Listen postgresql notifies initialization...')
 
         crs = connection.cursor()
         pg_con = connection.connection
@@ -100,6 +108,15 @@ class PGNotify:
         crs.execute("LISTEN entity_event;")
 
         return pg_con
+
+    def _init_celery_app(self):
+        self.logger.info('Celery initialization...')
+
+        app = celery.Celery('project')
+        app.config_from_object('django.conf:settings', namespace='CELERY')
+        app.autodiscover_tasks()
+
+        return app
 
     def _handle(self):
         self.connection.poll()
@@ -239,17 +256,25 @@ class PGNotify:
                 elif payload.action == Action.delete:
                     self.app.control.revoke(payload.record['id'], terminate=True)
 
+    def _ex_handler(self, loop, context):
+        loop.default_exception_handler(context)
+
+        self.stop(1)
+
     def start(self):
+        self.logger.info('Starting PGNotify service')
+
         self.loop.add_reader(self.connection, self._handle)
 
         self.loop.run_forever()
 
-    def stop(self):
+    def stop(self, code: 'int' = 0):
+        self.logger.info(f'Stopping PGNotify service with code {code}.')
         self.logger.info('Cleaning up...')
-        self.loop.stop()
-        self.loop.close()
 
-        sys.exit(0)
+        self.loop.stop()
+
+        sys.exit(code)
 
 
 if __name__ == '__main__':

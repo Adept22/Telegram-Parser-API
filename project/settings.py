@@ -84,6 +84,7 @@ SITE_ID = 1
 STATIC_ROOT = 'static/'
 STATIC_URL = 'static/'
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', '/tmp/uploads/')
+MEDIA_PATH_DEPTH = 3
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MIGRATE = False
