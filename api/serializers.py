@@ -139,16 +139,17 @@ class ChatMemberRoleListSerializer(serializers.ModelSerializer):
 class MemberMediaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.MemberMedia
-        fields = ("id", "member", "internal_id", "path", "date")
-        read_only_fields = ("id",)
+        fields = ("id", "member", "internal_id", "path", "date", "created_at")
+        read_only_fields = ("id", "path", "created_at")
         extra_kwargs = {"internal_id": {"validators": [], "required": True}}
 
 
 class ChatMediaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.ChatMedia
-        fields = ("id", "chat", "internal_id", "path", "date")
-        read_only_fields = ("id",)
+        fields = ("id", "chat", "internal_id", "path", "date", "created_at")
+        read_only_fields = ("id", "path", "created_at")
+        extra_kwargs = {"internal_id": {"validators": [], "required": True}}
 
 
 class HostListSerializer(serializers.ModelSerializer):
@@ -170,8 +171,8 @@ class MessageListSerializer(serializers.ModelSerializer):
 class MessageMediaListSerializer(serializers.ModelSerializer):
     class Meta:
         model = base_models.MessageMedia
-        fields = ("id", "message", "path", "created_at", "internal_id", "date")
-        read_only_fields = ("id", "created_at")
+        fields = ("id", "message", "path", "internal_id", "date", "created_at")
+        read_only_fields = ("id", "path", "created_at")
         extra_kwargs = {"internal_id": {"validators": [], "required": True}}
 
 
