@@ -269,7 +269,7 @@ class Message(BaseModel):
 
 class MessageMedia(BaseModel):
     message = models.ForeignKey(Message, verbose_name=u"message media", on_delete=models.CASCADE)
-    internal_id = models.BigIntegerField(u"internal id", unique=True)
+    internal_id = models.BigIntegerField(u"internal id")
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
 
@@ -277,6 +277,9 @@ class MessageMedia(BaseModel):
         verbose_name = u"MessageMedia"
         verbose_name_plural = u"MessageMedias"
         db_table = 'telegram\".\"messages_medias'
+        constraints = [
+            models.UniqueConstraint(fields=["internal_id", "message"], name="message_media_unique"),
+        ]
 
     def __str__(self):
         return u"{}. {}".format(self.id, self.message)
