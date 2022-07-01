@@ -79,11 +79,12 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'ru-RU'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
-USE_TZ = False
+USE_TZ = True
 SITE_ID = 1
 STATIC_ROOT = 'static/'
 STATIC_URL = 'static/'
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', '/tmp/uploads/')
+MEDIA_PATH_DEPTH = 3
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MIGRATE = False
@@ -94,6 +95,7 @@ CELERY_SEND_TASK_ERROR_EMAILS = True
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_TIMEZONE = "Europe/Moscow"
+CELERY_ENABLE_UTC = False
 
 MIGRATION_MODULES = {
     "admin": None,

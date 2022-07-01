@@ -30,6 +30,9 @@ ln -s /var/www/telegram-parser-api/nginx/telegram-parser-api.conf.local /etc/ngi
 ln -s /etc/nginx/sites-available/telegram-parser-api.conf /etc/nginx/sites-enabled/
 ```
 ```
+mkdir -p /var/log/pg_notify
+chown -R www-data:www-data /var/log/pg_notify
+chmod -R 660 /var/log/pg_notify
 ln -s systemd/pg_notify.service /etc/systemd/system/
 systemctl daemon-reload
 systemctl enable pg_notify.service

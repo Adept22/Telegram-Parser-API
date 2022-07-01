@@ -89,38 +89,6 @@ class Phone(BaseModel):
         return u"{}. {}".format(self.id, self.number)
 
 
-class Member(BaseModel):
-    internal_id = models.BigIntegerField(blank=True, unique=True)
-    username = models.CharField(u"username", max_length=255, blank=True, null=True)
-    first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
-    last_name = models.CharField(u"last name", max_length=255, blank=True, null=True)
-    about = models.TextField(u"about", blank=True, null=True)
-    phone = models.CharField(u"phone", max_length=255, blank=True, null=True)
-
-    class Meta:
-        verbose_name = u"Member"
-        verbose_name_plural = u"Members"
-        db_table = 'telegram\".\"members'
-
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.username)
-
-
-class MemberMedia(BaseModel):
-    member = models.ForeignKey(Member, verbose_name=u"member media", on_delete=models.CASCADE)
-    path = models.CharField(u"path", max_length=255, blank=True, null=True)
-    internal_id = models.BigIntegerField(u"internal id", unique=True)
-    date = models.DateTimeField(u"date", blank=True, null=True)
-
-    class Meta:
-        verbose_name = u"MemberMedia"
-        verbose_name_plural = u"MemberMedias"
-        db_table = 'telegram\".\"members_medias'
-
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.member)
-
-
 class Chat(BaseModel):
     CREATED = 0
     AVAILABLE = 1
@@ -193,6 +161,53 @@ class ChatPhone(BaseModel):
         return u"{}".format(self.id)
 
 
+class ChatMedia(BaseModel):
+    internal_id = models.BigIntegerField(u"internal id", unique=True)
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE, null=True, blank=False)
+    path = models.CharField(max_length=3000, blank=True, null=True)
+    date = models.DateTimeField(u"дата", blank=True, null=True)
+
+    class Meta:
+        verbose_name = u"ChatMedia"
+        verbose_name_plural = u"ChatMedias"
+        db_table = 'telegram\".\"chats_medias'
+
+    def __str__(self):
+        return u"{}. {}".format(self.id, self.chat)
+
+
+class Member(BaseModel):
+    internal_id = models.BigIntegerField(blank=True, unique=True)
+    username = models.CharField(u"username", max_length=255, blank=True, null=True)
+    first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
+    last_name = models.CharField(u"last name", max_length=255, blank=True, null=True)
+    about = models.TextField(u"about", blank=True, null=True)
+    phone = models.CharField(u"phone", max_length=255, blank=True, null=True)
+
+    class Meta:
+        verbose_name = u"Member"
+        verbose_name_plural = u"Members"
+        db_table = 'telegram\".\"members'
+
+    def __str__(self):
+        return u"{}. {}".format(self.id, self.username)
+
+
+class MemberMedia(BaseModel):
+    member = models.ForeignKey(Member, verbose_name=u"member media", on_delete=models.CASCADE)
+    internal_id = models.BigIntegerField(u"internal id", unique=True)
+    path = models.CharField(u"path", max_length=255, blank=True, null=True)
+    date = models.DateTimeField(u"date", blank=True, null=True)
+
+    class Meta:
+        verbose_name = u"MemberMedia"
+        verbose_name_plural = u"MemberMedias"
+        db_table = 'telegram\".\"members_medias'
+
+    def __str__(self):
+        return u"{}. {}".format(self.id, self.member)
+
+
 class ChatMember(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
     member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.CASCADE)
@@ -228,21 +243,6 @@ class ChatMemberRole(BaseModel):
         return u"{}. {}".format(self.id, self.title)
 
 
-class ChatMedia(BaseModel):
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE, null=True, blank=False)
-    path = models.CharField(max_length=3000, blank=True, null=True)
-    internal_id = models.BigIntegerField(u"internal id", unique=True)
-    date = models.DateTimeField(u"дата", blank=True, null=True)
-
-    class Meta:
-        verbose_name = u"ChatMedia"
-        verbose_name_plural = u"ChatMedias"
-        db_table = 'telegram\".\"chats_medias'
-
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.chat)
-
-
 class Message(BaseModel):
     member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.CASCADE, blank=True, null=True)
     reply_to = models.ForeignKey("self", verbose_name=u"reply_to", blank=True, null=True, on_delete=models.CASCADE)
@@ -269,8 +269,8 @@ class Message(BaseModel):
 
 class MessageMedia(BaseModel):
     message = models.ForeignKey(Message, verbose_name=u"message media", on_delete=models.CASCADE)
-    path = models.CharField(u"path", max_length=255, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
+    path = models.CharField(u"path", max_length=255, blank=True, null=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
 
     class Meta:

@@ -1,5 +1,7 @@
 import glob
 import os.path
+import random
+import string
 import tempfile
 from functools import reduce
 from django.conf import settings
@@ -138,10 +140,21 @@ class MessageMedias(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def make_path(self, current, *, depth: 'int' = 0):
+        if depth >= settings.MEDIA_PATH_DEPTH:
+            return current
+
+        name = ''.join([random.choice(string.digits + string.ascii_lowercase) for c in range(0, 2)])
+
+        current = os.path.join(current, name)
+
+        if not os.path.exists(current):
+            os.mkdir(current, 0o775)
+
+        return self.make_path(current, depth=depth + 1)
+
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
-        tmp_dir = tempfile.gettempdir()
-
         if request.method == "POST":
             request.data['filename'] = request.query_params.get('filename')
             request.data['chunk_number'] = request.query_params.get('chunk_number')
@@ -158,6 +171,8 @@ class MessageMedias(viewsets.ModelViewSet):
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
 
+                tmp_dir = tempfile.gettempdir()
+
                 tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
 
                 with open(tmp_path, 'wb') as tmpf:
@@ -168,25 +183,35 @@ class MessageMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'message', filename), "wb") as dst:
+                            obj = self.get_object()
+
+                            path = self.make_path(settings.MEDIA_ROOT)
+                            name, ext = os.path.splitext(filename)
+                            media_path = os.path.join(path, f"{obj.id}{ext}")
+
+                            with open(media_path, "wb") as mf:
                                 for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                                    with open(chunk, "rb") as cf:
+                                        mf.write(cf.read())
 
                                     os.remove(chunk)
 
-                            obj = self.get_object()
-                            obj.path = os.path.join('uploads', 'message', filename)
+                            obj.path = os.path.join('uploads', os.path.relpath(media_path, settings.MEDIA_ROOT))
                             obj.save()
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
+
             if serializer.is_valid():
                 req = serializer.validated_data
+
+                tmp_dir = tempfile.gettempdir()
+
                 if os.path.exists(os.path.join(tmp_dir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
                     return Response(status=status.HTTP_204_NO_CONTENT)
+
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -280,10 +305,21 @@ class MemberMedias(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def make_path(self, current, *, depth: 'int' = 0):
+        if depth >= settings.MEDIA_PATH_DEPTH:
+            return current
+
+        name = ''.join([random.choice(string.digits + string.ascii_lowercase) for c in range(0, 2)])
+
+        current = os.path.join(current, name)
+
+        if not os.path.exists(current):
+            os.mkdir(current, 0o775)
+
+        return self.make_path(current, depth=depth + 1)
+
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
-        tmp_dir = tempfile.gettempdir()
-
         if request.method == "POST":
             request.data['filename'] = request.query_params.get('filename')
             request.data['chunk_number'] = request.query_params.get('chunk_number')
@@ -300,6 +336,8 @@ class MemberMedias(viewsets.ModelViewSet):
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
 
+                tmp_dir = tempfile.gettempdir()
+
                 tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
 
                 with open(tmp_path, 'wb') as tmpf:
@@ -310,25 +348,35 @@ class MemberMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'member', filename), "wb") as dst:
+                            obj = self.get_object()
+
+                            path = self.make_path(settings.MEDIA_ROOT)
+                            name, ext = os.path.splitext(filename)
+                            media_path = os.path.join(path, f"{obj.id}{ext}")
+
+                            with open(media_path, "wb") as mf:
                                 for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                                    with open(chunk, "rb") as cf:
+                                        mf.write(cf.read())
 
                                     os.remove(chunk)
 
-                            obj = self.get_object()
-                            obj.path = os.path.join('uploads', 'member', filename)
+                            obj.path = os.path.join('uploads', os.path.relpath(media_path, settings.MEDIA_ROOT))
                             obj.save()
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
+
             if serializer.is_valid():
                 req = serializer.validated_data
+
+                tmp_dir = tempfile.gettempdir()
+
                 if os.path.exists(os.path.join(tmp_dir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
                     return Response(status=status.HTTP_204_NO_CONTENT)
+
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -355,10 +403,21 @@ class ChatMedias(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    def make_path(self, current, *, depth: 'int' = 0):
+        if depth >= settings.MEDIA_PATH_DEPTH:
+            return current
+
+        name = ''.join([random.choice(string.digits + string.ascii_lowercase) for c in range(0, 2)])
+
+        current = os.path.join(current, name)
+
+        if not os.path.exists(current):
+            os.mkdir(current, 0o775)
+
+        return self.make_path(current, depth=depth + 1)
+
     @action(methods=["post", "get"], detail=True)
     def chunk(self, request, pk=None):
-        tmp_dir = tempfile.gettempdir()
-
         if request.method == "POST":
             request.data['filename'] = request.query_params.get('filename')
             request.data['chunk_number'] = request.query_params.get('chunk_number')
@@ -375,6 +434,8 @@ class ChatMedias(viewsets.ModelViewSet):
                 total_size = serializer.validated_data['total_size']
                 total_chunks = serializer.validated_data['total_chunks']
 
+                tmp_dir = tempfile.gettempdir()
+
                 tmp_path = os.path.join(tmp_dir, f"{filename}.part{chunk_number}")
 
                 with open(tmp_path, 'wb') as tmpf:
@@ -385,25 +446,35 @@ class ChatMedias(viewsets.ModelViewSet):
                     if chunks:
                         computed = reduce(lambda x, y: x + y, [os.path.getsize(c) for c in chunks])
                         if computed >= total_size:
-                            with open(os.path.join(settings.MEDIA_ROOT, 'chat', filename), "wb") as dst:
+                            obj = self.get_object()
+
+                            path = self.make_path(settings.MEDIA_ROOT)
+                            name, ext = os.path.splitext(filename)
+                            media_path = os.path.join(path, f"{obj.id}{ext}")
+
+                            with open(media_path, "wb") as mf:
                                 for chunk in sorted(chunks):
-                                    with open(chunk, "rb") as f:
-                                        dst.write(f.read())
+                                    with open(chunk, "rb") as cf:
+                                        mf.write(cf.read())
 
                                     os.remove(chunk)
 
-                            obj = self.get_object()
-                            obj.path = os.path.join('uploads', 'chat', filename)
+                            obj.path = os.path.join('uploads', os.path.relpath(media_path, settings.MEDIA_ROOT))
                             obj.save()
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         else:
             serializer = serializers.ChunkViewSerializer(data=request.GET)
+
             if serializer.is_valid():
                 req = serializer.validated_data
+
+                tmp_dir = tempfile.gettempdir()
+
                 if os.path.exists(os.path.join(tmp_dir, u"{}.part{}".format(req["filename"], req["chunk_number"]))):
                     return Response(status=status.HTTP_204_NO_CONTENT)
+
                 return Response(serializer.data, status=status.HTTP_404_NOT_FOUND)
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
