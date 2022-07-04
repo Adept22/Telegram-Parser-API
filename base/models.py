@@ -1,13 +1,9 @@
 import uuid
 from django.db import models
-from django.conf import settings
-from telethon.utils import resolve_id
 
 
 class BaseModel(models.Model):
-    """ Абстрактная модель для использования UUID в качестве PK."""
-    # Параметр blank=True позволяет работать с формами, он никогда не
-    # будет пустым, см. метод save()
+    """Абстрактная модель для использования UUID в качестве PK."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid1, editable=False)
     created_at = models.DateTimeField(u"дата создания", auto_now_add=True)
@@ -16,9 +12,56 @@ class BaseModel(models.Model):
         abstract = True
 
 
+class Task(BaseModel):
+    """Абстрактная модель задания."""
+
+    STATUS_CREATED = 0
+    STATUS_STARTED = 1
+    STATUS_SUCCESS = 2
+    STATUS_FAILURE = 3
+    STATUS_REVOKED = 4
+
+    STATUS_CHOICES = (
+        (STATUS_CREATED, u"Создан"),
+        (STATUS_STARTED, u"В работе"),
+        (STATUS_SUCCESS, u"Выполнен"),
+        (STATUS_FAILURE, u"Ошибка"),
+        (STATUS_REVOKED, u"Отозван"),
+    )
+
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
+    status_text = models.TextField(u"status text", blank=True, null=True)
+    started_at = models.DateTimeField(u"дата запуска", blank=True, null=True)
+    ended_at = models.DateTimeField(u"дата завершения", blank=True, null=True)
+
+    class Meta:
+        abstract = True
+
+
+class Link(BaseModel):
+    STATUS_CREATED = 0
+    STATUS_RESOLVED = 1
+    STATUS_FAILURE = 2
+
+    STATUS_CHOICES = (
+        (STATUS_CREATED, u"Создана"),
+        (STATUS_RESOLVED, u"Определена"),
+        (STATUS_FAILURE, u"Ошибка")
+    )
+
+    link = models.CharField(u"link", max_length=255, blank=False, unique=True)
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
+    status_text = models.TextField(u"status text", blank=True, null=True)
+
+    class Meta:
+        verbose_name = u"Link"
+        verbose_name_plural = u"Links"
+        db_table = 'telegram\".\"links'
+
+
 class Host(BaseModel):
     public_ip = models.CharField(max_length=15, blank=True, null=True)
-    local_ip = models.CharField(max_length=15, blank=True, null=True, unique=True)
+    local_ip = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
@@ -31,18 +74,18 @@ class Host(BaseModel):
 
 
 class Parser(BaseModel):
-    NEW_STATUS = 0
-    IN_PROGRESS_STATUS = 1
-    FAILED_STATUS = 2
+    STATUS_NEW = 0
+    STATUS_IN_PROGRESS = 1
+    STATUS_FAILED = 2
 
     STATUS_CHOICES = (
-        (NEW_STATUS, u"Создан"),
-        (IN_PROGRESS_STATUS, u"В работе"),
-        (FAILED_STATUS, u"Ошибка"),
+        (STATUS_NEW, u"Создан"),
+        (STATUS_IN_PROGRESS, u"В работе"),
+        (STATUS_FAILED, u"Ошибка"),
     )
 
-    host = models.ForeignKey(Host, verbose_name=u"host", on_delete=models.CASCADE)
-    status = models.IntegerField(u"status", default=NEW_STATUS, choices=STATUS_CHOICES)
+    host = models.ForeignKey(Host, verbose_name=u"host", on_delete=models.DO_NOTHING)
+    status = models.IntegerField(u"status", default=STATUS_NEW, choices=STATUS_CHOICES)
 
     class Meta:
         verbose_name = u"Parser"
@@ -54,29 +97,29 @@ class Parser(BaseModel):
 
 
 class Phone(BaseModel):
-    CREATED = 0
-    READY = 1
-    FLOOD = 2
-    FULL = 3
-    BAN = 4
+    STATUS_CREATED = 0
+    STATUS_READY = 1
+    STATUS_FLOOD = 2
+    STATUS_FULL = 3
+    STATUS_BAN = 4
 
     STATUS_CHOICES = (
-        (CREATED, u"Создан"),
-        (READY, u"Готов"),
-        (FLOOD, u"В ожидании"),
-        (FULL, u"Полон"),
-        (BAN, u"Забанен"),
+        (STATUS_CREATED, u"Создан"),
+        (STATUS_READY, u"Готов"),
+        (STATUS_FLOOD, u"В ожидании"),
+        (STATUS_FULL, u"Полон"),
+        (STATUS_BAN, u"Забанен"),
     )
 
-    number = models.CharField(u"номер", max_length=20, blank=False, unique=True)
+    number = models.CharField(u"номер", max_length=20, unique=True)
     first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
     last_name = models.CharField(u"last name", max_length=255, blank=True, null=True)
-    status = models.IntegerField(u"status", default=CREATED, choices=STATUS_CHOICES)
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
     status_text = models.TextField(u"status text", blank=True, null=True)
-    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.CASCADE, null=True, blank=False)
+    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.DO_NOTHING)
     code = models.CharField(u"code", max_length=10, blank=True, null=True)
     session = models.CharField(u"session", max_length=512, null=True, blank=True, unique=True)
-    internal_id = models.BigIntegerField(blank=True, null=True, unique=True)
+    internal_id = models.BigIntegerField(u"internal_id", blank=True, null=True, unique=True)
     api = models.JSONField(blank=True, null=True)
     takeout = models.BooleanField(u"takeout", default=True)
 
@@ -89,64 +132,81 @@ class Phone(BaseModel):
         return u"{}. {}".format(self.id, self.number)
 
 
+class PhoneTask(Task):
+    TYPE_AUTH = 0
+
+    TYPE_CHOICES = (
+        (TYPE_AUTH, u"Авторизация"),
+    )
+
+    phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.DO_NOTHING)
+    type = models.IntegerField(u"type", choices=TYPE_CHOICES)
+
+    class Meta:
+        verbose_name = u"PhoneTask"
+        verbose_name_plural = u"PhoneTasks"
+        db_table = 'telegram\".\"phones_tasks'
+
+
 class Chat(BaseModel):
-    CREATED = 0
-    AVAILABLE = 1
-    MONITORING = 2
-    FAILED = 3
+    STATUS_CREATED = 0
+    STATUS_AVAILABLE = 1
+    STATUS_FAILED = 2
 
     STATUS_CHOICES = (
-        (CREATED, u"Создан"),
-        (AVAILABLE, u"Доступен"),
-        (MONITORING, u"Мониторинг"),
-        (FAILED, u"Ошибка"),
+        (STATUS_CREATED, u"Создан"),
+        (STATUS_AVAILABLE, u"Доступен"),
+        (STATUS_FAILED, u"Ошибка"),
     )
 
     internal_id = models.BigIntegerField("internal id", null=True, blank=True, unique=True)
-    link = models.CharField(u"link", max_length=255, blank=False, unique=True)
     title = models.CharField(u"title", max_length=255, blank=True)
-    status = models.IntegerField(u"status", default=CREATED, choices=STATUS_CHOICES, blank=True)
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     description = models.TextField(u"description", blank=True, null=True)
-    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.CASCADE, null=True, blank=False)
+    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.DO_NOTHING)
     date = models.DateField(u"date", blank=True, null=True)
-    total_messages = models.IntegerField(u"total messages", default=0, blank=True, null=True)
-    total_members = models.IntegerField(u"total members", default=0, blank=True, null=True)
+    total_messages = models.IntegerField(u"total messages", default=0)
+    total_members = models.IntegerField(u"total members", default=0)
 
     class Meta:
         verbose_name = u"Chat"
         verbose_name_plural = u"Chats"
         db_table = 'telegram\".\"chats'
 
-    def __str__(self):
-        return f"{self.link}"
 
-    @property
-    def get_type(self):
-        type = None
+class ChatLink(Link):
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
 
-        if self.internal_id:
-            type = resolve_id(self.internal_id)[1].__name__
+    class Meta:
+        verbose_name = u"ChatLink"
+        verbose_name_plural = u"ChatLinks"
+        db_table = 'telegram\".\"chats_links'
 
-        return type
 
-    def get_chat_phones(self):
-        chat_phones = self.chatphone_set.filter(
-            is_using=True,
-            phone__takeout=False
-        )
+class ChatTask(Task):
+    TYPE_MEMBER = 0
+    TYPE_MESSAGE = 1
+    TYPE_MONITORING = 2
 
-        if chat_phones.count() >= settings.CHAT_PHONE_LINKS:
-            return []
+    TYPE_CHOICES = (
+        (TYPE_MEMBER, u"Участники"),
+        (TYPE_MESSAGE, u"Сообщения"),
+        (TYPE_MONITORING, u"Мониторинг"),
+    )
 
-        phones = list(Phone.objects.filter(status=Phone.READY, takeout=False))
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
+    type = models.IntegerField(u"type", choices=TYPE_CHOICES)
 
-        return phones[:settings.CHAT_PHONE_LINKS - chat_phones.count()]
+    class Meta:
+        verbose_name = u"ChatTask"
+        verbose_name_plural = u"ChatTasks"
+        db_table = 'telegram\".\"chats_tasks'
 
 
 class ChatPhone(BaseModel):
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
-    phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
+    phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.DO_NOTHING)
     is_using = models.BooleanField(u"is using", default=True)
 
     class Meta:
@@ -157,13 +217,10 @@ class ChatPhone(BaseModel):
             models.UniqueConstraint(fields=["chat", "phone"], name="chat_phone_unique"),
         ]
 
-    def __str__(self):
-        return u"{}".format(self.id)
-
 
 class ChatMedia(BaseModel):
     internal_id = models.BigIntegerField(u"internal id", unique=True)
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE, null=True, blank=False)
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     path = models.CharField(max_length=3000, blank=True, null=True)
     date = models.DateTimeField(u"дата", blank=True, null=True)
 
@@ -172,12 +229,9 @@ class ChatMedia(BaseModel):
         verbose_name_plural = u"ChatMedias"
         db_table = 'telegram\".\"chats_medias'
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.chat)
-
 
 class Member(BaseModel):
-    internal_id = models.BigIntegerField(blank=True, unique=True)
+    internal_id = models.BigIntegerField(u"internal_id")
     username = models.CharField(u"username", max_length=255, blank=True, null=True)
     first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
     last_name = models.CharField(u"last name", max_length=255, blank=True, null=True)
@@ -189,12 +243,18 @@ class Member(BaseModel):
         verbose_name_plural = u"Members"
         db_table = 'telegram\".\"members'
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.username)
+
+class MemberLink(Link):
+    member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.DO_NOTHING)
+
+    class Meta:
+        verbose_name = u"MemberLink"
+        verbose_name_plural = u"MemberLinks"
+        db_table = 'telegram\".\"members_links'
 
 
 class MemberMedia(BaseModel):
-    member = models.ForeignKey(Member, verbose_name=u"member media", on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, verbose_name=u"member media", on_delete=models.DO_NOTHING)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
@@ -204,13 +264,10 @@ class MemberMedia(BaseModel):
         verbose_name_plural = u"MemberMedias"
         db_table = 'telegram\".\"members_medias'
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.member)
-
 
 class ChatMember(BaseModel):
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
-    member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.CASCADE)
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
+    member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.DO_NOTHING)
     is_left = models.BooleanField(u"is left", default=False)
     date = models.DateTimeField(u"дата", blank=True, null=True)
 
@@ -222,12 +279,9 @@ class ChatMember(BaseModel):
             models.UniqueConstraint(fields=["chat", "member"], name="chat_member_unique"),
         ]
 
-    def __str__(self):
-        return u"{}. {} - {}".format(self.id, self.chat, self.member)
-
 
 class ChatMemberRole(BaseModel):
-    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.CASCADE)
+    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING)
     title = models.CharField(u"title", max_length=100)
     code = models.CharField(u"code", max_length=10)
 
@@ -239,19 +293,16 @@ class ChatMemberRole(BaseModel):
             models.UniqueConstraint(fields=["member", "title", "code"], name="chat_member_role_unique"),
         ]
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.title)
-
 
 class Message(BaseModel):
-    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.CASCADE, blank=True, null=True)
-    reply_to = models.ForeignKey("self", verbose_name=u"reply_to", blank=True, null=True, on_delete=models.CASCADE)
+    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING)
+    reply_to = models.ForeignKey("self", verbose_name=u"reply_to", on_delete=models.DO_NOTHING, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id")
-    text = models.TextField(blank=True, null=True)
+    text = models.TextField(u"text", blank=True, null=True)
     is_pinned = models.BooleanField(u"is pinned", default=False)
     forwarded_from_id = models.BigIntegerField(u"forwarded from id", blank=True, null=True)
     forwarded_from_name = models.CharField(max_length=255, blank=True, null=True)
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE, null=True, blank=False)
+    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     grouped_id = models.BigIntegerField(u"grouped id", blank=True, null=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
 
@@ -263,12 +314,18 @@ class Message(BaseModel):
             models.UniqueConstraint(fields=["internal_id", "chat"], name="message_unique"),
         ]
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.text)
+
+class MessageLink(Link):
+    message = models.ForeignKey(Message, verbose_name=u"message", on_delete=models.DO_NOTHING)
+
+    class Meta:
+        verbose_name = u"MessageLink"
+        verbose_name_plural = u"MessageLinks"
+        db_table = 'telegram\".\"messages_links'
 
 
 class MessageMedia(BaseModel):
-    message = models.ForeignKey(Message, verbose_name=u"message media", on_delete=models.CASCADE)
+    message = models.ForeignKey(Message, verbose_name=u"message media", on_delete=models.DO_NOTHING)
     internal_id = models.BigIntegerField(u"internal id")
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
     date = models.DateTimeField(u"date", blank=True, null=True)
@@ -281,57 +338,23 @@ class MessageMedia(BaseModel):
             models.UniqueConstraint(fields=["internal_id", "message"], name="message_media_unique"),
         ]
 
-    def __str__(self):
-        return u"{}. {}".format(self.id, self.message)
 
-
-class Task(BaseModel):
-    CREATED_STATUS = 0
-    STARTED_STATUS = 1
-    SUCCESS_STATUS = 2
-    FAILURE_STATUS = 3
-    REVOKED_STATUS = 4
-
-    STATUS_CHOICES = (
-        (CREATED_STATUS, u"Создан"),
-        (STARTED_STATUS, u"В работе"),
-        (SUCCESS_STATUS, u"Выполнен"),
-        (FAILURE_STATUS, u"Ошибка"),
-        (REVOKED_STATUS, u"Отозван"),
-    )
-
-    MEMBER_TYPE = 0
-    MESSAGE_TYPE = 1
-    MONITORING_TYPE = 2
-
-    TYPE_CHOICES = (
-        (MEMBER_TYPE, u"Участники"),
-        (MESSAGE_TYPE, u"Сообщения"),
-        (MONITORING_TYPE, u"Мониторинг"),
-    )
-
-    chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.CASCADE)
-    status = models.IntegerField(u"status", default=CREATED_STATUS, choices=STATUS_CHOICES)
-    status_text = models.TextField(u"status text", blank=True, null=True)
-    started_at = models.DateTimeField(u"дата запуска", blank=True, null=True)
-    ended_at = models.DateTimeField(u"дата завершения", blank=True, null=True)
-    type = models.IntegerField(u"type", choices=TYPE_CHOICES)
-
-    class Meta:
-        verbose_name = u"Task"
-        verbose_name_plural = u"Tasks"
-        db_table = 'telegram\".\"chats_tasks'
-
-
+TypeTask = Task
+TypeLink = Link
 TypeHost = Host
 TypeParser = Parser
 TypePhone = Phone
-TypeMember = Member
-TypeMemberMedia = MemberMedia
-TypeMessage = Message
-TypeMessageMedia = MessageMedia
+TypePhoneTask = PhoneTask
 TypeChat = Chat
+TypeChatLink = ChatLink
+TypeChatTask = ChatTask
 TypeChatPhone = ChatPhone
+TypeChatMedia = ChatMedia
+TypeMember = Member
+TypeMemberLink = MemberLink
+TypeMemberMedia = MemberMedia
 TypeChatMember = ChatMember
 TypeChatMemberRole = ChatMemberRole
-TypeChatMedia = ChatMedia
+TypeMessage = Message
+TypeMessageLink = MessageLink
+TypeMessageMedia = MessageMedia

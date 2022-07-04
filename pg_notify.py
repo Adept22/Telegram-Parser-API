@@ -17,9 +17,10 @@ class Action(Enum):
 
 
 class Table(Enum):
-    chats = auto()
-    phones = auto()
+    links = auto()
     chats_tasks = auto()
+    phones = auto()
+    phones_tasks = auto()
 
 
 class TaskStatus(Enum):
@@ -30,11 +31,15 @@ class TaskStatus(Enum):
     revoked = 4
 
 
-class TaskType(Enum):
+class ChatTaskType(Enum):
     task_member = 0
     task_message = 1
     task_monitoring = 2
     task_chat_media = 3
+
+
+class PhoneTaskType(Enum):
+    task_auth = 0
 
 
 class PGNotify:
@@ -57,7 +62,7 @@ class PGNotify:
         signal.signal(signal.SIGTERM, self._handle_sig)
         signal.signal(signal.SIGINT, self._handle_sig)
 
-        self._init_django()
+        self.settings, self.models = self._init_django()
 
         self.connection = self._init_db_connection()
         self.app = self._init_celery_app()
@@ -94,8 +99,9 @@ class PGNotify:
         django.setup()
 
         from base import models
+        from django.conf import settings
 
-        self.models = models
+        return settings, models
 
     def _init_db_connection(self):
         from django.db import connection
@@ -118,6 +124,24 @@ class PGNotify:
 
         return app
 
+    def get_chat_phones(self, chat):
+        chat_phones = chat.chatphone_set.filter(
+            is_using=True,
+            phone__takeout=False
+        )
+
+        if chat_phones.count() >= self.settings.CHAT_PHONE_LINKS:
+            return []
+
+        phones = list(
+            self.models.Phone.objects.filter(
+                status=self.models.Phone.READY, 
+                takeout=False
+            )
+        )
+
+        return phones[:self.settings.CHAT_PHONE_LINKS - chat_phones.count()]
+
     def _handle(self):
         self.connection.poll()
 
@@ -128,35 +152,34 @@ class PGNotify:
 
             self.logger.info(f'Handle new pg notification {notify.payload}')
 
-            if payload.table == Table.chats:
+            if payload.table == Table.links:
                 if payload.action == Action.insert:
-                    self.logger.debug('Sending ChatResolveTask...')
-
                     try:
-                        chat = self.models.Chat.objects.get(id=payload.record['id'])
-                    except self.models.Chat.DoesNotExist:
-                        self.logger.warning(f'Chat ({payload.record["id"]}) is not found...')
+                        link = self.models.Link.objects.get(id=payload.record)
+                    except self.models.Link.DoesNotExist:
+                        self.logger.warning(f'Link ({payload.record}) is not found...')
 
                         continue
 
+                    self.logger.debug('Sending LinkResolveTask...')
+
                     self.app.send_task(
-                        "ChatResolveTask",
-                        (chat.id,),
+                        "LinkResolveTask",
+                        (link.id,),
                         time_limit=60,
-                        task_id=payload.record['id'],
+                        task_id=payload.record,
                         queue='high_prio'
                     )
 
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'], terminate=True)
+                    self.app.control.revoke(payload.record, terminate=True)
 
             elif payload.table == Table.phones:
                 if payload.action == Action.insert:
-
                     try:
-                        phone = self.models.Phone.objects.get(id=payload.record['id'])
+                        phone = self.models.Phone.objects.get(id=payload.record)
                     except self.models.Phone.DoesNotExist:
-                        self.logger.warning(f'Phone ({payload.record["id"]}) is not found...')
+                        self.logger.warning(f'Phone ({payload.record}) is not found...')
 
                         continue
 
@@ -166,69 +189,69 @@ class PGNotify:
                         "PhoneAuthorizationTask",
                         (phone.id,),
                         time_limit=600,
-                        task_id=payload.record['id'],
+                        task_id=payload.record,
                         queue="high_prio"
                     )
 
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'], terminate=True)
+                    self.app.control.revoke(payload.record, terminate=True)
 
             elif payload.table == Table.chats_tasks:
                 if payload.action == Action.insert:
                     try:
-                        chat = self.models.Chat.objects.get(id=payload.record['chat_id'])
-                    except self.models.Chat.DoesNotExist:
-                        self.logger.warning(f'Chat ({payload.record["chat_id"]}) is not found...')
+                        chat_task = self.models.ChatTask.objects.get(id=payload.record)
+                    except self.models.ChatTask.DoesNotExist:
+                        self.logger.warning(f'ChatTask ({payload.record}) is not found...')
 
                         continue
 
                     sig = None
 
-                    if TaskType(payload.record['type']) == TaskType.task_member:
+                    if ChatTaskType(chat_task.type) == ChatTaskType.task_member:
                         self.logger.debug('Creating ParseMembersTask signature...')
 
                         sig = celery.signature(
                             "ParseMembersTask",
-                            (chat.id,),
+                            (chat_task.chat.id,),
                             queue="low_prio",
-                            task_id=payload.record['id'],
+                            task_id=payload.record,
                             immutable=True
                         )
 
-                    elif TaskType(payload.record['type']) == TaskType.task_message:
+                    elif ChatTaskType(chat_task.type) == ChatTaskType.task_message:
                         self.logger.debug('Creating ParseMessagesTask signature...')
 
                         sig = celery.signature(
                             "ParseMessagesTask",
-                            (chat.id,),
+                            (chat_task.chat.id,),
                             queue="low_prio",
-                            task_id=payload.record['id'],
+                            task_id=payload.record,
                             immutable=True
                         )
 
-                    elif TaskType(payload.record['type']) == TaskType.task_monitoring:
+                    elif ChatTaskType(chat_task.type) == ChatTaskType.task_monitoring:
                         self.logger.debug('Creating MonitoringChatTask signature...')
 
                         sig = celery.signature(
                             "MonitoringChatTask",
-                            (chat.id,),
+                            (chat_task.chat.id,),
                             queue="high_prio",
-                            task_id=payload.record['id'],
+                            task_id=payload.record,
                             immutable=True
                         )
 
-                    elif TaskType(payload.record['type']) == TaskType.task_chat_media:
+                    elif ChatTaskType(chat_task.type) == ChatTaskType.task_chat_media:
                         self.logger.debug('Creating ChatMediaTask signature...')
 
                         sig = celery.signature(
                             "ChatMediaTask",
-                            (chat.id,),
+                            (chat_task.chat.id,),
                             queue="high_prio",
-                            task_id=payload.record['id'],
+                            task_id=payload.record,
                             immutable=True
                         )
 
-                    phones = chat.get_chat_phones()
+                    phones = self.get_chat_phones(chat_task.chat)
 
                     self.logger.debug(f'Phones len {len(phones)}')
 
@@ -238,7 +261,7 @@ class PGNotify:
                         celery.chord([
                             celery.signature(
                                 'JoinChatTask',
-                                args=(chat.id, phone.id),
+                                args=(chat_task.chat.id, phone.id),
                                 queue='high_prio',
                                 immutable=True,
                                 time_limit=60
@@ -250,11 +273,52 @@ class PGNotify:
                         sig.delay()
 
                 elif payload.action == Action.update:
-                    if TaskStatus(payload.record['status']) == TaskStatus.revoked:
-                        self.app.control.revoke(payload.record['id'], terminate=True)
+                    try:
+                        chat_task = self.models.ChatTask.objects.get(id=payload.record)
+                    except self.models.ChatTask.DoesNotExist:
+                        self.logger.warning(f'ChatTask ({payload.record}) is not found...')
+
+                        continue
+
+                    if TaskStatus(chat_task.status) == TaskStatus.revoked:
+                        self.app.control.revoke(payload.record, terminate=True)
 
                 elif payload.action == Action.delete:
-                    self.app.control.revoke(payload.record['id'], terminate=True)
+                    self.app.control.revoke(payload.record, terminate=True)
+
+            elif payload.table == Table.phones_tasks:
+                if payload.action == Action.insert:
+                    try:
+                        phone_task = self.models.PhoneTask.objects.get(id=payload.record)
+                    except self.models.PhoneTask.DoesNotExist:
+                        self.logger.warning(f'PhoneTask ({payload.record}) is not found...')
+
+                        continue
+
+                    if PhoneTaskType(phone_task.type) == PhoneTaskType.task_auth:
+                        self.logger.debug('Sending PhoneAuthorizationTask...')
+
+                        self.app.send_task(
+                            "PhoneAuthorizationTask",
+                            (phone_task.phone.id,),
+                            time_limit=60,
+                            task_id=payload.record,
+                            queue='high_prio'
+                        )
+
+                elif payload.action == Action.update:
+                    try:
+                        phone_task = self.models.PhoneTask.objects.get(id=payload.record)
+                    except self.models.PhoneTask.DoesNotExist:
+                        self.logger.warning(f'PhoneTask ({payload.record}) is not found...')
+
+                        continue
+
+                    if TaskStatus(phone_task.status) == TaskStatus.revoked:
+                        self.app.control.revoke(payload.record, terminate=True)
+
+                elif payload.action == Action.delete:
+                    self.app.control.revoke(payload.record, terminate=True)
 
     def _ex_handler(self, loop, context):
         loop.default_exception_handler(context)

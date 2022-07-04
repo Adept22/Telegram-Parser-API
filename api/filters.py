@@ -2,14 +2,22 @@ import django_filters
 import base.models as base_models
 
 
-class ChatFilter(django_filters.FilterSet):
-    phone = django_filters.CharFilter(
-        field_name='chatphone__phone__number', label='Phone number', lookup_expr='contains'
-    )
-
+class LinkFilter(django_filters.FilterSet):
     class Meta:
-        model = base_models.Chat
-        fields = ["id", "internal_id", "link", "title", "status", "phone"]
+        model = base_models.Link
+        fields = "__all__"
+
+
+class HostFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Host
+        fields = "__all__"
+
+
+class ParserFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Parser
+        fields = "__all__"
 
 
 class PhoneFilter(django_filters.FilterSet):
@@ -19,15 +27,45 @@ class PhoneFilter(django_filters.FilterSet):
         exclude = ["api"]
 
 
-class MessageFilter(django_filters.FilterSet):
+class PhoneTaskFilter(django_filters.FilterSet):
     class Meta:
-        model = base_models.Message
+        model = base_models.PhoneTask
+        fields = "__all__"
+
+
+class ChatFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.Chat
+        fields = "__all__"
+
+
+class ChatTaskFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.ChatTask
+        fields = "__all__"
+
+
+class ChatPhoneFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.ChatPhone
+        fields = "__all__"
+
+
+class ChatMediaFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.ChatMedia
         fields = "__all__"
 
 
 class MemberFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.Member
+        fields = "__all__"
+
+
+class MemberMediaFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.MemberMedia
         fields = "__all__"
 
 
@@ -43,32 +81,13 @@ class ChatMemberRoleFilter(django_filters.FilterSet):
         fields = "__all__"
 
 
-class ChatPhoneFilter(django_filters.FilterSet):
+class MessageFilter(django_filters.FilterSet):
     class Meta:
-        model = base_models.ChatPhone
+        model = base_models.Message
         fields = "__all__"
 
 
-class ParserFilter(django_filters.FilterSet):
+class MessageMediaFilter(django_filters.FilterSet):
     class Meta:
-        model = base_models.Parser
+        model = base_models.MessageMedia
         fields = "__all__"
-
-
-class TaskFilter(django_filters.FilterSet):
-    class Meta:
-        model = base_models.Task
-        fields = "__all__"
-
-
-class MemberMediaFilter(django_filters.FilterSet):
-    class Meta:
-        model = base_models.MemberMedia
-        fields = "__all__"
-
-
-class ChatMediaFilter(django_filters.FilterSet):
-    class Meta:
-        model = base_models.ChatMedia
-        fields = "__all__"
-
