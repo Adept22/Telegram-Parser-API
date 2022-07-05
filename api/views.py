@@ -21,7 +21,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
     model_class = None
 
     @abstractmethod
-    def get_required(validated_data):
+    def get_required(serializer):
         """Возвращает dict обязательных параметров"""
 
         raise NotImplementedError
@@ -43,7 +43,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             model = self.get_model_class()
-            required = self.get_required(serializer.validated_data)
+            required = serializer.get_required()
             obj, created = model.objects.update_or_create(
                 **required,
                 defaults=serializer.validated_data,
@@ -64,11 +64,6 @@ class Links(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = base_filters.LinkFilter
 
-    def get_required(validated_data):
-        return {
-            "link": validated_data["link"]
-        }
-
 
 class Hosts(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -78,11 +73,6 @@ class Hosts(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.HostFilter
-
-    def get_required(validated_data):
-        return {
-            "local_ip": validated_data["local_ip"]
-        }
 
 
 class Parsers(BaseModelViewSet):
@@ -94,9 +84,6 @@ class Parsers(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ParserFilter
 
-    def get_required(validated_data):
-        return {}
-
 
 class Phones(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -106,13 +93,6 @@ class Phones(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = base_filters.PhoneFilter
-
-    def get_required(validated_data):
-        return {
-            "number": validated_data["number"],
-            "session": validated_data["session"],
-            "internal_id": validated_data["internal_id"],
-        }
 
 
 class PhonesTasks(BaseModelViewSet):
@@ -124,9 +104,6 @@ class PhonesTasks(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.PhoneTaskFilter
 
-    def get_required(validated_data):
-        return {}
-
 
 class Chats(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -137,10 +114,15 @@ class Chats(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = base_filters.ChatFilter
 
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"]
-        }
+
+class ChatsLinks(BaseModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    model_class = base_models.ChatLink
+    serializer_class = serializers.ChatLinkListSerializer
+    queryset = base_models.ChatLink.objects.all()
+    pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = base_filters.ChatLinkFilter
 
 
 class ChatsTasks(BaseModelViewSet):
@@ -152,9 +134,6 @@ class ChatsTasks(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ChatTaskFilter
 
-    def get_required(validated_data):
-        return {}
-
 
 class ChatsPhones(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -165,12 +144,6 @@ class ChatsPhones(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = base_filters.ChatPhoneFilter
 
-    def get_required(validated_data):
-        return {
-            "chat": validated_data["chat"],
-            "phone": validated_data["phone"],
-        }
-
 
 class ChatsMedias(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -180,11 +153,6 @@ class ChatsMedias(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ChatMediaFilter
-
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"],
-        }
 
     def make_path(self, current, *, depth: 'int' = 0):
         if depth >= settings.MEDIA_PATH_DEPTH:
@@ -272,10 +240,15 @@ class Members(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.MemberFilter
 
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"],
-        }
+
+class MembersLinks(BaseModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    model_class = base_models.MemberLink
+    serializer_class = serializers.MemberLinkListSerializer
+    queryset = base_models.MemberLink.objects.all()
+    pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = base_filters.MemberLinkFilter
 
 
 class MembersMedias(BaseModelViewSet):
@@ -286,11 +259,6 @@ class MembersMedias(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.MemberMediaFilter
-
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"],
-        }
 
     def make_path(self, current, *, depth: 'int' = 0):
         if depth >= settings.MEDIA_PATH_DEPTH:
@@ -378,12 +346,6 @@ class ChatsMembers(BaseModelViewSet):
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ChatMemberFilter
 
-    def get_required(validated_data):
-        return {
-            "chat": validated_data["chat"],
-            "member": validated_data["member"],
-        }
-
 
 class ChatsMembersRoles(BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
@@ -393,13 +355,6 @@ class ChatsMembersRoles(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend, OrderingFilter)
     filter_class = base_filters.ChatMemberRoleFilter
-
-    def get_required(validated_data):
-        return {
-            "member": validated_data["member"],
-            "title": validated_data["title"],
-            "code": validated_data["code"],
-        }
 
 
 class Messages(BaseModelViewSet):
@@ -412,11 +367,15 @@ class Messages(BaseModelViewSet):
     ordering_fields = ["internal_id", "created_at"]
     filter_class = base_filters.MessageFilter
 
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"],
-            "message": validated_data["message"],
-        }
+
+class MessagesLinks(BaseModelViewSet):
+    permission_classes = [permissions.AllowAny]
+    model_class = base_models.MessageLink
+    serializer_class = serializers.MessageLinkListSerializer
+    queryset = base_models.MessageLink.objects.all()
+    pagination_class = CustomPagination
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = base_filters.MessageLinkFilter
 
 
 class MessagesMedias(BaseModelViewSet):
@@ -427,12 +386,6 @@ class MessagesMedias(BaseModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = base_filters.MessageMediaFilter
-
-    def get_required(validated_data):
-        return {
-            "internal_id": validated_data["internal_id"],
-            "message": validated_data["message"],
-        }
 
     def make_path(self, current, *, depth: 'int' = 0):
         if depth >= settings.MEDIA_PATH_DEPTH:

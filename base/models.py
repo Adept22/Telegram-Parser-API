@@ -29,7 +29,7 @@ class Task(BaseModel):
         (STATUS_REVOKED, u"Отозван"),
     )
 
-    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     started_at = models.DateTimeField(u"дата запуска", blank=True, null=True)
     ended_at = models.DateTimeField(u"дата завершения", blank=True, null=True)
@@ -39,6 +39,18 @@ class Task(BaseModel):
 
 
 class Link(BaseModel):
+    TYPE_LINK = 0
+    TYPE_CHAT_LINK = 1
+    TYPE_MEMBER_LINK = 2
+    TYPE_MESSAGE_LINK = 3
+
+    TYPE_CHOICES = (
+        (TYPE_LINK, u"Ссылка"),
+        (TYPE_CHAT_LINK, u"Ссылка на чат"),
+        (TYPE_MEMBER_LINK, u"Ссылка на пользователя"),
+        (TYPE_MESSAGE_LINK, u"Ссылка на сообщение"),
+    )
+
     STATUS_CREATED = 0
     STATUS_RESOLVED = 1
     STATUS_FAILURE = 2
@@ -50,7 +62,8 @@ class Link(BaseModel):
     )
 
     link = models.CharField(u"link", max_length=255, blank=False, unique=True)
-    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
+    type = models.IntegerField(u"type", choices=TYPE_CHOICES, default=TYPE_LINK, blank=True)
+    status = models.IntegerField(u"status", choices=STATUS_CHOICES, default=STATUS_CREATED, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
 
     class Meta:
@@ -85,7 +98,7 @@ class Parser(BaseModel):
     )
 
     host = models.ForeignKey(Host, verbose_name=u"host", on_delete=models.DO_NOTHING)
-    status = models.IntegerField(u"status", default=STATUS_NEW, choices=STATUS_CHOICES)
+    status = models.IntegerField(u"status", default=STATUS_NEW, choices=STATUS_CHOICES, blank=True)
 
     class Meta:
         verbose_name = u"Parser"
@@ -114,14 +127,14 @@ class Phone(BaseModel):
     number = models.CharField(u"номер", max_length=20, unique=True)
     first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
     last_name = models.CharField(u"last name", max_length=255, blank=True, null=True)
-    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES)
+    status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.DO_NOTHING)
     code = models.CharField(u"code", max_length=10, blank=True, null=True)
     session = models.CharField(u"session", max_length=512, null=True, blank=True, unique=True)
     internal_id = models.BigIntegerField(u"internal_id", blank=True, null=True, unique=True)
     api = models.JSONField(blank=True, null=True)
-    takeout = models.BooleanField(u"takeout", default=True)
+    takeout = models.BooleanField(u"takeout", default=True, blank=True)
 
     class Meta:
         verbose_name = u"Phone"
@@ -164,10 +177,10 @@ class Chat(BaseModel):
     status = models.IntegerField(u"status", default=STATUS_CREATED, choices=STATUS_CHOICES, blank=True)
     status_text = models.TextField(u"status text", blank=True, null=True)
     description = models.TextField(u"description", blank=True, null=True)
-    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.DO_NOTHING)
+    parser = models.ForeignKey(Parser, verbose_name=u"parser", on_delete=models.DO_NOTHING, blank=True, null=True)
     date = models.DateField(u"date", blank=True, null=True)
-    total_messages = models.IntegerField(u"total messages", default=0)
-    total_members = models.IntegerField(u"total members", default=0)
+    total_messages = models.IntegerField(u"total messages", default=0, blank=True)
+    total_members = models.IntegerField(u"total members", default=0, blank=True)
 
     class Meta:
         verbose_name = u"Chat"
@@ -176,6 +189,7 @@ class Chat(BaseModel):
 
 
 class ChatLink(Link):
+    link_ptr = models.OneToOneField(Link, db_column='id', on_delete=models.CASCADE, name="link_ptr", parent_link=True)
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
 
     class Meta:
@@ -207,7 +221,7 @@ class ChatTask(Task):
 class ChatPhone(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.DO_NOTHING)
-    is_using = models.BooleanField(u"is using", default=True)
+    is_using = models.BooleanField(u"is using", default=True, blank=True)
 
     class Meta:
         verbose_name = u"ChatPhone"
@@ -245,6 +259,7 @@ class Member(BaseModel):
 
 
 class MemberLink(Link):
+    link_ptr = models.OneToOneField(Link, db_column='id', on_delete=models.CASCADE, name="link_ptr", parent_link=True)
     member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.DO_NOTHING)
 
     class Meta:
@@ -268,7 +283,7 @@ class MemberMedia(BaseModel):
 class ChatMember(BaseModel):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.DO_NOTHING)
-    is_left = models.BooleanField(u"is left", default=False)
+    is_left = models.BooleanField(u"is left", default=False, blank=True)
     date = models.DateTimeField(u"дата", blank=True, null=True)
 
     class Meta:
@@ -295,11 +310,11 @@ class ChatMemberRole(BaseModel):
 
 
 class Message(BaseModel):
-    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING)
+    member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING, blank=True, null=True)
     reply_to = models.ForeignKey("self", verbose_name=u"reply_to", on_delete=models.DO_NOTHING, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id")
     text = models.TextField(u"text", blank=True, null=True)
-    is_pinned = models.BooleanField(u"is pinned", default=False)
+    is_pinned = models.BooleanField(u"is pinned", default=False, blank=True)
     forwarded_from_id = models.BigIntegerField(u"forwarded from id", blank=True, null=True)
     forwarded_from_name = models.CharField(max_length=255, blank=True, null=True)
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
@@ -316,6 +331,7 @@ class Message(BaseModel):
 
 
 class MessageLink(Link):
+    link_ptr = models.OneToOneField(Link, db_column='id', on_delete=models.CASCADE, name="link_ptr", parent_link=True)
     message = models.ForeignKey(Message, verbose_name=u"message", on_delete=models.DO_NOTHING)
 
     class Meta:

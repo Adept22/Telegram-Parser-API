@@ -54,7 +54,7 @@ class PGNotify:
     def __init__(self) -> None:
         self.logger = self._init_logger()
 
-        self.logger.info('Initialization PGNotify service instance')
+        self.logger.info("Initialization PGNotify service instance")
 
         self.loop = asyncio.new_event_loop()
         self.loop.set_exception_handler(self._ex_handler)
@@ -67,13 +67,13 @@ class PGNotify:
         self.connection = self._init_db_connection()
         self.app = self._init_celery_app()
 
-        self.logger.info('PGNotify instance created')
+        self.logger.info("PGNotify instance created")
 
     def _init_logger(self):
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.DEBUG)
 
-        formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+        formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 
         stdout_handler = logging.StreamHandler(sys.stdout)
         stdout_handler.setLevel(logging.INFO)
@@ -84,14 +84,14 @@ class PGNotify:
         return logger
 
     def _handle_sig(self, sig, frame):
-        self.logger.warning(f'{signal.Signals(sig).name} received...')
+        self.logger.warning(f"{signal.Signals(sig).name} received...")
 
         self.stop()
 
     def _init_django(self):
         import django
 
-        self.logger.info('Django setup...')
+        self.logger.info("Django setup...")
 
         os.environ["DJANGO_SETTINGS_MODULE"] = "project.settings"
         os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
@@ -106,7 +106,7 @@ class PGNotify:
     def _init_db_connection(self):
         from django.db import connection
 
-        self.logger.info('Listen postgresql notifies initialization...')
+        self.logger.info("Listen postgresql notifies initialization...")
 
         crs = connection.cursor()
         pg_con = connection.connection
@@ -116,28 +116,25 @@ class PGNotify:
         return pg_con
 
     def _init_celery_app(self):
-        self.logger.info('Celery initialization...')
+        self.logger.info("Celery initialization...")
 
-        app = celery.Celery('project')
-        app.config_from_object('django.conf:settings', namespace='CELERY')
+        app = celery.Celery("project")
+        app.config_from_object("django.conf:settings", namespace="CELERY")
         app.autodiscover_tasks()
 
         return app
 
     def get_chat_phones(self, chat):
-        chat_phones = chat.chatphone_set.filter(
-            is_using=True,
-            phone__takeout=False
-        )
+        chat_phones = chat.chatphone_set.filter(is_using=True, phone__takeout=False)
 
         if chat_phones.count() >= self.settings.CHAT_PHONE_LINKS:
             return []
 
         phones = list(
             self.models.Phone.objects.filter(
-                status=self.models.Phone.READY, 
+                status=self.models.Phone.STATUS_READY,
                 takeout=False
-            )
+            ).exclude(id__in=[cp.phone.id for cp in chat_phones])
         )
 
         return phones[:self.settings.CHAT_PHONE_LINKS - chat_phones.count()]
@@ -150,25 +147,25 @@ class PGNotify:
 
             payload = PGNotify.Payload(**json.loads(notify.payload))
 
-            self.logger.info(f'Handle new pg notification {notify.payload}')
+            self.logger.info(f"Handle new pg notification {notify.payload}")
 
             if payload.table == Table.links:
                 if payload.action == Action.insert:
                     try:
                         link = self.models.Link.objects.get(id=payload.record)
                     except self.models.Link.DoesNotExist:
-                        self.logger.warning(f'Link ({payload.record}) is not found...')
+                        self.logger.warning(f"Link ({payload.record}) is not found...")
 
                         continue
 
-                    self.logger.debug('Sending LinkResolveTask...')
+                    self.logger.debug("Sending LinkResolveTask...")
 
                     self.app.send_task(
                         "LinkResolveTask",
                         (link.id,),
                         time_limit=60,
                         task_id=payload.record,
-                        queue='high_prio'
+                        queue="high_prio"
                     )
 
                 elif payload.action == Action.delete:
@@ -179,11 +176,11 @@ class PGNotify:
                     try:
                         phone = self.models.Phone.objects.get(id=payload.record)
                     except self.models.Phone.DoesNotExist:
-                        self.logger.warning(f'Phone ({payload.record}) is not found...')
+                        self.logger.warning(f"Phone ({payload.record}) is not found...")
 
                         continue
 
-                    self.logger.debug('Sending PhoneAuthorizationTask...')
+                    self.logger.debug("Sending PhoneAuthorizationTask...")
 
                     self.app.send_task(
                         "PhoneAuthorizationTask",
@@ -201,82 +198,93 @@ class PGNotify:
                     try:
                         chat_task = self.models.ChatTask.objects.get(id=payload.record)
                     except self.models.ChatTask.DoesNotExist:
-                        self.logger.warning(f'ChatTask ({payload.record}) is not found...')
+                        self.logger.warning(f"ChatTask ({payload.record}) is not found...")
 
                         continue
 
-                    sig = None
+                    chat = chat_task.chat
+
+                    phones = self.get_chat_phones(chat)
+
+                    self.logger.debug(f"Phones len {len(phones)}")
+
+                    if phones:
+                        chat_links = list(chat.chatlink_set.order_by("-created_at"))
+
+                        self.logger.debug(f"Chat links len {len(chat_links)}")
+
+                        self.logger.debug("Sending celery group")
+
+                        result = celery.group([
+                            celery.signature(
+                                "JoinChatTask",
+                                args=(link.id, phone.id),
+                                queue="high_prio",
+                                immutable=True,
+                                time_limit=60
+                            ) for phone in phones for link in chat_links
+                        ])()
+
+                        result.join()
+
+                        to_start = len(phones)
+
+                        # for v in result.collect():
+                        #     if not isinstance(v, (ResultBase, tuple)):
+                        #         to_start -= 1
+
+                        #     if not to_start:
+                        #         result.revoke(terminate=True, signal="SIGKILL")
 
                     if ChatTaskType(chat_task.type) == ChatTaskType.task_member:
-                        self.logger.debug('Creating ParseMembersTask signature...')
+                        self.logger.debug("Sending ParseMembersTask...")
 
-                        sig = celery.signature(
+                        self.app.send_task(
                             "ParseMembersTask",
-                            (chat_task.chat.id,),
+                            (chat.id,),
                             queue="low_prio",
                             task_id=payload.record,
                             immutable=True
                         )
 
                     elif ChatTaskType(chat_task.type) == ChatTaskType.task_message:
-                        self.logger.debug('Creating ParseMessagesTask signature...')
+                        self.logger.debug("Sending ParseMessagesTask...")
 
-                        sig = celery.signature(
+                        self.app.send_task(
                             "ParseMessagesTask",
-                            (chat_task.chat.id,),
+                            (chat.id,),
                             queue="low_prio",
                             task_id=payload.record,
                             immutable=True
                         )
 
                     elif ChatTaskType(chat_task.type) == ChatTaskType.task_monitoring:
-                        self.logger.debug('Creating MonitoringChatTask signature...')
+                        self.logger.debug("Sending MonitoringChatTask...")
 
-                        sig = celery.signature(
+                        self.app.send_task(
                             "MonitoringChatTask",
-                            (chat_task.chat.id,),
+                            (chat.id,),
                             queue="high_prio",
                             task_id=payload.record,
                             immutable=True
                         )
 
                     elif ChatTaskType(chat_task.type) == ChatTaskType.task_chat_media:
-                        self.logger.debug('Creating ChatMediaTask signature...')
+                        self.logger.debug("Sending ChatMediaTask...")
 
-                        sig = celery.signature(
+                        self.app.send_task(
                             "ChatMediaTask",
-                            (chat_task.chat.id,),
+                            (chat.id,),
                             queue="high_prio",
                             task_id=payload.record,
                             immutable=True
                         )
 
-                    phones = self.get_chat_phones(chat_task.chat)
-
-                    self.logger.debug(f'Phones len {len(phones)}')
-
-                    if phones:
-                        self.logger.debug('Sending celery chord')
-
-                        celery.chord([
-                            celery.signature(
-                                'JoinChatTask',
-                                args=(chat_task.chat.id, phone.id),
-                                queue='high_prio',
-                                immutable=True,
-                                time_limit=60
-                            ) for phone in phones
-                        ])(sig)
-                    else:
-                        self.logger.debug('Sending celery standalone task')
-
-                        sig.delay()
-
                 elif payload.action == Action.update:
                     try:
                         chat_task = self.models.ChatTask.objects.get(id=payload.record)
                     except self.models.ChatTask.DoesNotExist:
-                        self.logger.warning(f'ChatTask ({payload.record}) is not found...')
+                        self.logger.warning(f"ChatTask ({payload.record}) is not found...")
 
                         continue
 
@@ -291,26 +299,26 @@ class PGNotify:
                     try:
                         phone_task = self.models.PhoneTask.objects.get(id=payload.record)
                     except self.models.PhoneTask.DoesNotExist:
-                        self.logger.warning(f'PhoneTask ({payload.record}) is not found...')
+                        self.logger.warning(f"PhoneTask ({payload.record}) is not found...")
 
                         continue
 
                     if PhoneTaskType(phone_task.type) == PhoneTaskType.task_auth:
-                        self.logger.debug('Sending PhoneAuthorizationTask...')
+                        self.logger.debug("Sending PhoneAuthorizationTask...")
 
                         self.app.send_task(
                             "PhoneAuthorizationTask",
                             (phone_task.phone.id,),
                             time_limit=60,
                             task_id=payload.record,
-                            queue='high_prio'
+                            queue="high_prio"
                         )
 
                 elif payload.action == Action.update:
                     try:
                         phone_task = self.models.PhoneTask.objects.get(id=payload.record)
                     except self.models.PhoneTask.DoesNotExist:
-                        self.logger.warning(f'PhoneTask ({payload.record}) is not found...')
+                        self.logger.warning(f"PhoneTask ({payload.record}) is not found...")
 
                         continue
 
@@ -326,21 +334,21 @@ class PGNotify:
         self.stop(1)
 
     def start(self):
-        self.logger.info('Starting PGNotify service')
+        self.logger.info("Starting PGNotify service")
 
         self.loop.add_reader(self.connection, self._handle)
 
         self.loop.run_forever()
 
-    def stop(self, code: 'int' = 0):
-        self.logger.info(f'Stopping PGNotify service with code {code}.')
-        self.logger.info('Cleaning up...')
+    def stop(self, code: "int" = 0):
+        self.logger.info(f"Stopping PGNotify service with code {code}.")
+        self.logger.info("Cleaning up...")
 
         self.loop.stop()
 
         sys.exit(code)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     service = PGNotify()
     service.start()

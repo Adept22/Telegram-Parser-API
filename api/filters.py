@@ -39,6 +39,12 @@ class ChatFilter(django_filters.FilterSet):
         fields = "__all__"
 
 
+class ChatLinkFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.ChatLink
+        fields = "__all__"
+
+
 class ChatTaskFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.ChatTask
@@ -63,6 +69,12 @@ class MemberFilter(django_filters.FilterSet):
         fields = "__all__"
 
 
+class MemberLinkFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.MemberLink
+        fields = "__all__"
+
+
 class MemberMediaFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.MemberMedia
@@ -84,6 +96,12 @@ class ChatMemberRoleFilter(django_filters.FilterSet):
 class MessageFilter(django_filters.FilterSet):
     class Meta:
         model = base_models.Message
+        fields = "__all__"
+
+
+class MessageLinkFilter(django_filters.FilterSet):
+    class Meta:
+        model = base_models.MessageLink
         fields = "__all__"
 
 
