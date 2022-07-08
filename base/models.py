@@ -1,8 +1,9 @@
 import uuid
+from model_utils.managers import InheritanceManager
 from django.db import models
 
 
-class BaseModel(models.Model):
+class _Model(models.Model):
     """Абстрактная модель для использования UUID в качестве PK."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid1, editable=False)
@@ -12,7 +13,7 @@ class BaseModel(models.Model):
         abstract = True
 
 
-class Task(BaseModel):
+class Task(_Model):
     """Абстрактная модель задания."""
 
     STATUS_CREATED = 0
@@ -38,7 +39,9 @@ class Task(BaseModel):
         abstract = True
 
 
-class Link(BaseModel):
+class _Link(_Model):
+    objects = InheritanceManager()
+
     TYPE_LINK = 0
     TYPE_CHAT_LINK = 1
     TYPE_MEMBER_LINK = 2
@@ -67,12 +70,20 @@ class Link(BaseModel):
     status_text = models.TextField(u"status text", blank=True, null=True)
 
     class Meta:
+        abstract = True
+
+
+class Link(_Link):
+    class Meta:
         verbose_name = u"Link"
         verbose_name_plural = u"Links"
         db_table = 'telegram\".\"links'
 
+    class DiscriminatorMeta:
+        value = _Link.TYPE_LINK
 
-class Host(BaseModel):
+
+class Host(_Model):
     public_ip = models.CharField(max_length=15, blank=True, null=True)
     local_ip = models.CharField(max_length=15, unique=True)
     name = models.CharField(max_length=255, blank=True, null=True)
@@ -86,7 +97,7 @@ class Host(BaseModel):
         return u"{}. {}".format(self.id, self.name)
 
 
-class Parser(BaseModel):
+class Parser(_Model):
     STATUS_NEW = 0
     STATUS_IN_PROGRESS = 1
     STATUS_FAILED = 2
@@ -109,7 +120,7 @@ class Parser(BaseModel):
         return u"{}".format(self.id)
 
 
-class Phone(BaseModel):
+class Phone(_Model):
     STATUS_CREATED = 0
     STATUS_READY = 1
     STATUS_FLOOD = 2
@@ -161,7 +172,7 @@ class PhoneTask(Task):
         db_table = 'telegram\".\"phones_tasks'
 
 
-class Chat(BaseModel):
+class Chat(_Model):
     STATUS_CREATED = 0
     STATUS_AVAILABLE = 1
     STATUS_FAILED = 2
@@ -197,6 +208,9 @@ class ChatLink(Link):
         verbose_name_plural = u"ChatLinks"
         db_table = 'telegram\".\"chats_links'
 
+    class DiscriminatorMeta:
+        value = _Link.TYPE_CHAT_LINK
+
 
 class ChatTask(Task):
     TYPE_MEMBER = 0
@@ -218,7 +232,7 @@ class ChatTask(Task):
         db_table = 'telegram\".\"chats_tasks'
 
 
-class ChatPhone(BaseModel):
+class ChatPhone(_Model):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     phone = models.ForeignKey(Phone, verbose_name=u"phone", on_delete=models.DO_NOTHING)
     is_using = models.BooleanField(u"is using", default=True, blank=True)
@@ -232,7 +246,7 @@ class ChatPhone(BaseModel):
         ]
 
 
-class ChatMedia(BaseModel):
+class ChatMedia(_Model):
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     path = models.CharField(max_length=3000, blank=True, null=True)
@@ -244,7 +258,7 @@ class ChatMedia(BaseModel):
         db_table = 'telegram\".\"chats_medias'
 
 
-class Member(BaseModel):
+class Member(_Model):
     internal_id = models.BigIntegerField(u"internal_id")
     username = models.CharField(u"username", max_length=255, blank=True, null=True)
     first_name = models.CharField(u"first name", max_length=255, blank=True, null=True)
@@ -267,8 +281,11 @@ class MemberLink(Link):
         verbose_name_plural = u"MemberLinks"
         db_table = 'telegram\".\"members_links'
 
+    class DiscriminatorMeta:
+        value = _Link.TYPE_MEMBER_LINK
 
-class MemberMedia(BaseModel):
+
+class MemberMedia(_Model):
     member = models.ForeignKey(Member, verbose_name=u"member media", on_delete=models.DO_NOTHING)
     internal_id = models.BigIntegerField(u"internal id", unique=True)
     path = models.CharField(u"path", max_length=255, blank=True, null=True)
@@ -280,7 +297,7 @@ class MemberMedia(BaseModel):
         db_table = 'telegram\".\"members_medias'
 
 
-class ChatMember(BaseModel):
+class ChatMember(_Model):
     chat = models.ForeignKey(Chat, verbose_name=u"chat", on_delete=models.DO_NOTHING)
     member = models.ForeignKey(Member, verbose_name=u"member", on_delete=models.DO_NOTHING)
     is_left = models.BooleanField(u"is left", default=False, blank=True)
@@ -295,7 +312,7 @@ class ChatMember(BaseModel):
         ]
 
 
-class ChatMemberRole(BaseModel):
+class ChatMemberRole(_Model):
     member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING)
     title = models.CharField(u"title", max_length=100)
     code = models.CharField(u"code", max_length=10)
@@ -309,7 +326,7 @@ class ChatMemberRole(BaseModel):
         ]
 
 
-class Message(BaseModel):
+class Message(_Model):
     member = models.ForeignKey(ChatMember, verbose_name=u"member", on_delete=models.DO_NOTHING, blank=True, null=True)
     reply_to = models.ForeignKey("self", verbose_name=u"reply_to", on_delete=models.DO_NOTHING, blank=True, null=True)
     internal_id = models.BigIntegerField(u"internal id")
@@ -339,8 +356,11 @@ class MessageLink(Link):
         verbose_name_plural = u"MessageLinks"
         db_table = 'telegram\".\"messages_links'
 
+    class DiscriminatorMeta:
+        value = _Link.TYPE_MESSAGE_LINK
 
-class MessageMedia(BaseModel):
+
+class MessageMedia(_Model):
     message = models.ForeignKey(Message, verbose_name=u"message media", on_delete=models.DO_NOTHING)
     internal_id = models.BigIntegerField(u"internal id")
     path = models.CharField(u"path", max_length=255, blank=True, null=True)

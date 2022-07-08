@@ -17,6 +17,11 @@ import base.models as base_models
 import api.filters as base_filters
 
 
+class LinkSubClassFieldsMixin(object):
+    def get_queryset(self):
+        return base_models.Link.objects.select_subclasses()
+
+
 class BaseModelViewSet(viewsets.ModelViewSet):
     model_class = None
 
@@ -55,7 +60,7 @@ class BaseModelViewSet(viewsets.ModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class Links(BaseModelViewSet):
+class Links(LinkSubClassFieldsMixin, BaseModelViewSet):
     permission_classes = [permissions.AllowAny]
     model_class = base_models.Link
     serializer_class = serializers.LinkListSerializer

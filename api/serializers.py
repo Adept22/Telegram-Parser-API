@@ -10,6 +10,32 @@ class BaseModelSerializer(serializers.ModelSerializer):
 
 
 class LinkListSerializer(BaseModelSerializer):
+    def to_representation(self, instance):
+        instance = base_models.Link.objects.get_subclass(id=instance.id)
+
+        if instance.type == base_models.Link.TYPE_CHAT_LINK:
+            serializer = ChatLinkListSerializer(instance=self.instance)
+        elif instance.type == base_models.Link.TYPE_MEMBER_LINK:
+            serializer = MemberLinkListSerializer(instance=self.instance)
+        elif instance.type == base_models.Link.TYPE_MESSAGE_LINK:
+            serializer = MessageLinkListSerializer(instance=self.instance)
+        else:
+            serializer = super()
+
+        return serializer.to_representation(instance)
+
+    def to_internal_value(self, data):
+        if int(data["type"]) == base_models.Link.TYPE_CHAT_LINK:
+            serializer = ChatLinkListSerializer(instance=self.instance, data=data)
+        elif int(data["type"]) == base_models.Link.TYPE_MEMBER_LINK:
+            serializer = MemberLinkListSerializer(instance=self.instance, data=data)
+        elif int(data["type"]) == base_models.Link.TYPE_MESSAGE_LINK:
+            serializer = MessageLinkListSerializer(instance=self.instance, data=data)
+        else:
+            serializer = super()
+
+        return serializer.to_internal_value(data)
+
     class Meta:
         model = base_models.Link
         fields = "__all__"
